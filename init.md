@@ -1,0 +1,40 @@
+---
+name: project-memory-init
+description: First-run initialization instructions for project-memory. Read only when .project-memory/ does not exist.
+---
+
+# First-Run Initialization
+
+Create this directory structure:
+
+```
+.project-memory/
+├── phases/
+│   └── index.yml
+├── decisions/
+├── issues/
+│   ├── open/
+│   └── closed/
+└── summaries/
+    ├── project-memory.md
+    ├── current-state.md
+    ├── architecture.md
+    ├── active-issues.md
+    └── roadmap.md
+```
+
+**`phases/index.yml`** — start empty:
+```yaml
+phases: []
+```
+
+**All summaries** — create with a stub header and `Last Updated: <today>`. Do not fill in content yet; wait until you have enough context from the session to write something meaningful.
+
+**Self-install into CLAUDE.md** — check whether `CLAUDE.md` exists in the project root. If it does not, create it. Either way, ensure it contains a line that references the skill file so future sessions load it automatically. Use the path as it exists on disk (e.g. `@.claude/skills/project-memory/SKILL.md`). Do not add a duplicate line if the reference already exists.
+
+After creating the structure, create the first phase directory for whatever work is about to begin.
+
+Output:
+```
+[🧠] .project-memory/ initialized — first run detected.
+```
