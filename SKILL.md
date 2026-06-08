@@ -279,7 +279,7 @@ Classify the work using the table below.
 If the proposed work is a significant architectural move (deployment, auth, persistence, schema, public API) and `decisions/index.md` has no candidate at all for it, ask once: "No prior decision covers this. Want to record one now?" — then proceed.
 
 **Session override:**
-If the user says "skip decision questions for now" (or similar phrasing — "atla", "şimdilik atla", "hız modu"), suspend Step 3 questions for the rest of the session. Decisions are still **written** when made — only the pre-implementation question is bypassed. Override resets on the next session.
+If the user says "skip decision questions for now" (or similar phrasing — "skip", "skip for now", "speed mode"), suspend Step 3 questions for the rest of the session. Decisions are still **written** when made — only the pre-implementation question is bypassed. Override resets on the next session.
 
 ---
 

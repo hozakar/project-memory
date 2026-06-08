@@ -5,6 +5,16 @@ description: Naming conventions and lifecycle rules for DECISION and ISSUE files
 
 # Conventions
 
+## Language
+
+All skill files (`SKILL.md`, `init.md`, `audit.md`, `conventions.md`, `templates.md`) are written in English.
+
+Rationale: skill files are LLM-facing rules — they never surface directly to the end user. English is the LLM's native register for instruction-following. User-facing communication (conversation, summaries shown to the user) may follow the user's preferred language; the rule files themselves do not.
+
+This applies to all text inside the skill files: prose, comments, placeholder identifiers, headings, table cells, code-block strings used as examples. Memory data under `.project-memory/` (which the user authors and reads) is NOT subject to this rule.
+
+---
+
 ## Architectural Decision Records
 
 Create when architecture changes, major dependencies are introduced, important tradeoffs are made, or a significant alternative was rejected.
@@ -20,8 +30,8 @@ Create when architecture changes, major dependencies are introduced, important t
 ---
 id: DECISION-YYYY-MM-DD-short-slug
 status: active | superseded | amended
-primary_scope: <kategori>           # auth, persistence, deployment, ui, schema, ...
-touches: [varlık1, varlık2]         # somut isimler — bkz. Touches Field Guidance
+primary_scope: <category>           # auth, persistence, deployment, ui, schema, ...
+touches: [entity1, entity2]         # concrete names — see Touches Field Guidance
 supersedes: DECISION-YYYY-MM-DD-... # null if none
 superseded_by: DECISION-YYYY-MM-DD-... # null if none; set when a later decision overrides this
 ---
