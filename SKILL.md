@@ -72,6 +72,7 @@ Git is the source of truth for code changes. `.project-memory/` is the source of
 │       ├── review-and-fixes.md
 │       └── followup.md
 ├── decisions/
+│   ├── index.md
 │   └── DECISION-YYYY-MM-DD-slug.md
 ├── issues/
 │   ├── open/
@@ -142,9 +143,10 @@ At session start and after any context compaction:
 5. .project-memory/summaries/roadmap.md
 6. .project-memory/phases/index.yml
 7. Active phase directory (if open)
-8. Relevant decision records (when planning in a specific area)
-9. Open issues (as needed)
-10. Recent git commits (as needed)
+8. .project-memory/decisions/index.md (load fully — primary input to the Pre-Implementation Gate)
+9. Individual DECISION-YYYY-MM-DD-* files (only when planning in a scope the index flags as relevant)
+10. Open issues (as needed)
+11. Recent git commits (as needed)
 ```
 
 Do not load all historical phases unless necessary. Prefer summarized memory before raw history. When diving deeper into a specific area, filter `phases/index.yml` by tags to find relevant phases.
@@ -167,7 +169,9 @@ Do not load all historical phases unless necessary. Prefer summarized memory bef
 - Do any sections contain stale placeholders (`"None recorded yet"`, `"TBD"`, `"system just initialized"`)? Clear them if real data exists.
 
 **Before writing any plan:**
-- Is there a prior decision (DECISION-YYYY-MM-DD-*) affecting this area?
+- List the concrete entities (`touches` candidates) this plan affects.
+- Scan `decisions/index.md` for active decisions touching any of those entities or sharing the same `primary_scope`.
+- Apply the Decision Resolution Rules from `conventions.md` to candidates.
 - Has something similar been attempted and abandoned before?
 - Do any active tensions constrain this approach?
 - Are there open issues this plan must account for?
@@ -247,9 +251,35 @@ Before dispatching ANY significant implementation work — including:
 - Junior pipeline submissions (`submit_implementation`)
 - Agent tool calls for code changes
 
-A phase **MUST** be open. If no phase is open, **CREATE IT FIRST**. Implementation work is BLOCKED until the phase exists.
+Run these steps in order. None may be skipped.
 
-Phase minimum to unblock: `phase.yml` (status: planning) + `plan.md` stub + `phases/index.yml` entry.
+**Step 1 — Phase open?**
+A phase **MUST** be open. If no phase is open, **CREATE IT FIRST**. Implementation work is BLOCKED until the phase exists. Minimum: `phase.yml` (status: planning) + `plan.md` stub + `phases/index.yml` entry.
+
+**Step 2 — Implementation significance?**
+Classify the work using the table below.
+
+| Significance | Examples | Decision check |
+|---|---|---|
+| **Trivial** | rename, format, comment, import cleanup, single-line bugfix, dependency patch bump | Skip the decision check entirely |
+| **Significant** | new feature, schema/type change, deployment-model change, auth introduction or removal, persistence layer change, new dependency, new module | Run the decision check |
+| **Ambiguous** | test additions, config tweaks, small UI changes, doc updates with runtime effect | Run the decision check but only escalate on **directional** conflict |
+
+**Step 3 — Decision check (when required by Step 2):**
+
+1. List the concrete entities the work touches (e.g. `user_id`, `auth_token`, `deployment_target`). Be concrete — see `conventions.md` → Touches Field Guidance.
+2. Scan `decisions/index.md` for active rows where any `Touches` entry overlaps your list OR `Scope` matches your primary scope.
+3. For each candidate, apply the Decision Resolution Rules (`conventions.md`) and classify:
+   - **Directional conflict** — candidate claim contradicts the proposed work in a way that would change its direction → add to batch question.
+   - **Refinement / overlap without conflict** — candidate touches the same area but does not contradict → emit a one-line silent note, continue.
+   - **Unrelated** — overlap is incidental → ignore.
+4. If the batch has at least one entry, surface ALL candidates in a single `AskUserQuestion` call. Do NOT issue sequential questions per candidate. Wait for the user's response before implementing.
+
+**Step 4 — Capture missing decisions:**
+If the proposed work is a significant architectural move (deployment, auth, persistence, schema, public API) and `decisions/index.md` has no candidate at all for it, ask once: "No prior decision covers this. Want to record one now?" — then proceed.
+
+**Session override:**
+If the user says "skip decision questions for now" (or similar phrasing — "atla", "şimdilik atla", "hız modu"), suspend Step 3 questions for the rest of the session. Decisions are still **written** when made — only the pre-implementation question is bypassed. Override resets on the next session.
 
 ---
 
@@ -299,7 +329,7 @@ At phase completion (merge OR logical completion):
 |---|---|
 | User requests significant implementation | Create phase BEFORE starting any work |
 | `submit_implementation` about to be called | Phase must exist — create before the call |
-| DECISION-* file created | Add one-liner per rejected alternative to `project-memory.md` → Rejected Decisions |
+| DECISION-* file created | Add row to `decisions/index.md`; add one-liner per rejected alternative to `project-memory.md` → Rejected Decisions; if `supersedes` is set, update the superseded file's `status` and `superseded_by` and its index row |
 | New feature or component shipped | Update `current-state.md` → Current Features or Major Components |
 | Technical debt introduced | Update `current-state.md` → Current Technical Debt |
 | Architecture module added or changed | Update `architecture.md` |
@@ -337,6 +367,9 @@ Ambiguous (test additions, dep upgrades, doc updates)
 
 **Work cancelled / superseded?**
 → Set `status: abandoned` in `phase.yml`, add `abandoned_reason` field
+
+**About to implement something significant?**
+→ Step 1: phase open? → Step 2: classify trivial/significant/ambiguous → Step 3: scan `decisions/index.md` for `touches` overlap → batch any directional conflicts into one question → Step 4: if no candidate exists for an architectural move, offer to record one.
 
 ---
 

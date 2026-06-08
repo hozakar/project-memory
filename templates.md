@@ -97,6 +97,32 @@ Do not copy diffs from git. Summarize engineering intent.
 
 ---
 
+## decisions/index.md
+
+One-row-per-decision summary table. Loaded by Claude at session start and consulted during the Pre-Implementation Gate. Each row mirrors the frontmatter of its DECISION file.
+
+```md
+# Decisions Index
+
+| Date | ID | Scope | Status | Touches | Claim |
+|---|---|---|---|---|---|
+| 2026-06-08 | DECISION-2026-06-08-decision-cross-reference-mechanism | skill | active | decisions, pre-impl-gate, touches | Decision cross-reference is mandatory pre-implementation step; supersedes is primary, recency is fallback |
+```
+
+Maintenance rules:
+- Every new `DECISION-*.md` file gets a row added in the same write batch.
+- When a decision is superseded, update its `Status` cell to `superseded` (do not delete the row — historical context).
+- Claim column is one short sentence — the testable assertion the decision makes. Not a description of the topic.
+- Rows sorted newest first.
+
+---
+
+## DECISION-YYYY-MM-DD-slug.md
+
+See `conventions.md` for the required frontmatter schema (`id`, `status`, `primary_scope`, `touches`, `supersedes`, `superseded_by`) and Decision Resolution Rules.
+
+---
+
 ## project-memory.md
 
 Target size: 500–1500 words.
