@@ -114,7 +114,17 @@ Next significant work begins → New phase created
 | **Significant** | feature, bugfix, refactor, schema/type change, config with runtime effect, security fix, perf optimization | Open a phase if none is open; attach to open phase |
 | **Ambiguous** | test additions, config tweaks, dependency upgrades, doc updates | Ask the user before deciding |
 
-**Grouping rule:** commits in the same session on the same topic belong to the same phase. If the topic shifts substantially mid-session, consider closing the current phase and opening a new one — ask the user if uncertain.
+**Grouping rule:** commits in the same session on the same topic belong to the same phase. If the topic shifts substantially mid-session, close the current phase and open a new one.
+
+**Topic shift criteria — a shift is substantial when ANY of the following is true:**
+- Different system layer (e.g. frontend → backend, app → infra)
+- Different user-facing feature or capability
+- Commits are 2+ calendar days apart from the last commit in the current phase
+- User opens a new branch for the new work
+- The changed files are in a completely different module or top-level directory than the current phase's commits
+- User explicitly declares "new topic", "new feature", or similar
+
+When uncertain whether a shift is substantial, ask the user before opening a new phase.
 
 **Trivial-only session:** if the entire session produces only trivial commits and no open phase exists, no phase is created. Memory is not polluted with noise.
 
@@ -138,6 +148,13 @@ At session start and after any context compaction:
 ```
 
 Do not load all historical phases unless necessary. Prefer summarized memory before raw history. When diving deeper into a specific area, filter `phases/index.yml` by tags to find relevant phases.
+
+**Token budget guidelines:**
+- Summary files are the primary budget concern — read all five by default (designed to stay concise).
+- If `phases/index.yml` contains 20+ phases, read only the most recent 10 entries unless searching a specific tag.
+- If any single summary file exceeds 300 lines, read the first 150 lines only on initial load; fetch the rest on demand.
+- Active phase directory: always load in full — it is the most time-sensitive memory.
+- Historical phase directories: load only when the user's task explicitly relates to that phase's area.
 
 ---
 
@@ -183,6 +200,13 @@ For file formats and templates, read `.claude/skills/project-memory/templates.md
 - Branch merged into target → set `merge_commit`, `status: completed`
 - Logical work unit finished with no branch → set `closed_at`, `status: completed`
 - Explicit user declaration ("this work is done") → same as above
+- Work cancelled or superseded → set `closed_at`, `status: abandoned`, `abandoned_reason: <brief note>`
+
+**Phase status transitions:**
+- `planning → implementation`: first significant commit lands
+- `implementation → review`: user requests review or pre-close gate is triggered
+- `review → completed`: pre-close gate passes (all three files non-stub)
+- `any → abandoned`: work cancelled, branch deleted without merge, or superseded by new phase
 
 ---
 
@@ -284,6 +308,35 @@ At phase completion (merge OR logical completion):
 | Stub placeholder found when real data exists | Replace immediately — never defer |
 
 **Stub placeholders to clear on sight:** `"None recorded yet"`, `"TBD"`, `"system just initialized"`, `"first run detected"`, or any `*(none)*` in a section that now has content.
+
+---
+
+# Quick Reference Cheatsheet
+
+**About to commit?**
+```
+Trivial (typo, formatting, import cleanup)
+  → open phase exists? attach silently : skip entirely
+
+Significant (feature, bugfix, refactor, schema change, config with runtime effect)
+  → open phase exists? update phase.yml commits list
+  → no open phase? CREATE PHASE FIRST, then commit
+
+Ambiguous (test additions, dep upgrades, doc updates)
+  → ask the user
+```
+
+**About to open a phase?**
+→ Minimum required: `phase.yml` (status: planning) + `plan.md` stub + `phases/index.yml` entry
+
+**About to close a phase?**
+→ Verify all three: `implementation.md` ✓ + `review-and-fixes.md` ✓ + `followup.md` ✓
+
+**Topic shifted mid-session?**
+→ Close current phase (set `status: completed` or `abandoned`), open new one
+
+**Work cancelled / superseded?**
+→ Set `status: abandoned` in `phase.yml`, add `abandoned_reason` field
 
 ---
 

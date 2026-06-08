@@ -14,18 +14,25 @@ created_at: YYYY-MM-DD
 status: planning
 branch: null                 # set if a dedicated branch exists; null for direct commits
 related_phases: []
-affected_areas: []
-files_expected: []
 commits: []
 merge_commit: null           # set only if branch was merged; null for direct-commit phases
-closed_at: null              # set to YYYY-MM-DD when phase completes (non-merge close)
+closed_at: null              # set to YYYY-MM-DD when phase completes or is abandoned (non-merge)
+abandoned_reason: null       # set only when status: abandoned
 issues_created: []
 issues_resolved: []
 decisions_referenced: []
 tags: []
 ```
 
-Status values: `planning` / `implementation` / `review` / `completed`
+Status values: `planning` / `implementation` / `review` / `completed` / `abandoned`
+
+Status transitions:
+- `planning → implementation`: first significant commit lands
+- `implementation → review`: user requests review, or pre-close gate is triggered
+- `review → completed`: pre-close gate passes (all three files complete and non-stub)
+- `any → abandoned`: user declares work cancelled, branch deleted without merge, or work superseded by a new phase
+
+When setting `abandoned`: add `abandoned_reason: <brief description>` field and set `closed_at` to today.
 
 ---
 
@@ -99,12 +106,12 @@ Target size: 500–1500 words.
 
 ## Project Purpose
 ## Current Architecture
-## Major Decisions
 ## Active Tensions
   Unresolved tradeoffs the project is navigating.
 ## Anti-Patterns
   Agent adds entries autonomously when pattern observed with high confidence.
 ## Rejected Decisions
+  Alternatives not taken. One-liner per entry pointing to the full DECISION-YYYY-MM-DD-slug.md file.
   Agent asks user "why did we not go with X?" when reason is unknown.
 ## Open Problems
 ## Technical Debt
