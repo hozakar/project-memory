@@ -15,7 +15,7 @@ Run when the skill is explicitly invoked with the `audit` argument. Same detecti
 
 # Detection Procedure
 
-Run all 5 categories on every audit pass. Collect findings before acting.
+Run all 6 categories on every audit pass. Collect findings before acting.
 
 | # | Category | Detection Rule | Tool Calls | Classification |
 |---|---|---|---|---|
@@ -24,6 +24,7 @@ Run all 5 categories on every audit pass. Collect findings before acting.
 | 3 | **Stub placeholders** | Grep all `summaries/*.md` for the following strings: `None recorded yet`, `TBD`, `system just initialized`, `first run detected`. Record the file path and which section header the match falls under. | `Grep` over `.project-memory/summaries/*.md` for each stub pattern | **Escalate** |
 | 4 | **Open-phase commit gap** | In `phases/index.yml`, find every phase with `status` equal to `planning`, `implementation`, or `review` (skip `completed` and `abandoned`). For each such phase: identify the branch (use `staging` if `branch` is null). Get the list of commit hashes already recorded in `commits[]`. Run `git log --oneline <branch>` and compare against the recorded commits. Commits on the branch that came after the last recorded commit in the phase, and are not in the phase's `commits[]` list, are the gap. | `Read: .project-memory/phases/index.yml`; `Bash: git log --oneline <branch>` for each open phase | **Escalate** |
 | 5 | **Misplaced issue files** | List all files in `issues/open/`. For each file, read its frontmatter and check the `status:` field. If `status: closed`, the file is in the wrong directory. | `Glob: .project-memory/issues/open/*.md`; `Read` frontmatter of each file | **Auto-fix** |
+| 6 | **Decision index drift** | List all `DECISION-*.md` files in `.project-memory/decisions/`. Read each file's frontmatter to extract `id` and `status`. Read `.project-memory/decisions/index.md` and parse the rows (skip header). For each row extract the ID column and Status column. Compute three sets: (a) **missing index row** — file ID not in any index row; (b) **orphan index row** — index ID has no corresponding file; (c) **status mismatch** — file ID matches index ID but file `status` ≠ index `Status`. | `Glob: .project-memory/decisions/DECISION-*.md`; `Read` frontmatter of each; `Read: .project-memory/decisions/index.md` | **Escalate** |
 
 ---
 
@@ -56,6 +57,9 @@ Everything outside category 5 is escalated, regardless of how clearly wrong it a
   • Summary missing Last Updated field: <filename>
   • Stub placeholder: <filename> → "<placeholder text>" in section "<section heading>"
   • Open-phase gap: phase <id> is missing commits: <hash1> <hash2> ...
+  • Decision index missing row: <DECISION-ID> (file exists, no index row)
+  • Decision index orphan row: <DECISION-ID> (index row exists, no file)
+  • Decision index status mismatch: <DECISION-ID> (file: <status>, index: <status>)
   • Auto-fixed: moved <filename> to closed/
 
 Entering interactive triage — answering each finding in turn.
@@ -106,6 +110,12 @@ When the skill is invoked as `Skill project-memory audit`:
 
 - **Summary missing Last Updated field:** "`<filename>` has no 'Last Updated:' field. Add it now?" — options: `"add Last Updated: <today>"`, `"skip"`.
 
+- **Decision index missing row:** "`<DECISION-ID>` has no row in `decisions/index.md`. What should I do?" — options: `"add row now"`, `"skip"`.
+
+- **Decision index orphan row:** "`<DECISION-ID>` appears in `decisions/index.md` but the file does not exist. What should I do?" — options: `"remove row"`, `"recreate file from index data"`, `"skip"`.
+
+- **Decision index status mismatch:** "`<DECISION-ID>` status differs — file says `<status>`, index says `<status>`. Which is correct?" — options: `"file is correct (update index)"`, `"index is correct (update file)"`, `"skip"`.
+
 ---
 
 # Edge Cases
@@ -121,3 +131,9 @@ When the skill is invoked as `Skill project-memory audit`:
 - **Empty `issues/open/` directory:** Category 5 produces zero findings. This is normal; do not flag it.
 
 - **No open phases:** Category 4 produces zero findings. Normal.
+
+- **Decisions directory empty or missing:** Category 6 produces zero findings. Normal for a project with no decisions yet.
+
+- **`decisions/index.md` missing or has only the header:** If the file is missing entirely, every DECISION file is a "missing index row" finding. If the file exists but has no data rows, same outcome. This is intentional — surfacing every missing row forces the user to recreate the index or confirm intent.
+
+- **Why no auto-fix for "missing index row":** The `Claim` column is human-authored prose, not derivable from frontmatter. Auto-inserting a row with all fields except Claim produces a half-fix that pollutes the index. Escalation is safer.
