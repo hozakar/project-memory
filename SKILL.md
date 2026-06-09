@@ -234,6 +234,8 @@ phases:
       - session
 ```
 
+Phases are sorted newest first in `index.yml`. When a new phase is created, prepend it to the array (do not append). This ensures the Memory Loading Strategy can read the most recent 10 entries from the top when `phases/index.yml` exceeds 20 phases.
+
 Tags are the primary navigation mechanism for finding prior work in a specific area.
 
 ---

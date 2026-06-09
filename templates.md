@@ -24,6 +24,8 @@ decisions_referenced: []
 tags: []
 ```
 
+**Sorting rule:** Phases are sorted newest first in `index.yml`. When a new phase is created, prepend it to the `phases` array. This matches the convention in `decisions/index.md` and ensures the Memory Loading Strategy can truncate safely.
+
 Status values: `planning` / `implementation` / `review` / `completed` / `abandoned`
 
 Status transitions:
