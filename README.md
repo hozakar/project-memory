@@ -15,29 +15,29 @@ The skill maintains a `.project-memory/` directory in your project root, structu
 
 ```
 .project-memory/
-├── phases/
-│   ├── index.yml
-│   └── phase-YYYYMMDD-short-title/
-│       ├── phase.yml
-│       ├── plan.md
-│       ├── implementation.md
-│       ├── review-and-fixes.md
-│       └── followup.md
-├── decisions/
-│   ├── index.md
-│   └── DECISION-YYYY-MM-DD-slug.md
-├── discussions/
-│   ├── index.md
-│   └── DISCUSSION-YYYY-MM-DD-slug.md
-├── issues/
-│   ├── open/
-│   └── closed/
-└── summaries/
-    ├── project-memory.md
-    ├── current-state.md
-    ├── architecture.md
-    ├── active-issues.md
-    └── roadmap.md
+â”œâ”€â”€ phases/
+â”‚   â”œâ”€â”€ index.yml
+â”‚   â””â”€â”€ phase-YYYYMMDD-short-title/
+â”‚       â”œâ”€â”€ phase.yml
+â”‚       â”œâ”€â”€ plan.md
+â”‚       â”œâ”€â”€ implementation.md
+â”‚       â”œâ”€â”€ review-and-fixes.md
+â”‚       â””â”€â”€ followup.md
+â”œâ”€â”€ decisions/
+â”‚   â”œâ”€â”€ index.md
+â”‚   â””â”€â”€ DECISION-YYYY-MM-DD-slug.md
+â”œâ”€â”€ discussions/
+â”‚   â”œâ”€â”€ index.md
+â”‚   â””â”€â”€ DISCUSSION-YYYY-MM-DD-slug.md
+â”œâ”€â”€ issues/
+â”‚   â”œâ”€â”€ open/
+â”‚   â””â”€â”€ closed/
+â””â”€â”€ summaries/
+    â”œâ”€â”€ project-memory.md
+    â”œâ”€â”€ current-state.md
+    â”œâ”€â”€ architecture.md
+    â”œâ”€â”€ active-issues.md
+    â””â”€â”€ roadmap.md
 ```
 
 ## Key Concepts
@@ -55,38 +55,22 @@ A phase is a logical unit of work (not a branch). It opens when significant work
 `summaries/` contains living documents updated at every phase close:
 
 | File | Purpose |
-|---|---|
-| `project-memory.md` | Core context: history, decisions, tensions, anti-patterns, priorities |
-| `current-state.md` | Features, components, debt, risks, next actions |
-| `architecture.md` | Module inventory, updated when structure changes |
-| `active-issues.md` | Open issues index |
-| `roadmap.md` | Upcoming work, fed from `followup.md` at phase close |
-
-### Decisions
-
-Architectural and design decisions are recorded as `DECISION-YYYY-MM-DD-slug.md` files. Rejected alternatives are logged to prevent re-litigating settled choices. A live summary table at `decisions/index.md` is loaded at session start and consulted during the Pre-Implementation Gate; when a planned change touches the same entities as an active decision, the gate batches any directional conflicts into a single question before implementation proceeds.
-
-### Discussions
-
-Exploratory conversations between the user and the LLM are captured as `DISCUSSION-YYYY-MM-DD-slug.md` files. Discussions may lead to phases, decisions, issues, or roadmap entries. A live summary table at `discussions/index.md` is loaded at session start and consulted during the Pre-Implementation Gate alongside decisions.
-
-Discussions can be resumed — the existing file is updated rather than duplicated.
-
-## Skill Files
-
 | File | Purpose |
 |---|---|
-| `SKILL.md` | Entry point — on-load flow, argument handling, critical gates |
+| `SKILL.md` | Entry point — on-load flow, argument dispatch (audit, discuss), core concepts, project structure |
+| `gates.md` | Implementation gates (Pre-Implementation, Pre-Close), commit significance, topic shift, end-of-phase maintenance |
+| `protocol.md` | Agent thinking protocol, memory loading strategy with token budgets, knowledge preservation |
+| `cheatsheet.md` | Quick reference cheatsheet, event-based trigger table |
+| `audit.md` | Drift detection and repair procedures (6 categories) |
 | `init.md` | First-run initialization procedure |
-| `audit.md` | Drift detection and repair procedures |
-| `templates.md` | File templates for phases, decisions, issues, summaries |
-| `conventions.md` | Naming conventions, lifecycle rules, discussion lifecycle, decision-resolution rules, and language policy |
+| `templates.md` | File templates for phases, decisions, issues, discussions, indexes |
+| `conventions.md` | Naming conventions, lifecycle rules, decision resolution rules, discussion lifecycle, language policy |
 
 ## Usage
 
 The skill activates automatically at session start via the `project-memory` skill entry. On load it:
 
-1. Emits `[✅] PROJECT MEMORY LOADED`
+1. Emits `[âœ…] PROJECT MEMORY LOADED`
 2. Reads active phase context if one is open
 3. Runs a drift audit across 6 detection categories (including decision-index drift) and auto-fixes or escalates findings
 
