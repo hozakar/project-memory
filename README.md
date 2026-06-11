@@ -17,7 +17,7 @@ The skill maintains a `.project-memory/` directory in your project root, structu
 .project-memory/
 ├── phases/
 │   ├── index.yml
-│   └── YYYY-MM-DD-short-title/
+│   └── phase-YYYYMMDD-short-title/
 │       ├── phase.yml
 │       ├── plan.md
 │       ├── implementation.md

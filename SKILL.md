@@ -65,7 +65,7 @@ Git is the source of truth for code changes. `.project-memory/` is the source of
 .project-memory/
 ├── phases/
 │   ├── index.yml
-│   └── YYYY-MM-DD-short-title/
+│   └── phase-YYYYMMDD-short-title/
 │       ├── phase.yml
 │       ├── plan.md
 │       ├── implementation.md
@@ -193,7 +193,7 @@ Never plan in isolation from project history.
 A phase is created when **significant work begins** — regardless of whether a branch is opened. Create the phase directory and files **before** making the first significant commit.
 
 ```
-.project-memory/phases/YYYY-MM-DD-short-title/
+.project-memory/phases/phase-YYYYMMDD-short-title/
 ```
 
 Required files: `phase.yml`, `plan.md`, `implementation.md`, `review-and-fixes.md`, `followup.md`
