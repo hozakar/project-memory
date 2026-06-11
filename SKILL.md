@@ -1,6 +1,6 @@
-﻿---
+---
 name: project-memory
-description: Project memory and phase management system. Loads at every session start to provide engineering context — history, decisions, active tensions, anti-patterns. Use when planning, implementing, reviewing, or closing phases. Always active in this project.
+description: Project memory and phase management system. Loads at every session start to provide engineering context → history, decisions, active tensions, anti-patterns. Use when planning, implementing, reviewing, or closing phases. Always active in this project.
 ---
 
 # On Load
@@ -8,9 +8,7 @@ description: Project memory and phase management system. Loads at every session 
 When this skill activates:
 
 1. Output exactly this line:
-   ```
-   [🧠] PROJECT MEMORY LOADED
-   ```
+   🧠 PROJECT MEMORY LOADED
 
 2. Check whether `.project-memory/` exists in the project root.
    - If it **does not exist**: read `init.md` and follow its instructions.
@@ -19,7 +17,7 @@ When this skill activates:
 3. Run Drift Audit (read `audit.md` for the full procedure).
    - Auto-fix any findings in the auto-fix category silently.
    - Report all findings in the escalation category in a single block, in the format specified by `audit.md`.
-   - If no findings at all: replace the Step 1 line with `[🧠] PROJECT MEMORY LOADED — drift audit clean`.
+   - If no findings at all: replace the Step 1 line with 🧠 PROJECT MEMORY LOADED → drift audit clean.
    - If findings exist: keep the Step 1 line as-is and emit the drift report block after it.
    - If any escalation findings exist after auto-fix, immediately enter Interactive Audit Mode (per `audit.md` Interactive Mode section) without waiting for the user to invoke `audit` manually. Apply user decisions, re-detect, loop until clean.
 
@@ -44,12 +42,12 @@ When invoked as `Skill project-memory discuss`, or when the user uses implicit d
 
 1. Read `conventions.md` Discussion Lifecycle section for the full procedure.
 2. Load `discussions/index.md` to surface prior discussions relevant to the current topic.
-3. Engage in structured discussion with the user — explore ideas, tradeoffs, alternatives, plans.
+3. Engage in structured discussion with the user → explore ideas, tradeoffs, alternatives, plans.
 4. At discussion close, determine the outcome (Phase / Decision / Issue / Roadmap / None) and write a `DISCUSSION-YYYY-MM-DD-slug.md` file to `.project-memory/discussions/`.
 5. Update `discussions/index.md` with the new row.
 6. If outcome is `phase`, offer to create the phase immediately. If `decision`, offer to create the DECISION file. If `issue`, offer to create the ISSUE file. If `roadmap`, add the entry to `roadmap.md`.
 
-**Implicit triggers:** Discussion mode activates automatically when the user uses phrases indicating collaborative planning or brainstorming. Detection is lenient — if the conversation's character is exploratory/planning, capture it. Both English and Turkish phrases are detected.
+**Implicit triggers:** Discussion mode activates automatically when the user uses phrases indicating collaborative planning or brainstorming. Detection is lenient → if the conversation's character is exploratory/planning, capture it. Both English and Turkish phrases are detected.
 
 **Resume:** If the user says "continue this discussion" or references a specific topic, load the existing `DISCUSSION-*.md` file in full context and continue. Update the SAME file; do not create a new one.
 
@@ -57,12 +55,12 @@ When invoked as `Skill project-memory discuss`, or when the user uses implicit d
 
 # CRITICAL GATES (READ FIRST)
 
-```
+`
 BEFORE IMPLEMENTATION → phase must exist → create it first
 BEFORE MERGE/CLOSE    → Pre-Close Gate must pass (3 files complete)
 BEFORE SESSION END    → if significant commits landed, phase must be updated
 PIPELINE SUBMISSION   → counts as implementation → phase must exist before submit
-```
+`
 
 **For detailed gate procedures, commit significance rules, topic shift criteria, and end-of-phase maintenance → read `gates.md`.**
 
@@ -85,8 +83,9 @@ Git is the source of truth for code changes. `.project-memory/` is the source of
 # Project Structure
 
 ## `.project-memory/` (per-project data)
-```text
+`	ext
 .project-memory/
+```
 ├── phases/
 │   ├── index.yml
 │   └── phase-YYYYMMDD-short-title/
@@ -111,9 +110,10 @@ Git is the source of truth for code changes. `.project-memory/` is the source of
     ├── active-issues.md
     └── roadmap.md
 ```
+`
 
 ## Skill Files (read-only reference)
-```text
+`	ext
 .claude/skills/project-memory/
 ├── SKILL.md          ← Entry point, arguments, core concepts (this file)
 ├── gates.md          ← Implementation gates, commit rules, phase lifecycle
@@ -124,15 +124,15 @@ Git is the source of truth for code changes. `.project-memory/` is the source of
 ├── templates.md      ← All document schemas (phases, decisions, issues, discussions)
 ├── conventions.md    ← Naming and lifecycle rules, decision resolution
 └── README.md         ← Human-readable overview
-```
+`
 
 ---
 
 # Phase Lifecycle
 
-A phase represents a **logical unit of work**, not a branch. Branches are optional reinforcement — not the trigger.
+A phase represents a **logical unit of work**, not a branch. Branches are optional reinforcement → not the trigger.
 
-```
+`
 Significant work begins → Phase created (status: planning)
           ↓
 Commits accumulate → phase.yml updated with commit hashes
@@ -141,10 +141,10 @@ Work unit complete → Phase closes (status: completed)
                      followup.md → roadmap.md transfer (mandatory)
           ↓
 Next significant work begins → New phase created
-```
+`
 
 **Key rules:**
-- Phase is created BEFORE the first significant commit — read `gates.md` for commit significance and topic shift criteria.
+- Phase is created BEFORE the first significant commit → read `gates.md` for commit significance and topic shift criteria.
 - Required files: `phase.yml`, `plan.md`, `implementation.md`, `review-and-fixes.md`, `followup.md`. Templates in `templates.md`.
 - Phase status transitions and close criteria are in `gates.md`.
 - Phases are sorted newest first in `index.yml`. Prepend on creation.
@@ -154,7 +154,7 @@ Next significant work begins → New phase created
 
 # Phase Index
 
-```yaml
+`yaml
 phases:
   - id: phase-20260807-auth-refactor
     title: Auth Refactor
@@ -171,7 +171,7 @@ phases:
     tags:
       - auth
       - session
-```
+`
 
 ---
 
@@ -187,12 +187,12 @@ For index maintenance (adding/updating rows in `decisions/index.md` and `discuss
 
 # Quick Reference
 
-```
+`
 About to commit?          → Classify significance, check phase exists
 About to open a phase?    → phase.yml + plan.md stub + index.yml entry
 About to close a phase?   → Verify 3 files: implementation + review + followup
 About to close discussion?→ Determine outcome, write file, update index
 About to implement?       → Pre-Implementation Gate (gates.md): phase open → classify → decision check → batch conflicts
-```
+`
 
 For the full quick reference cheatsheet and event-based triggers → read `cheatsheet.md`.
