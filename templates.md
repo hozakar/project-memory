@@ -29,10 +29,10 @@ tags: []
 Status values: `planning` / `implementation` / `review` / `completed` / `abandoned`
 
 Status transitions:
-- `planning → implementation`: first significant commit lands
-- `implementation → review`: user requests review, or pre-close gate is triggered
-- `review → completed`: pre-close gate passes (all three files complete and non-stub)
-- `any → abandoned`: user declares work cancelled, branch deleted without merge, or work superseded by a new phase
+- `planning â†’ implementation`: first significant commit lands
+- `implementation â†’ review`: user requests review, or pre-close gate is triggered
+- `review â†’ completed`: pre-close gate passes (all three files complete and non-stub)
+- `any â†’ abandoned`: user declares work cancelled, branch deleted without merge, or work superseded by a new phase
 
 When setting `abandoned`: add `abandoned_reason: <brief description>` field and set `closed_at` to today.
 
@@ -113,8 +113,8 @@ One-row-per-decision summary table. Loaded by Claude at session start and consul
 
 Maintenance rules:
 - Every new `DECISION-*.md` file gets a row added in the same write batch.
-- When a decision is superseded, update its `Status` cell to `superseded` (do not delete the row — historical context).
-- Claim column is one short sentence — the testable assertion the decision makes. Not a description of the topic.
+- When a decision is superseded, update its `Status` cell to `superseded` (do not delete the row â€” historical context).
+- Claim column is one short sentence â€” the testable assertion the decision makes. Not a description of the topic.
 - Rows sorted newest first.
 
 ---
@@ -125,9 +125,75 @@ See `conventions.md` for the required frontmatter schema (`id`, `status`, `prima
 
 ---
 
+## DISCUSSION-YYYY-MM-DD-slug.md
+
+**Frontmatter (required):**
+```yaml
+---
+id: DISCUSSION-YYYY-MM-DD-short-slug
+title: Human readable title
+date: YYYY-MM-DD
+status: open | concluded
+summary: Brief summary of the discussion
+conclusion: What was decided or resolved
+outcome:
+  type: phase | decision | issue | roadmap | none
+  id: phase-YYYYMMDD-... | DECISION-YYYY-... | ISSUE-YYYY-... | null
+  summary: ""               # free-text for roadmap entries; null otherwise
+tags: []
+---
+```
+
+**Body:**
+```md
+# Context
+Why this discussion started.
+
+# Discussion Points
+What was debated. Key questions and answers. Alternatives floated.
+
+# Conclusions
+What was decided. What was ruled out and why.
+
+# Follow-up Actions
+What should happen next as a result of this discussion.
+```
+
+**Outcome types:**
+
+| type | id field | summary field | Behavior |
+|------|----------|---------------|----------|
+| phase | phase-YYYYMMDD-slug | null | Discussion triggered a new phase |
+| decision | DECISION-YYYY-MM-DD-slug | null | Discussion resulted in a formal decision |
+| issue | ISSUE-YYYY-MM-DD-slug | null | Discussion identified a bug or problem |
+| roadmap | null | free-text entry | Discussion produced a roadmap item (no immediate phase) |
+| `none` | null | null | Discussion was exploratory; no concrete artifact produced |
+
+**Resume rule:** When the user says "continue this discussion", load the existing file, continue, and UPDATE it at close. Do NOT create a new DISCUSSION file for the same topic.
+
+---
+
+## discussions/index.md
+
+One-row-per-discussion summary table. Loaded at session start by SKILL.md Memory Loading Strategy. Consulted during the Pre-Implementation Gate alongside decisions/index.md.
+
+```md
+# Discussions Index
+
+| Date | ID | Status | Outcome | Tags | Summary |
+|---|---|---|---|---|---|
+| 2026-06-11 | DISCUSSION-2026-06-11-slug | concluded | phase-20260611-... | feature, discussion | Brief one-line summary |
+```
+
+Maintenance rules:
+- Every new DISCUSSION-*.md file gets a row added in the same write batch.
+- When a discussion is concluded, update its Status to concluded.
+- Outcome column shows the linked artifact ID or `none`.
+- Rows sorted newest first.
+
 ## project-memory.md
 
-Target size: 500–1500 words.
+Target size: 500â€“1500 words.
 
 ```md
 # Project Memory
@@ -148,10 +214,11 @@ Target size: 500–1500 words.
 ## Current Priorities
 ## Recommended Next Phase
 ## Navigation Map
-  - Architectural questions → architecture.md + DECISION-YYYY-MM-DD-* files
-  - Active work → current-state.md + open phase directory
-  - History in a specific area → filter phases/index.yml by tag
-  - Known issues → active-issues.md → issues/open/ (open) or issues/closed/ (resolved)
-  - Past tradeoffs → decisions/
-  - Project philosophy → project-memory.md
+  - Architectural questions â†’ architecture.md + DECISION-YYYY-MM-DD-* files
+  - Active work â†’ current-state.md + open phase directory
+  - History in a specific area â†’ filter phases/index.yml by tag
+  - Known issues â†’ active-issues.md â†’ issues/open/ (open) or issues/closed/ (resolved)
+  - Past tradeoffs â†’ decisions/
+  - Project philosophy â†’ project-memory.md
 ```
+

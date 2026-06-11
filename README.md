@@ -26,6 +26,9 @@ The skill maintains a `.project-memory/` directory in your project root, structu
 ├── decisions/
 │   ├── index.md
 │   └── DECISION-YYYY-MM-DD-slug.md
+├── discussions/
+│   ├── index.md
+│   └── DISCUSSION-YYYY-MM-DD-slug.md
 ├── issues/
 │   ├── open/
 │   └── closed/
@@ -63,6 +66,12 @@ A phase is a logical unit of work (not a branch). It opens when significant work
 
 Architectural and design decisions are recorded as `DECISION-YYYY-MM-DD-slug.md` files. Rejected alternatives are logged to prevent re-litigating settled choices. A live summary table at `decisions/index.md` is loaded at session start and consulted during the Pre-Implementation Gate; when a planned change touches the same entities as an active decision, the gate batches any directional conflicts into a single question before implementation proceeds.
 
+### Discussions
+
+Exploratory conversations between the user and the LLM are captured as `DISCUSSION-YYYY-MM-DD-slug.md` files. Discussions may lead to phases, decisions, issues, or roadmap entries. A live summary table at `discussions/index.md` is loaded at session start and consulted during the Pre-Implementation Gate alongside decisions.
+
+Discussions can be resumed — the existing file is updated rather than duplicated.
+
 ## Skill Files
 
 | File | Purpose |
@@ -71,13 +80,13 @@ Architectural and design decisions are recorded as `DECISION-YYYY-MM-DD-slug.md`
 | `init.md` | First-run initialization procedure |
 | `audit.md` | Drift detection and repair procedures |
 | `templates.md` | File templates for phases, decisions, issues, summaries |
-| `conventions.md` | Naming conventions, lifecycle rules, decision-resolution rules, and language policy |
+| `conventions.md` | Naming conventions, lifecycle rules, discussion lifecycle, decision-resolution rules, and language policy |
 
 ## Usage
 
 The skill activates automatically at session start via the `project-memory` skill entry. On load it:
 
-1. Emits `[🧠] PROJECT MEMORY LOADED`
+1. Emits `[✅] PROJECT MEMORY LOADED`
 2. Reads active phase context if one is open
 3. Runs a drift audit across 6 detection categories (including decision-index drift) and auto-fixes or escalates findings
 

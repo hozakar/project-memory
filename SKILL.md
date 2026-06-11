@@ -38,7 +38,27 @@ When this skill is invoked with the argument `audit` (e.g. `Skill project-memory
 
 ---
 
+# Argument: discuss
+
+When this skill is invoked with the argument `discuss` (e.g. `Skill project-memory discuss`), or when the user uses implicit discussion triggers in conversation, enter **Discussion Mode**:
+
+1. Read `.claude/skills/project-memory/conventions.md` Discussion Lifecycle section for the full procedure.
+2. Load `discussions/index.md` to surface prior discussions relevant to the current topic.
+3. Engage in structured discussion with the user — explore ideas, tradeoffs, alternatives, plans.
+4. At discussion close, determine the outcome (Phase / Decision / Issue / Roadmap / None) and write a `DISCUSSION-YYYY-MM-DD-slug.md` file to `.project-memory/discussions/`.
+5. Update `discussions/index.md` with the new row.
+6. If outcome is `phase`, offer to create the phase immediately. If `decision`, offer to create the DECISION file. If `issue`, offer to create the ISSUE file. If `roadmap`, add the entry to `roadmap.md`.
+
+**Implicit triggers:** The discussion mode activates automatically when the user uses phrases indicating collaborative planning or brainstorming, including but not limited to: "tartışalım", "planlayalım", "bunu konuşalım", "let's discuss", "let's plan", "let's talk about", "lets work on that", "let's work on". When triggered implicitly, the discussion proceeds in the background — current conversation continues without an explicit mode switch, but the discussion is captured and written at close.
+
+**Resume:** If the user says "şu tartışmaya devam edelim", "let's continue the discussion about X", or similar, load the referenced `DISCUSSION-*.md` file in full context and continue. Update the SAME file; do not create a new one.
+
+Implicit trigger phrases should be detected in both English and Turkish. Detection is lenient — if the conversation's character is exploratory/planning, capture it.
+
+---
+
 # CRITICAL GATES (READ FIRST)
+
 
 ```
 BEFORE IMPLEMENTATION → phase must exist → create it first
@@ -77,6 +97,10 @@ Git is the source of truth for code changes. `.project-memory/` is the source of
 ├── issues/
 │   ├── open/
 │   └── closed/
+├── discussions/
+│   ├── index.md
+│   └── DISCUSSION-YYYY-MM-DD-slug.md
+
 └── summaries/
     ├── project-memory.md
     ├── current-state.md
@@ -146,7 +170,9 @@ At session start and after any context compaction:
 8. .project-memory/decisions/index.md (load fully — primary input to the Pre-Implementation Gate)
 9. Individual DECISION-YYYY-MM-DD-* files (only when planning in a scope the index flags as relevant)
 10. Open issues (as needed)
-11. Recent git commits (as needed)
+11. .project-memory/discussions/index.md (load fully — surfaces prior discussions relevant to current scope)
+12. Individual DISCUSSION-YYYY-MM-DD-* files (when resuming a discussion or when planning in a scope the index flags as relevant)
+13. Recent git commits (as needed)
 ```
 
 Do not load all historical phases unless necessary. Prefer summarized memory before raw history. When diving deeper into a specific area, filter `phases/index.yml` by tags to find relevant phases.
@@ -157,6 +183,8 @@ Do not load all historical phases unless necessary. Prefer summarized memory bef
 - If any single summary file exceeds 300 lines, read the first 150 lines only on initial load; fetch the rest on demand.
 - Active phase directory: always load in full — it is the most time-sensitive memory.
 - Historical phase directories: load only when the user's task explicitly relates to that phase's area.
+- `discussions/index.md` is loaded at session start alongside `decisions/index.md`. Individual DISCUSSION files are loaded on demand.
+
 
 ---
 
@@ -229,6 +257,7 @@ phases:
       - ISSUE-2026-08-07-auth-session-leak
     decisions:
       - DECISION-2026-08-07-no-session-storage
+    discussions: []
     tags:
       - auth
       - session
@@ -266,6 +295,8 @@ Classify the work using the table below.
 | **Trivial** | rename, format, comment, import cleanup, single-line bugfix, dependency patch bump | Skip the decision check entirely |
 | **Significant** | new feature, schema/type change, deployment-model change, auth introduction or removal, persistence layer change, new dependency, new module | Run the decision check |
 | **Ambiguous** | test additions, config tweaks, small UI changes, doc updates with runtime effect | Run the decision check but only escalate on **directional** conflict |
+
+**Discussion-triggered work:** When implementation is triggered by a prior DISCUSSION file, the discussion's frontmatter `outcome` block provides the rationale. The decision check (Step 3) still applies based on significance classification.
 
 **Step 3 — Decision check (when required by Step 2):**
 
@@ -338,6 +369,9 @@ At phase completion (merge OR logical completion):
 | Issue opened | Add to `active-issues.md` + create file in `issues/open/` |
 | Issue closed | Move file to `issues/closed/`, update frontmatter, update `active-issues.md` |
 | Stub placeholder found when real data exists | Replace immediately — never defer |
+| Discussion concluded | Write `DISCUSSION-*.md` to `discussions/`; add row to `discussions/index.md`; if outcome references a phase/decision/issue/roadmap, create the referenced artifact |
+| Discussion resumed | Load the existing DISCUSSION file; update it at close; do not create a new file |
+| Discussion triggers a phase | Set `outcome.type: phase` and `outcome.id: <phase-id>` in the DISCUSSION file |
 
 **Stub placeholders to clear on sight:** `"None recorded yet"`, `"TBD"`, `"system just initialized"`, `"first run detected"`, or any `*(none)*` in a section that now has content.
 
@@ -372,6 +406,12 @@ Ambiguous (test additions, dep upgrades, doc updates)
 
 **About to implement something significant?**
 → Step 1: phase open? → Step 2: classify trivial/significant/ambiguous → Step 3: scan `decisions/index.md` for `touches` overlap → batch any directional conflicts into one question → Step 4: if no candidate exists for an architectural move, offer to record one.
+
+**About to close a discussion?**
+→ Determine outcome type (phase / decision / issue / roadmap / none)
+→ Write DISCUSSION-YYYY-MM-DD-slug.md to discussions/
+→ Add row to discussions/index.md
+→ If phase outcome: offer to create the phase. If decision: offer to create DECISION. If issue: offer to create ISSUE. If roadmap: add to roadmap.md.
 
 ---
 
