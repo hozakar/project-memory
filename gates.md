@@ -137,11 +137,12 @@ If the user says "skip decision questions for now" (or similar phrasing — "ski
 
 # Pre-Close Gate — MANDATORY
 
-**Before closing any phase** (merge, logical completion, or explicit user declaration), verify and complete the following. Phase may not close until all three are done:
+**Before closing any phase** (merge, logical completion, or explicit user declaration), verify and complete the following. Phase may not close until all four are done:
 
 1. `implementation.md` — written and reflects the actual implementation (not a stub)
 2. `review-and-fixes.md` — all review rounds closed; findings and actions recorded
 3. `followup.md` — debt, open issues, and recommended next phases captured
+4. **`summary` field in `phase.yml`** — write a 2-3 sentence summary of what was done and why. This enables informed tag-aware filtering without loading the full phase directory.
 
 If any of these are missing or stub-only, write them first, then close.
 

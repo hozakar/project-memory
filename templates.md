@@ -12,6 +12,7 @@ id: phase-YYYYMMDD-short-title
 title: Human Readable Title
 created_at: YYYY-MM-DD
 status: planning
+summary: null                # written at Pre-Close Gate: 2-3 sentences — what was done and why
 branch: null                 # set if a dedicated branch exists; null for direct commits
 related_phases: []
 commits: []
