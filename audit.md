@@ -15,41 +15,112 @@ Run when the skill is explicitly invoked with the `audit` argument. Same detecti
 
 # Detection Procedure
 
-Run all 7 categories on every audit pass. Collect findings before acting.
+Run all 12 categories on every audit pass. Collect findings before acting. Check `audit_ignore` (see Permanent Skip section) before escalating any finding — suppressed findings are omitted entirely.
 
-| # | Category | Detection Rule | Tool Calls | Classification |
-|---|---|---|---|---|
-| 1 | **Commit orphans** | Run `git log --oneline -30`. For each commit hash, check `phases/index.yml` for a match in any `commits:` list or as a `merge_commit`. Commits not found in the index are candidates. Apply trivial-commit regex (see Edge Cases) to filter: commits whose subject matches `^(docs\|chore\(lint\|chore\(format\|chore\(deps\|chore\(memory\|chore\(audit\|fix\(lint` are filtered out. Remaining unmatched commits = orphan significant commits. | `Bash: git log --oneline -30`; `Read: .project-memory/phases/index.yml` | **Escalate** |
-| 2 | **Summary staleness** | Run `git log -1 --format=%cs` to get the date of the most recent project commit (no path filter — captures any recent commit whether it touched skill files or memory data; both are valid signals for staleness). Then for each file in `summaries/*.md`, parse the `Last Updated:` field. If the summary date is older than the project commit date, it is stale. If a summary file has no `Last Updated:` field, treat as a separate finding (see Edge Cases). | `Bash: git log -1 --format=%cs`; `Read` each `summaries/*.md` file to find `Last Updated:` line | **Escalate** |
-| 3 | **Stub placeholders** | Grep all `summaries/*.md` for the following strings: `None recorded yet`, `TBD`, `system just initialized`, `first run detected`. Record the file path and which section header the match falls under. | `Grep` over `.project-memory/summaries/*.md` for each stub pattern | **Escalate** |
-| 4 | **Open-phase commit gap** | In `phases/index.yml`, find every phase with `status` equal to `planning`, `implementation`, or `review` (skip `completed` and `abandoned`). For each such phase: identify the branch (if `branch` is null, try `main`, `master`, `staging` in order and use the first branch that exists; if none exist, skip this phase's gap detection). Get the list of commit hashes already recorded in `commits[]`. Run `git log --oneline <branch>` and compare against the recorded commits. Commits on the branch that came after the last recorded commit in the phase, and are not in the phase's `commits[]` list, are the gap. | `Read: .project-memory/phases/index.yml`; `Bash: git log --oneline <branch>` for each open phase | **Escalate** |
-| 5 | **Misplaced issue files** | List all files in `issues/open/`. For each file, read its frontmatter and check the `status:` field. If `status: closed`, the file is in the wrong directory. | `Glob: .project-memory/issues/open/*.md`; `Read` frontmatter of each file | **Auto-fix** |
-| 6 | **Decision index drift** | List all `DECISION-*.md` files in `.project-memory/decisions/`. Read each file's frontmatter to extract `id` and `status`. Read `.project-memory/decisions/index.md` and parse the rows (skip header). For each row extract the ID column and Status column. Compute three sets: (a) **missing index row** — file ID not in any index row; (b) **orphan index row** — index ID has no corresponding file; (c) **status mismatch** — file ID matches index ID but file `status` ≠ index `Status`. | `Glob: .project-memory/decisions/DECISION-*.md`; `Read` frontmatter of each; `Read: .project-memory/decisions/index.md` | **Escalate** |
-| 7 | **Orphan commit references** | Read `phases/index.yml`. Collect all hashes from every phase's `commits:` list and `merge_commit` field (skip null values and hashes already annotated with `[orphaned`). Batch-check all hashes with a single `git cat-file --batch-check` call (pipe the hashes to stdin). Any hash that returns `missing` is an orphan reference — its stored hash no longer exists in git (rebase/squash/force-push rewrote it). | `Read: .project-memory/phases/index.yml`; `Bash: echo "<hashes>" \| git cat-file --batch-check` | **Auto-fix** |
-| 8 | **ADR sync drift** | Read `.project-memory/config.yml` for `adr_dir` (default `adr/` if file absent or field missing). If `adr_dir` does not exist in project root, skip this category (ADR not yet set up). For each `DECISION-*.md` file: (a) read frontmatter `adr_id` — if null or missing, flag "missing adr_id"; (b) if `adr_id` is set, glob `<adr_dir>/<adr_id>-*.md` — if no match, flag "missing ADR file"; (c) if file found, read its `Status:` line and compare against expected prose per the ADR Status mapping in `conventions.md` — if mismatch, flag "status mismatch". | `Read: .project-memory/config.yml`; `Glob/Read: .project-memory/decisions/DECISION-*.md` frontmatter; `Glob/Read: <adr_dir>/<adr_id>-*.md` Status line | **Escalate** |
+| # | Category | Detection Rule | Tool Calls | Classification | Severity |
+|---|---|---|---|---|---|
+| 1 | **Commit orphans** | Run `git log --oneline -30`. For each commit hash, check `phases/index.yml` for a match in any `commits:` list or as a `merge_commit`. Commits not found in the index are candidates. Apply trivial-commit regex (see Edge Cases) to filter: commits whose subject matches `^(docs\|chore\(lint\|chore\(format\|chore\(deps\|chore\(memory\|chore\(audit\|fix\(lint` are filtered out. Remaining unmatched commits = orphan significant commits. Age: git commit timestamp. | `Bash: git log --oneline -30`; `Read: .project-memory/phases/index.yml` | **Escalate** | **high** |
+| 2 | **Summary staleness** | Run `git log -1 --format=%cs` to get the date of the most recent project commit. For each file in `summaries/*.md`, parse the `Last Updated:` field. If the summary date is older than the project commit date, it is stale. If a summary file has no `Last Updated:` field, treat as a separate finding (see Edge Cases). Age: date of the most recent project commit. | `Bash: git log -1 --format=%cs`; `Read` each `summaries/*.md` file | **Escalate** | **medium** |
+| 3 | **Stub placeholders** | Grep all `summaries/*.md` for: `None recorded yet`, `TBD`, `system just initialized`, `first run detected`. Record the file path and which section header the match falls under. No age computation — always report-only (low severity). | `Grep` over `.project-memory/summaries/*.md` | **Escalate** | **low** |
+| 4 | **Open-phase commit gap** | In `phases/index.yml`, find every phase with `status` equal to `planning`, `implementation`, or `review`. For each: identify branch (if null, try `main`, `master`, `staging`; if none exist, skip). Get commits already in `commits[]`. Run `git log --oneline <branch>` and find commits on branch not in the phase's list. Age: timestamp of the earliest untracked commit. | `Read: .project-memory/phases/index.yml`; `Bash: git log --oneline <branch>` | **Escalate** | **high** |
+| 5 | **Misplaced issue files** | List all files in `issues/open/`. For each, read its frontmatter `status:` field. If `status: closed`, the file is misplaced. | `Glob: .project-memory/issues/open/*.md`; `Read` frontmatter | **Auto-fix** | — |
+| 6 | **Decision index drift** | List all `DECISION-*.md` files in `.project-memory/decisions/`. Read each file's frontmatter `id` and `status`. Read `decisions/index.md` and parse rows. Compute: (a) missing index row; (b) orphan index row; (c) status mismatch. Age: DECISION file date from filename prefix `DECISION-YYYY-MM-DD-*`. | `Glob: .project-memory/decisions/DECISION-*.md`; `Read` frontmatter; `Read: decisions/index.md` | **Escalate** | **high** |
+| 7 | **Orphan commit references** | Collect all hashes from every phase's `commits:` and `merge_commit` (skip null and already-annotated with `[orphaned`). Batch-check via `git cat-file --batch-check`. Any hash returning `missing` is orphaned. | `Read: .project-memory/phases/index.yml`; `Bash: echo "<hashes>" \| git cat-file --batch-check` | **Auto-fix** | — |
+| 8 | **ADR sync drift** | Read `.project-memory/config.yml` for `adr_dir` (default `adr/`). If `adr_dir` absent, skip. For each `DECISION-*.md`: (a) check `adr_id` — if null/missing, flag; (b) glob `<adr_dir>/<adr_id>-*.md` — if no match, flag; (c) if found, compare its `Status:` against expected prose per ADR Status mapping in `conventions.md`. Age: DECISION file date from filename prefix. | `Read: .project-memory/config.yml`; `Glob/Read: decisions/DECISION-*.md`; `Glob/Read: <adr_dir>/<adr_id>-*.md` | **Escalate** | **medium** |
+| 9 | **Discussion index drift** | List all `DISCUSSION-*.md` files in `.project-memory/discussions/` (not `discussions/archive/`). Read each file's frontmatter `id` and `status`. Read `discussions/index.md` and parse rows. Compute: (a) missing index row — file ID not in any index row; (b) orphan index row — index row ID has no file; (c) status mismatch — file `status` ≠ index `Status` cell. Age: DISCUSSION file date from filename prefix `DISCUSSION-YYYY-MM-DD-*`. | `Glob: .project-memory/discussions/DISCUSSION-*.md`; `Read` frontmatter of each; `Read: discussions/index.md` | **Escalate** | **low** |
+| 10 | **Completed phase file completeness** | For each phase in `index.yml` with `status: completed`, verify these 5 files exist in the phase directory: `phase.yml`, `plan.md`, `implementation.md`, `review-and-fixes.md`, `followup.md`. Report each missing file as a separate finding. Age: phase `closed_at` field. | `Read: phases/index.yml`; `Glob: phases/<id>/*.md` for each completed phase | **Escalate** | **medium** |
+| 11 | **Discussion expiry** | For each `DISCUSSION-*.md` in `discussions/` (not `discussions/archive/`): read frontmatter `outcome.type` and `date`. If `outcome.type == none` AND `today - date > 30 days` → expired. | `Glob: discussions/DISCUSSION-*.md`; `Read` frontmatter of each | **Auto-fix** | — |
+| 12 | **Tag inconsistency** | Read all phase tags from `phases/index.yml`. Collect all unique tags across all phases. Using LLM judgment, identify tag pairs that appear to be typos or near-duplicates (e.g., `skil-md` vs `skill-md`). Flag each suspect pair with both the tag value and the phase IDs where it appears. Only flag when confident — false positives are worse than misses. Skip if fewer than 5 unique tags total. Age: phase ID date prefix (e.g., `phase-20260611-*` → 2026-06-11). | `Read: phases/index.yml` | **Escalate** | **low** |
+
+---
+
+# Severity and Time Boundary
+
+Severity controls whether a finding enters interactive triage or appears in the report only.
+
+| Severity | Default behaviour |
+|---|---|
+| **high** | Always enters interactive triage, regardless of age |
+| **medium** | Enters interactive triage if age ≤ 3 days; report-only if age > 3 days |
+| **low** | Report-only always — never enters interactive triage |
+| **auto-fix** | Applied silently; logged in drift report auto-fix line |
+
+**Age computation per category:**
+
+| # | Age source |
+|---|---|
+| 1 | git commit timestamp of the orphan commit |
+| 2 | date of the most recent project commit (`git log -1 --format=%cs`) |
+| 4 | timestamp of the earliest untracked commit on the branch |
+| 6 | DECISION file date from filename prefix `DECISION-YYYY-MM-DD-*` |
+| 8 | DECISION file date from filename prefix |
+| 9 | DISCUSSION file date from filename prefix `DISCUSSION-YYYY-MM-DD-*` |
+| 10 | phase `closed_at` field in `index.yml` |
+| 12 | phase ID date prefix (e.g., `phase-20260611-*` → 2026-06-11) |
+
+Cat 3 (stub placeholders): no age computation — always report-only (low).
+Cat 5, 7, 11 (auto-fix): severity concept does not apply.
+
+When age > 3 days for a medium finding, the finding still appears in the drift report under `Report only` but is NOT presented via `AskUserQuestion`.
+
+---
+
+# Permanent Skip
+
+Before escalating any finding, check the `audit_ignore` list in `.project-memory/config.yml`. If a finding's fingerprint matches an entry's `key`, suppress it entirely — omit from both the report and interactive triage.
+
+**Fingerprint format per category:**
+
+| # | Key format |
+|---|---|
+| 1 | `commit:<hash>` |
+| 2 | `summary:<filename>` |
+| 3 | `stub:<filename>:<section-heading>` |
+| 4 | `phase-gap:<phase-id>` |
+| 6 | `decision-drift:<DECISION-ID>:<missing-row\|orphan-row\|status-mismatch>` |
+| 8 | `adr-drift:<DECISION-ID>:<missing-adr_id\|missing-file\|status-mismatch>` |
+| 9 | `discussion-drift:<DISCUSSION-ID>:<missing-row\|orphan-row\|status-mismatch>` |
+| 10 | `phase-completeness:<phase-id>:<missing-filename>` |
+| 12 | `tag-typo:<phase-id>:<tag-value>` |
+
+**`config.yml` format:**
+
+```yaml
+audit_ignore:
+  - category: 12
+    key: "phase-20260611-skill-md-refactor:skil-md"
+    reason: "legacy typo, accepted as-is"
+    ignored_at: 2026-06-12
+```
+
+When the user chooses "mark ignored" during interactive triage, write the entry to `config.yml` immediately before moving to the next finding.
 
 ---
 
 # Auto-Fix Rules
 
-Only categories 5 and 7 are auto-fixed. No other category is ever auto-fixed.
+Only categories 5, 7, and 11 are auto-fixed. No other category is ever auto-fixed.
 
 **Category 5 auto-fix steps:**
 1. For each `issues/open/*.md` file with frontmatter `status: closed`:
    a. Move the file to `issues/closed/` (same filename).
-   b. Open `summaries/active-issues.md` and remove or update the entry for that issue to reflect it is now closed.
-2. Log the action as: `Auto-fixed: moved <filename> to closed/`
-3. Include this log line in the drift report output (see Output Format).
+   b. Open `summaries/active-issues.md` and remove or update the entry for that issue.
+2. Log: `Auto-fixed: moved <filename> to closed/`
 
 **Category 7 auto-fix steps:**
-1. For each orphan hash found:
-   a. In `phases/index.yml`, replace the bare hash with `<hash> [orphaned YYYY-MM-DD]` (today's date). Apply to both `commits:` list entries and `merge_commit` field.
-   b. In the phase's `phase.yml`, apply the same annotation to any matching hash in `commits:` or `merge_commit`.
-2. Count total orphan hashes and the number of distinct phases affected.
-3. Log: `Auto-annotated: N orphan commit reference(s) across M phase(s) → marked [orphaned YYYY-MM-DD] in phase.yml and index.yml`
-4. If `N > 0`, add or update an entry in `summaries/project-memory.md` under Technical Debt: `N orphan commit reference(s) across M phase(s) (rebased/squashed history) — annotated YYYY-MM-DD, no automated recovery`
+1. For each orphan hash:
+   a. In `phases/index.yml`, replace the bare hash with `<hash> [orphaned YYYY-MM-DD]` (today's date). Apply to both `commits:` and `merge_commit`.
+   b. In the phase's `phase.yml`, apply the same annotation.
+2. Log: `Auto-annotated: N orphan commit reference(s) across M phase(s) → marked [orphaned YYYY-MM-DD] in phase.yml and index.yml`
+3. If `N > 0`, add or update an entry in `summaries/project-memory.md` under Technical Debt.
 
-Everything outside categories 5 and 7 is escalated, regardless of how clearly wrong it appears. The auto-fix rule is intentionally conservative.
+**Category 11 auto-fix steps:**
+1. For each expired discussion (`outcome.type: none` AND `today - date > 30 days`):
+   a. Move the file from `discussions/` to `discussions/archive/` (create `archive/` directory if absent).
+   b. Remove its row from `discussions/index.md`.
+2. Log: `Auto-archived: DISCUSSION-xxx → discussions/archive/ (outcome: none, age > 30 days)`
+
+Everything outside categories 5, 7, and 11 is escalated. The auto-fix rule is intentionally conservative.
 
 ---
 
@@ -61,29 +132,31 @@ Everything outside categories 5 and 7 is escalated, regardless of how clearly wr
 [🧠] PROJECT MEMORY LOADED
 
 [⚠️] DRIFT AUDIT — N issue(s), M auto-fixed
-  • Commit orphan: K commits not tracked
-    <hash1> <hash2> <hash3> ...
-  • Summary stale: <filename> (Last Updated <date> < project commit <date>)
-  • Summary missing Last Updated field: <filename>
-  • Stub placeholder: <filename> → "<placeholder text>" in section "<section heading>"
-  • Open-phase gap: phase <id> is missing commits: <hash1> <hash2> ...
-  • Decision index missing row: <DECISION-ID> (file exists, no index row)
-  • Decision index orphan row: <DECISION-ID> (index row exists, no file)
-  • Decision index status mismatch: <DECISION-ID> (file: <status>, index: <status>)
-  • ADR missing adr_id: <DECISION-ID> (adr_id field absent or null)
-  • ADR missing file: <DECISION-ID> (adr/<NNNN>-slug.md not found)
-  • ADR status mismatch: <DECISION-ID> (DECISION: <status>, adr/ Status: <prose>)
-  • Auto-annotated: N orphan commit reference(s) across M phase(s) → marked [orphaned YYYY-MM-DD] in phase.yml and index.yml
+  Interactive triage:
+  • [high] Commit orphan: K commits not tracked
+    <hash1> <hash2> ...
+  • [high] Open-phase gap: phase <id> is missing commits: <hash1> ...
+  • [high] Decision index missing row: <DECISION-ID>
+  • [medium] Summary stale: <filename> (Last Updated <date> < project commit <date>)
+  • [medium] Phase completeness: <phase-id> missing <filename>
+
+  Report only (no action needed):
+  • [low] Stub placeholder: <filename> → "<text>" in section "<heading>"
+  • [medium, age > 3d] Summary stale: <filename> (stale since <date>)
+  • [low] Discussion index missing row: <DISCUSSION-ID>
+  • [low] Tag inconsistency: <tag> in <phase-id> resembles <similar-tag> (N phases)
+  • Auto-annotated: N orphan commit reference(s) across M phase(s) → [orphaned YYYY-MM-DD]
+  • Auto-archived: DISCUSSION-xxx → discussions/archive/
   • Auto-fixed: moved <filename> to closed/
 
 Entering interactive triage — answering each finding in turn.
 ```
 
-Replace `N` with the total number of escalation findings. Replace `M` with the count of auto-fixed items (0 if none). Omit any bullet that has no findings for its category. The auto-fixed bullet always comes last.
+Replace `N` with the total number of escalation findings (interactive + report-only). Replace `M` with the count of auto-fixed items. Omit any bullet that has no findings. Auto-fix log lines always come last in the Report only block.
+
+The `Interactive triage:` sub-header is omitted when there are zero interactive findings. The `Report only:` sub-header is omitted when there are zero report-only findings.
 
 **When zero findings AND zero auto-fixes:**
-
-Emit this single line (replacing the default Step 1 `[🧠] PROJECT MEMORY LOADED` output):
 
 ```
 [🧠] PROJECT MEMORY LOADED — drift audit clean
@@ -93,13 +166,9 @@ Emit this single line (replacing the default Step 1 `[🧠] PROJECT MEMORY LOADE
 
 # Auto-Trigger Rule
 
-When on-load detection (Context A) produces **any escalation finding** after auto-fix, the skill MUST immediately proceed into Interactive Mode flow — without waiting for the user to invoke `Skill project-memory audit` manually.
+When on-load detection produces **any interactive-triage finding** (high severity, or medium with age ≤ 3 days) after auto-fix, the skill MUST immediately proceed into Interactive Mode flow. Report-only findings do not trigger interactive mode on their own.
 
-Rationale: users consistently skip the manual invocation suggestion. Drift accumulates silently. Auto-triggering interactive triage on-load enforces the discipline that on-demand invocation was meant to provide, without requiring the user to remember to run it.
-
-The transition is seamless: emit the drift report header line, then begin prompting per-finding via `AskUserQuestion` exactly as Interactive Mode specifies. After all findings are resolved, re-run detection and loop until clean.
-
-The clean-line case (`[🧠] PROJECT MEMORY LOADED — drift audit clean`) is unchanged — it only fires when there are zero findings and zero auto-fixes.
+Emit the drift report header line, then begin prompting per interactive-triage finding via `AskUserQuestion`. After all findings are resolved, re-run detection and loop until no interactive-triage findings remain.
 
 ---
 
@@ -107,69 +176,91 @@ The clean-line case (`[🧠] PROJECT MEMORY LOADED — drift audit clean`) is un
 
 When the skill is invoked as `Skill project-memory audit`:
 
-1. Run the full detection procedure above. Collect all escalation-category findings.
-2. For each finding, use `AskUserQuestion` to prompt the user with the finding and the available resolution choices (see question shapes below). Apply their decision immediately before moving to the next finding.
-3. After all decisions are applied, re-run the full detection procedure. If new findings appear, repeat from step 2. Loop until the audit returns clean.
-4. Do NOT re-run the on-load summary loading sequence — the user already has a loaded session.
+1. Run the full detection procedure. Collect all findings — both interactive-triage and report-only.
+2. Present the full drift report (both sections).
+3. For each **interactive-triage** finding, use `AskUserQuestion`. Apply their decision immediately before moving to the next.
+4. Report-only findings are shown in the report but never prompted.
+5. After all decisions are applied, re-run the full detection. If new interactive-triage findings appear, repeat from step 3. Loop until clean.
+6. Do NOT re-run the on-load summary loading sequence.
 
 **Question shapes per category:**
 
-- **Commit orphans:** "These N commits are not tracked in any phase: `<hashes>`. What should I do?" — options: `[open phase name(s) if any]`, `"new phase"`, `"mark trivial (skip)"`.
+- **Commit orphans:** "These N commits are not tracked in any phase: `<hashes>`. What should I do?" — options: `[open phase name(s) if any]`, `"new phase"`, `"mark trivial (skip)"`, `"mark ignored (permanent)"`
 
-- **Summary staleness:** "`<filename>` is stale (Last Updated `<date>`, memory commit `<date>`). How should I resolve this?" — options: `"update content"`, `"bump Last Updated date only"`, `"skip"`.
+- **Summary staleness:** "`<filename>` is stale (Last Updated `<date>`, memory commit `<date>`). How should I resolve this?" — options: `"update content"`, `"bump Last Updated date only"`, `"skip"`, `"mark ignored (permanent)"`
 
-- **Stub placeholders:** "`<filename>` still has '<placeholder>' in section '<section>'. Resolve now or leave?" — options: `"replace now"`, `"leave"`.
+- **Open-phase commit gap:** "Open phase `<id>` is missing commits: `<hashes>`. What should I do?" — options: `"add to this phase"`, `"open new phase for these commits"`, `"close current phase"`, `"skip"`, `"mark ignored (permanent)"`
 
-- **Open-phase commit gap:** "Open phase `<id>` is missing commits: `<hashes>`. What should I do?" — options: `"add to this phase"`, `"open new phase for these commits"`, `"close current phase"`, `"skip"`.
+- **Summary missing Last Updated field:** "`<filename>` has no 'Last Updated:' field. Add it now?" — options: `"add Last Updated: <today>"`, `"skip"`
 
-- **Summary missing Last Updated field:** "`<filename>` has no 'Last Updated:' field. Add it now?" — options: `"add Last Updated: <today>"`, `"skip"`.
+- **Decision index missing row:** "`<DECISION-ID>` has no row in `decisions/index.md`. What should I do?" — options: `"add row now"`, `"skip"`, `"mark ignored (permanent)"`
 
-- **Decision index missing row:** "`<DECISION-ID>` has no row in `decisions/index.md`. What should I do?" — options: `"add row now"`, `"skip"`.
+- **Decision index orphan row:** "`<DECISION-ID>` appears in `decisions/index.md` but the file does not exist." — options: `"remove row"`, `"recreate file from index data"`, `"skip"`
 
-- **Decision index orphan row:** "`<DECISION-ID>` appears in `decisions/index.md` but the file does not exist. What should I do?" — options: `"remove row"`, `"recreate file from index data"`, `"skip"`.
+- **Decision index status mismatch:** "`<DECISION-ID>` status differs — file says `<status>`, index says `<status>`. Which is correct?" — options: `"file is correct (update index)"`, `"index is correct (update file)"`, `"skip"`
 
-- **Decision index status mismatch:** "`<DECISION-ID>` status differs — file says `<status>`, index says `<status>`. Which is correct?" — options: `"file is correct (update index)"`, `"index is correct (update file)"`, `"skip"`.
+- **ADR missing adr_id:** "`<DECISION-ID>` has no `adr_id` field. Assign next ID and create the `adr/` file?" — options: `"yes"`, `"skip"`
 
-- **ADR missing adr_id:** "`<DECISION-ID>` has no `adr_id` field. Assign the next available ID and create the `adr/` file now?" — options: `"yes"`, `"skip"`.
+- **ADR missing file:** "`adr/<NNNN>-slug.md` does not exist for `<DECISION-ID>`. Create it now?" — options: `"yes"`, `"skip"`
 
-- **ADR missing file:** "`adr/<NNNN>-slug.md` does not exist for `<DECISION-ID>`. Create it now?" — options: `"yes"`, `"skip"`.
+- **ADR status mismatch:** "`<DECISION-ID>` status is `<status>` but adr file says `<prose>`. Which is correct?" — options: `"DECISION is correct (update adr/ file)"`, `"adr/ is correct (update DECISION frontmatter)"`, `"skip"`
 
-- **ADR status mismatch:** "`<DECISION-ID>` status is `<status>` but `adr/<NNNN>-slug.md` Status line says `<prose>`. Which is correct?" — options: `"DECISION is correct (update adr/ file)"`, `"adr/ is correct (update DECISION frontmatter)"`, `"skip"`.
+- **Discussion index missing row:** "`<DISCUSSION-ID>` has no row in `discussions/index.md`. What should I do?" — options: `"add row now"`, `"skip"`, `"mark ignored (permanent)"`
+
+- **Discussion index orphan row:** "`<DISCUSSION-ID>` appears in `discussions/index.md` but the file does not exist." — options: `"remove row"`, `"skip"`
+
+- **Discussion index status mismatch:** "`<DISCUSSION-ID>` status differs — file says `<status>`, index says `<status>`. Which is correct?" — options: `"file is correct (update index)"`, `"index is correct (update file)"`, `"skip"`
+
+- **Phase completeness:** "`<phase-id>` is missing `<filename>`. Create a stub now or skip?" — options: `"create stub"`, `"skip"`, `"mark ignored (permanent)"`
+
+- **Tag inconsistency:** "`<tag>` in phase `<phase-id>` looks like a typo of `<similar-tag>` (used in N phases). What should I do?" — options: `"rename to <similar-tag>"`, `"leave as-is"`, `"mark ignored (permanent)"`
+
+When the user chooses `"mark ignored (permanent)"` for any finding: write the corresponding `audit_ignore` entry to `.project-memory/config.yml` immediately, then move to the next finding.
 
 ---
 
 # Edge Cases
 
-- **Trivial-commit regex:** `^(docs|chore\(lint|chore\(format|chore\(deps|chore\(memory|chore\(audit|fix\(lint`. Apply to the commit subject line (the part after the 7-char hash and space). If a commit subject matches this pattern AND no open phase exists, exclude it from the orphan list entirely. If a commit subject matches AND an open phase exists, also exclude it from the orphan list — but if the count of such trivial unattached commits exceeds 3, add a silent note: "X trivial commits not attached to open phase `<id>`" (do not escalate, do not ask the user; note only if count > 3).
+- **Trivial-commit regex:** `^(docs|chore\(lint|chore\(format|chore\(deps|chore\(memory|chore\(audit|fix\(lint`. Apply to the commit subject line. If a commit subject matches this pattern AND no open phase exists, exclude it from the orphan list. If a commit subject matches AND an open phase exists, also exclude it — but if the count of such trivial unattached commits exceeds 3, add a silent note in the report only.
 
-- **`*(none)*` is not a stub:** `*(none)*` is the canonical placeholder for a legitimately-empty section (per SKILL.md — "Stub placeholders to clear on sight … any `*(none)*` in a section that **now has content**"). It is intentional and correct when the section truly has no content. Detecting whether a section "has content" vs. "is intentionally empty" via regex is unreliable. Do not include `*(none)*` in the stub grep patterns. If a user finds a stale `*(none)*` in a section that should have content, they can clear it manually.
+- **`*(none)*` is not a stub:** `*(none)*` is the canonical placeholder for a legitimately-empty section. Do not include it in the stub grep patterns.
 
-- **First-run:** If `.project-memory/` does not exist, skip the audit entirely. The `init.md` path handles first-run setup; audit has no role there.
+- **First-run:** If `.project-memory/` does not exist, skip the audit entirely.
 
-- **Summaries without `Last Updated:` field:** Do not fail the date parse. Instead, raise as a separate escalation finding: "summary missing Last Updated field: `<filename>`". This is distinct from summary staleness and is always escalated, never auto-fixed.
+- **Summaries without `Last Updated:` field:** Raise as a separate escalation finding (medium severity, no time boundary — the age is undefined so it always qualifies for interactive triage).
 
-- **Empty `issues/open/` directory:** Category 5 produces zero findings. This is normal; do not flag it.
+- **Empty `issues/open/` directory:** Cat 5 produces zero findings. Normal.
 
-- **No open phases:** Category 4 produces zero findings. Normal.
+- **No open phases:** Cat 4 produces zero findings. Normal.
 
-- **Decisions directory empty or missing:** Category 6 produces zero findings. Normal for a project with no decisions yet.
+- **Decisions directory empty or missing:** Cat 6 produces zero findings. Normal.
 
-- **`decisions/index.md` missing or has only the header:** If the file is missing entirely, every DECISION file is a "missing index row" finding. If the file exists but has no data rows, same outcome. This is intentional — surfacing every missing row forces the user to recreate the index or confirm intent.
+- **`decisions/index.md` missing or header-only:** Every DECISION file is a "missing index row" finding.
 
-- **Why no auto-fix for "missing index row":** The `Claim` column is human-authored prose, not derivable from frontmatter. Auto-inserting a row with all fields except Claim produces a half-fix that pollutes the index. Escalation is safer.
+- **Why no auto-fix for "missing index row":** The `Claim` column is human-authored prose. Auto-inserting a row without it produces a half-fix.
 
-- **Category 7 — hashes already annotated:** Skip hashes that already contain `[orphaned` in their stored value. They were handled in a prior audit pass; re-annotating is a no-op and would corrupt the field.
+- **Cat 7 — hashes already annotated:** Skip hashes containing `[orphaned` — they were handled in a prior pass.
 
-- **Category 7 — empty commits list:** If a phase has no entries in `commits:` and `merge_commit` is null, skip that phase. Zero hashes to check.
+- **Cat 7 — git cat-file unavailable:** Skip Cat 7 entirely if not in a git directory.
 
-- **Category 7 — all commits in a phase orphaned:** Annotate all of them. The phase record itself is preserved; only the commit linkage is severed.
+- **Cat 8 — config.yml absent:** Skip Cat 8 entirely. ADR support is opt-in.
 
-- **Category 7 — git cat-file behavior:** `git cat-file --batch-check` accepts one hash per line on stdin and returns `<hash> missing` for non-existent objects. Works cross-platform (Windows/POSIX). If the command is unavailable (non-git directory), skip category 7 entirely and do not flag it as a finding.
+- **Cat 8 — adr_dir directory missing:** Flag every DECISION file as "missing ADR file". Escalated so user confirms directory creation.
 
-- **Category 7 — why auto-fix, not escalation:** The commit hash is gone permanently. The user cannot recover it. The only "decision" would be "annotate" or "ignore" — forcing Interactive Mode for potentially dozens of orphan references across many phases would be pure noise. Auto-annotate preserves the historical record without burdening the user.
+- **Cat 8 — adr_id zero-padding:** Normalize to 4-digit zero-padded string for glob matching.
 
-- **Category 8 — config.yml absent:** If `.project-memory/config.yml` does not exist, skip Category 8 entirely and do not flag it as a finding. ADR support is opt-in; absence of config is not drift.
+- **Cat 9 — `discussions/` directory missing or empty:** Zero findings. Normal.
 
-- **Category 8 — adr_dir directory missing:** If `config.yml` exists but the resolved `adr_dir` directory does not exist in the project root, flag every DECISION file as "missing ADR file" (the directory itself is missing). This is escalated so the user confirms creation of the directory, not silently created.
+- **Cat 9 — `discussions/index.md` missing or header-only:** Every DISCUSSION file is a "missing index row" finding (same logic as Cat 6).
 
-- **Category 8 — adr_id zero-padding:** When reading `adr_id` from frontmatter, normalize to a 4-digit zero-padded string for glob matching (e.g. `adr_id: 1` → `0001`). This handles both integer and string YAML representations.
+- **Cat 9 — files in `discussions/archive/`:** Excluded from Cat 9 detection. Archived discussions are not expected to have index rows.
+
+- **Cat 11 — `discussions/archive/` does not exist:** Create it during auto-fix before moving the first file. Do not flag its absence as a finding.
+
+- **Cat 12 — fewer than 5 unique tags:** Skip Cat 12. Insufficient signal for typo detection.
+
+- **Cat 12 — uncertain similarity:** When in doubt, do not flag. False positives are worse than misses for fuzzy pattern matching.
+
+- **audit_ignore — missing config.yml:** If `.project-memory/config.yml` does not exist, treat `audit_ignore` as an empty list. Do not flag the missing file as a finding.
+
+- **audit_ignore — no `audit_ignore` key in config.yml:** Same as empty list. The key is optional.

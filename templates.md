@@ -190,6 +190,40 @@ Chosen option: "<option name>", because <brief rationale from # Decision and # C
 
 ---
 
+## .project-memory/config.yml
+
+Project-level configuration for project-memory. Created during first-run initialization if ADR support is desired. All fields are optional — defaults apply when file is absent.
+
+```yaml
+# .project-memory/config.yml
+
+adr_dir: adr          # directory for ADR files relative to project root (default: adr)
+
+audit_ignore: []      # permanently suppressed audit findings (see audit.md Permanent Skip section)
+# Each entry:
+#   category: <integer>          # audit category number (1–12)
+#   key: "<fingerprint>"         # format is category-specific — see audit.md fingerprint table
+#   reason: "<why ignored>"      # human-readable note
+#   ignored_at: YYYY-MM-DD       # date the ignore was added
+```
+
+Example with entries:
+```yaml
+adr_dir: adr
+
+audit_ignore:
+  - category: 12
+    key: "phase-20260611-skill-md-refactor:skil-md"
+    reason: "legacy typo in completed phase, accepted as-is"
+    ignored_at: 2026-06-12
+  - category: 10
+    key: "phase-20260608-initial-setup:review-and-fixes.md"
+    reason: "initial setup phase pre-dates review discipline"
+    ignored_at: 2026-06-12
+```
+
+---
+
 ## DISCUSSION-YYYY-MM-DD-slug.md
 
 **Frontmatter (required):**
