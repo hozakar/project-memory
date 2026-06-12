@@ -29,6 +29,9 @@ The skill maintains a `.project-memory/` directory in your project root, structu
 ├── discussions/
 │   ├── index.md
 │   └── DISCUSSION-YYYY-MM-DD-slug.md
+├── eras/
+│   ├── index.yml
+│   └── era-NNN.md
 ├── issues/
 │   ├── open/
 │   └── closed/
@@ -72,6 +75,14 @@ Exploratory conversations between the user and the LLM are captured as `DISCUSSI
 
 Discussions can be resumed — the existing file is updated rather than duplicated.
 
+### MCP Companion Server (optional)
+
+An optional MCP server (`mcp-server/`) provides semantic search over phases and decisions using LanceDB + local embeddings (no API key needed). Nine tools are available: `search_memory`, `index_phase`, `index_decision`, `index_discussion`, `find_similar_commit`, `check_consistency`, `rebuild_index`, `index_era`, and `run_audit` (deterministic audit delegation). Graceful degradation — the skill works identically without the server.
+
+### Eras
+
+Every ~10 phases, a narrative `era-NNN.md` file is written to `.project-memory/eras/`, providing a human-readable summary of that period's work. Eras are indexed for semantic search and provide long-term narrative continuity.
+
 ## Skill Files
 
 | File | Purpose |
@@ -80,7 +91,7 @@ Discussions can be resumed — the existing file is updated rather than duplicat
 | `gates.md` | Implementation gates (Pre-Implementation, Pre-Close), commit significance, topic shift, end-of-phase maintenance |
 | `protocol.md` | Agent thinking protocol, memory loading strategy with token budgets, knowledge preservation |
 | `cheatsheet.md` | Quick reference cheatsheet, event-based trigger table |
-| `audit.md` | Drift detection and repair procedures (6 categories) |
+| `audit.md` | Drift detection and repair procedures (13 categories, severity model, permanent skip) |
 | `init.md` | First-run initialization procedure |
 | `templates.md` | File templates for phases, decisions, issues, discussions, indexes |
 | `conventions.md` | Naming conventions, lifecycle rules, decision resolution rules, discussion lifecycle, language policy |
@@ -89,9 +100,9 @@ Discussions can be resumed — the existing file is updated rather than duplicat
 
 The skill activates automatically at session start via the `project-memory` skill entry. On load it:
 
-1. Emits `[✅] PROJECT MEMORY LOADED`
+1. Emits 🧠 PROJECT MEMORY LOADED
 2. Reads active phase context if one is open
-3. Runs a drift audit across 6 detection categories (including decision-index drift) and auto-fixes or escalates findings
+3. Runs a drift audit across 13 detection categories (including decision-index drift) and auto-fixes or escalates findings
 
 To run an interactive audit manually:
 

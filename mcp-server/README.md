@@ -2,12 +2,21 @@
 
 Optional MCP companion server for the [project-memory](../) skill. Provides semantic search over phases and decisions using LanceDB + all-MiniLM-L6-v2 (local embedding, no API key needed).
 
-## What it does
+## Tools
 
-- `search_memory` — semantic search at Pre-Implementation Gate and ad-hoc queries
-- `index_phase` / `index_decision` — dual-write: skill calls these after every phase/decision write
-- `check_consistency` — DB/filesystem sync (used by drift audit Cat 13)
-- `rebuild_index` — full atomic rebuild from scratch
+- `search_memory(query, top_k?)` — semantic search over phases, decisions, discussions, and eras; excludes per-commit records by default
+- `index_phase(data)` — upsert a phase into the vector index (called on phase open and close)
+- `index_decision(data)` — upsert a decision (called on creation and status change)
+- `index_discussion(data)` — upsert a discussion (called on conclusion)
+- `find_similar_commit(diff_snippet, top_k?)` — search per-commit records for squash/rebase recovery
+- `check_consistency(project_memory_dir)` — compare DB index against filesystem; returns {missing, orphaned}
+- `rebuild_index(entries[])` — full atomic rebuild of the vector index
+- `index_era(data)` — upsert an era narrative summary
+- `run_audit(project_memory_dir)` — execute all 13 audit categories; returns {auto_fixed, pending_fixes, escalations} with pre-computed interactive flags
+
+**Version:** 0.0.1 (skill), MCP server internal v0.4.0
+
+**Write direction:** files → DB only. MCP may write `.project-memory/` files for file-move auto-fixes (Cat 5/11). YAML mutations (Cat 7) remain LLM-only. Zero data loss on MCP absence.
 
 ## Prerequisites
 
@@ -16,17 +25,18 @@ Optional MCP companion server for the [project-memory](../) skill. Provides sema
 
 ## Installation
 
-bash
+```bash
 cd mcp-server
 npm install
 npm run build
+```
 First run downloads the all-MiniLM-L6-v2 model (~25MB) to local cache.
 
 ## Configuration
 
 Add to your `claude_desktop_config.json` (or equivalent MCP config):
 
-json
+```json
 {
   "mcpServers": {
     "project-memory": {
@@ -38,6 +48,7 @@ json
     }
   }
 }
+```
 `PROJECT_MEMORY_DIR` should point to the root of the project that contains `.project-memory/`. The vector index is stored at `<PROJECT_MEMORY_DIR>/.project-memory/vector-index/` (gitignored).
 
 ## Module system note
