@@ -52,12 +52,16 @@ At session start and after any context compaction:
 13. Recent git commits (as needed)
 ```
 
-Do not load all historical phases unless necessary. Prefer summarized memory before raw history. When diving deeper into a specific area, filter `phases/index.yml` by tags to find relevant phases.
+Do not load all historical phases unless necessary. Prefer summarized memory before raw history. Tags are the primary navigation mechanism — tag-aware filtering applies at initial load, not only when diving deeper.
 
 ## Token Budget Guidelines
 
 - Summary files are the primary budget concern — read all five by default (designed to stay concise).
-- If `phases/index.yml` contains 20+ phases, read only the most recent 10 entries unless searching a specific tag.
+- If `phases/index.yml` contains 20+ phases, apply tag-aware filtering:
+  1. Derive the current task's scope as a set of tags (same entities used in Pre-Implementation Gate step 3 — file names, feature names, system areas).
+  2. Prefer phases whose `tags` intersect the derived scope. Read up to 10 tag-matching phases.
+  3. If fewer than 3 tag-matching phases exist, supplement with the most recent entries to reach at least 3 total.
+  4. Fall back to the most recent 10 entries when no tags can be derived from the task (e.g. cold session start with no stated goal).
 - If any single summary file exceeds 300 lines, read the first 150 lines only on initial load; fetch the rest on demand.
 - Active phase directory: always load in full — it is the most time-sensitive memory.
 - Historical phase directories: load only when the user's task explicitly relates to that phase's area.
