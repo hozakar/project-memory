@@ -207,7 +207,7 @@ Maintenance rules:
 
 ## project-memory.md
 
-Target size: 500â€“1500 words.
+Target size: 500—1500 words.
 
 ```md
 # Project Memory
@@ -220,19 +220,26 @@ Target size: 500â€“1500 words.
   Agent adds entries autonomously when pattern observed with high confidence.
 ## Rejected Decisions
   Alternatives not taken. One-liner per entry pointing to the full DECISION-YYYY-MM-DD-slug.md file.
-  Agent asks user "why did we not go with X?" when reason is unknown.
+  Agent asks user “why did we not go with X?” when reason is unknown.
 ## Open Problems
 ## Technical Debt
 ## Important Constraints
 ## Recent Completed Work
+## Historical Milestones
 ## Current Priorities
 ## Recommended Next Phase
 ## Navigation Map
-  - Architectural questions â†’ architecture.md + DECISION-YYYY-MM-DD-* files
-  - Active work â†’ current-state.md + open phase directory
-  - History in a specific area â†’ filter phases/index.yml by tag
-  - Known issues â†’ active-issues.md â†’ issues/open/ (open) or issues/closed/ (resolved)
-  - Past tradeoffs â†’ decisions/
-  - Project philosophy â†’ project-memory.md
+  - Architectural questions → architecture.md + DECISION-YYYY-MM-DD-* files
+  - Active work → current-state.md + open phase directory
+  - History in a specific area → filter phases/index.yml by tag
+  - Known issues → active-issues.md → issues/open/ (open) or issues/closed/ (resolved)
+  - Past tradeoffs → decisions/
+  - Project philosophy → project-memory.md
 ```
+
+**Rolling summaries rule (Recent Completed Work):**
+- Cap: Recent Completed Work holds at most **20 entries**. When a 21st entry is added, the oldest entry is moved out.
+- Overflow destination: moved entries are condensed into one-liners and appended to **Historical Milestones**, grouped by era (e.g. `2026-06 early`, `2026-Q3`). One era line covers multiple phases.
+- Do not delete overflowed entries — they move, never disappear.
+- Historical Milestones is append-only. It is not capped. Its one-liners are intentionally terse; full detail remains in the phase directory.
 
