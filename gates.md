@@ -93,6 +93,11 @@ Required files: `phase.yml`, `plan.md`, `implementation.md`, `review-and-fixes.m
 
 For file formats and templates, read `templates.md`.
 
+**MCP index on phase open (if available):**
+After writing `phase.yml` and `plan.md`, if `index_phase` is in available tools:
+- Call `index_phase({ id, title, tags, planText: plan.md content truncated to 2000 chars, implementationText: "", commitDiffs: [], status: "planning" })`
+- Best-effort: if the call fails, continue — file writes already completed.
+
 ---
 
 # Pre-Implementation Gate — MANDATORY
@@ -132,8 +137,23 @@ Classify the work using the commit significance table above.
 **Step 4 — Capture missing decisions:**
 If the proposed work is a significant architectural move (deployment, auth, persistence, schema, public API) and `decisions/index.md` has no candidate at all for it, ask once: "No prior decision covers this. Want to record one now?" — then proceed.
 
+**Step 5 — MCP context load (if available):**
+If `search_memory` is in available tools: call `search_memory(natural language description of what you are about to implement, top_k=8)`. For each result with similarity ≥ 0.6 not already loaded, load the corresponding `.project-memory/` file. Append any newly found directional conflicts to the Step 3 batch question (do not issue a separate question).
+
 **Session override:**
 If the user says "skip decision questions for now" (or similar phrasing — "skip", "skip for now", "speed mode"), suspend Step 3 questions for the rest of the session. Decisions are still **written** when made — only the pre-implementation question is bypassed. Override resets on the next session.
+
+---
+
+# Decision Creation — MCP Index Trigger
+
+When a `DECISION-*.md` file is created or its `status` field changes (e.g. `active → superseded`):
+
+**If `index_decision` is in available tools:**
+Call `index_decision({ id, title, status, context: context_section[:1000], decisionBody: combined_decision_and_chosen_solution_sections[:1000], touches })`.
+This is best-effort — if the call fails, continue. The file write already completed.
+
+Re-call on every status change. The tool upserts by ID, so repeated calls are safe.
 
 ---
 
@@ -163,6 +183,7 @@ At phase completion (merge OR logical completion):
 3. followup.md → roadmap.md — transfer all items
 4. phase.yml — set status: completed; set merge_commit if branch merged, closed_at if direct close
 5. phases/index.yml — update phase entry
+5a. **MCP index on phase close (if available):** If `index_phase` is in available tools, call `index_phase` with the full phase data: `{ id, title, tags, planText: plan.md[:2000], implementationText: implementation.md[:2000], commitDiffs: [for each commit hash in phase.yml commits: { hash, message, files: list of changed files, diffSnippet: first 2000 chars of git show output }], status: "completed" }`. Best-effort.
 6. current-state.md — always update: features, components, debt, risks, recommended next actions
 7. project-memory.md — always update Recent Completed Work; also update Active Tensions, Anti-Patterns, Current Priorities if changed
 ```

@@ -84,6 +84,28 @@ without reconstructing history from source code.
 
 ---
 
+# MCP Companion Integration
+
+**Availability check (once per session):**
+If `search_memory`, `index_phase`, and `index_decision` all appear in your available MCP tools → MCP is available. Set a session-level flag. Otherwise → MCP is unavailable; all behavior follows the standard strategy below.
+
+**When MCP is available — modified Memory Loading Strategy:**
+
+After loading the 5 summary files (steps 1–5), before loading `phases/index.yml`:
+- If the session has a stated task or goal: call `search_memory(task_description, top_k=8)`
+- For each result with similarity ≥ 0.6: load the corresponding file from `.project-memory/` (phase directory or DECISION file)
+- These files supplement — do not replace — the standard steps 6–13
+
+At Pre-Implementation Gate Step 3: additionally call `search_memory(natural language description of what you are implementing, top_k=8)` → load any additional relevant files not already in context.
+
+**Ad-hoc search rule:**
+If MCP is available and the user asks a question about past decisions, phases, or discussions (e.g. "what did we decide about X?", "did we ever try Y?", "what phases touched Z?"), call `search_memory(user_question)` to retrieve relevant context before answering. This does not require a gate trigger — it is discretionary judgment.
+
+**When MCP is unavailable:**
+All behavior is identical to the standard Memory Loading Strategy. MCP is an optional accelerator, never a requirement.
+
+---
+
 # Skill Sub-Files Reference
 
 | File | Purpose | When Loaded |
