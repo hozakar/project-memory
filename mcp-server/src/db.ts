@@ -4,6 +4,9 @@ import type { LanceRecord, SearchResult } from "./types";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let _conn: any = null;
+// Singleton: one connection per process lifetime. If PROJECT_MEMORY_DIR
+// changes between calls in the same process (rare), the wrong DB is reused.
+// For test teardown, restart the process or add a resetConnection() export.
 
 function dbPath(): string {
   const root = process.env.PROJECT_MEMORY_DIR ?? process.cwd();
@@ -39,6 +42,11 @@ async function getTable(): Promise<any> {
   return (conn as any).openTable("memory");
 }
 
+// WARNING: This upsert is non-atomic (delete then add). If the process crashes
+// between these two operations, the record is permanently removed from the
+// vector index. Recovery path: Cat 13 / proactive sync (check_consistency +
+// index_phase/index_decision) on the next session. LanceDB does not support
+// multi-statement transactions.
 export async function upsert(record: LanceRecord): Promise<void> {
   const table = await getTable();
   await table.delete(`id = '${record.id}'`);
@@ -84,7 +92,8 @@ export async function search(
     }
 
     return results.slice(0, topK);
-  } catch {
+  } catch (err) {
+    console.error("search failed:", err);
     return [];
   }
 }

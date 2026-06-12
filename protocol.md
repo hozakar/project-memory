@@ -1,4 +1,4 @@
-﻿---
+---
 name: project-memory-protocol
 description: Agent thinking protocol, memory loading strategy with token budgets, and knowledge preservation rule for project-memory.
 ---
@@ -120,7 +120,7 @@ All behavior is identical to the standard Memory Loading Strategy. MCP is an opt
 | `gates.md` | Pre-Implementation Gate, Pre-Close Gate, commit significance, topic shift, end-of-phase maintenance | Before implementation, merge, and phase close |
 | `protocol.md` | This file — thinking protocol, memory loading, knowledge preservation | At session start (after SKILL.md) |
 | `cheatsheet.md` | Quick reference cheatsheet, event-based triggers | On-demand for quick lookups |
-| `audit.md` | Drift detection and repair (6 categories) | Every session start (auto) + on `audit` argument |
+| `audit.md` | Drift detection and repair (13 categories) | Every session start (auto) + on `audit` argument |
 | `init.md` | First-run initialization | Only when `.project-memory/` does not exist |
 | `templates.md` | File templates for all `.project-memory/` document types | When creating phases, decisions, issues, discussions |
 | `conventions.md` | Naming conventions, lifecycle rules, decision resolution rules, discussion lifecycle | When creating/closing decisions, issues, or discussions |

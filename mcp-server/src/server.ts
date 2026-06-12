@@ -13,7 +13,7 @@ import type { IndexEntry } from "./types";
 
 export const server = new McpServer({
   name: "project-memory",
-  version: "0.4.0"
+  version: "0.0.1"
 });
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

@@ -131,6 +131,8 @@ function cat1CommitOrphans(
 
   const allTracked = new Set<string>();
   for (const p of phases) for (const h of p.commits) allTracked.add(h);
+  // Also index abbreviated form (git log --oneline returns 7-char hashes)
+  for (const p of phases) for (const h of p.commits) allTracked.add(h.slice(0, 7));
 
   const orphans: string[] = [];
   for (const line of logOutput.split("\n")) {
@@ -236,7 +238,7 @@ function cat4OpenPhaseGap(
     }
     if (!branch) continue;
 
-    const logOutput = git(`git log --oneline ${branch}`, projectRoot);
+    const logOutput = git(`git log --oneline --max-count=200 ${branch}`, projectRoot);
     if (!logOutput) continue;
 
     const missing: string[] = [];
@@ -538,9 +540,19 @@ function cat11DiscussionExpiry(projectMemoryDir: string): string[] {
   for (const filename of fs.readdirSync(discussionsDir)) {
     if (!filename.startsWith("DISCUSSION-") || !filename.endsWith(".md")) continue;
     const content = readFile(path.join(discussionsDir, filename));
-    // outcome.type is nested — find it with a specific pattern
-    const outcomeTypeMatch = content.match(/outcome:\s*\n\s+type:\s*(\S+)/);
-    const outcomeType = outcomeTypeMatch ? outcomeTypeMatch[1].replace(/^['"]|['"]$/g, "") : "";
+    // Match nested format (outcome:\n  type: xxx) or flat format (outcome: xxx)
+    let outcomeType = "";
+    const nestedMatch = content.match(/outcome:\s*\n\s+type:\s*(\S+)/);
+    if (nestedMatch) {
+      outcomeType = nestedMatch[1].replace(/^['"]|['"]$/g, "");
+    } else {
+      const flatMatch = content.match(/^outcome:\s*(\S+)/m);
+      if (flatMatch && flatMatch[1] !== "null") {
+        // Flat format: could be a phase/decision ID or "none". Treat as type=none only if literal "none", otherwise treat as a valid outcome (not expired).
+        const val = flatMatch[1].replace(/^['"]|['"]$/g, "");
+        outcomeType = (val === "none" || val === "") ? "none" : "non-null";
+      }
+    }
     if (outcomeType !== "none") continue;
     const dateStr = filename.match(/DISCUSSION-(\d{4}-\d{2}-\d{2})/)?.[1] ?? today();
     if (daysDiff(dateStr) <= 30) continue;
