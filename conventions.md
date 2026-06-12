@@ -55,7 +55,7 @@ Rejected alternatives are first-class content. Future agents need to know what w
 **After writing any DECISION file:**
 1. Add a one-liner per rejected alternative to `project-memory.md` â†’ Rejected Decisions. The DECISION file has the full reasoning; the summary entry is a one-line pointer (using the full DECISION-YYYY-MM-DD-slug identifier).
 2. Add a row to `decisions/index.md` (see `templates.md`) â€” this is the file Claude loads at session start to surface active decisions during the Pre-Implementation Gate.
-3. If `supersedes` is set, update the superseded file: change its `status` to `superseded` and set its `superseded_by` field. Also update its row in `decisions/index.md` to reflect the new status.
+3. If `supersedes` is set, update the superseded file: change its `status` to `superseded` and set its `superseded_by` field. Move its row in `decisions/index.md` from the **Active** section to the **Superseded** section and update the Status cell. The index has two sections; only the Active section is scanned during the Pre-Implementation Gate.
 
 ---
 
@@ -68,7 +68,7 @@ When more than one decision touches the same area, priority is determined in thi
 3. **Active refinement.** If two `active` decisions overlap but their claims do not contradict (one extends or details the other), both remain active. No question needed.
 4. **Recency fallback.** Only used when no `supersedes` is set and no scope/touches overlap exists between candidates. This is the weakest signal â€” a recent unrelated decision must not override an older architectural one. Recency is a tiebreaker within the same active scope, never a rule that overrides explicit references.
 
-`superseded` decisions remain in the index for historical context. Claude reads them as past state, not as active constraint.
+`superseded` decisions remain in the index's **Superseded** section for historical context. Claude reads them as past state, not as active constraint. They are NOT loaded during Pre-Implementation Gate scanning — only on explicit historical lookup.
 
 ---
 

@@ -44,7 +44,7 @@ At session start and after any context compaction:
 5. .project-memory/summaries/roadmap.md
 6. .project-memory/phases/index.yml
 7. Active phase directory (if open)
-8. .project-memory/decisions/index.md (load fully — primary input to the Pre-Implementation Gate)
+8. .project-memory/decisions/index.md — Active section only (primary input to Pre-Implementation Gate); Superseded section is available on demand for historical lookups but is NOT scanned during Pre-Implementation Gate
 9. Individual DECISION-YYYY-MM-DD-* files (only when planning in a scope the index flags as relevant)
 10. Open issues (as needed)
 11. .project-memory/discussions/index.md (load fully — surfaces prior discussions relevant to current scope)
