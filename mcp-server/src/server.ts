@@ -41,7 +41,7 @@ srv.tool(
     planText: z.string(),
     implementationText: z.string(),
     commitDiffs: z.array(z.object({
-      hash: z.string(),
+      hash: z.string().regex(/^[0-9a-f]{7,40}$/).describe("Git commit hash (hex, 7–40 chars)"),
       message: z.string(),
       files: z.array(z.string()),
       diffSnippet: z.string(),
