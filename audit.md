@@ -15,7 +15,7 @@ Run when the skill is explicitly invoked with the `audit` argument. Same detecti
 
 # Detection Procedure
 
-Run all 12 categories on every audit pass. Collect findings before acting. Check `audit_ignore` (see Permanent Skip section) before escalating any finding — suppressed findings are omitted entirely.
+Run all 13 categories on every audit pass. Collect findings before acting. Check `audit_ignore` (see Permanent Skip section) before escalating any finding — suppressed findings are omitted entirely.
 
 | # | Category | Detection Rule | Tool Calls | Classification | Severity |
 |---|---|---|---|---|---|
@@ -31,6 +31,7 @@ Run all 12 categories on every audit pass. Collect findings before acting. Check
 | 10 | **Completed phase file completeness** | For each phase in `index.yml` with `status: completed`, verify these 5 files exist in the phase directory: `phase.yml`, `plan.md`, `implementation.md`, `review-and-fixes.md`, `followup.md`. Report each missing file as a separate finding. Age: phase `closed_at` field. | `Read: phases/index.yml`; `Glob: phases/<id>/*.md` for each completed phase | **Escalate** | **medium** |
 | 11 | **Discussion expiry** | For each `DISCUSSION-*.md` in `discussions/` (not `discussions/archive/`): read frontmatter `outcome.type` and `date`. If `outcome.type == none` AND `today - date > 30 days` → expired. | `Glob: discussions/DISCUSSION-*.md`; `Read` frontmatter of each | **Auto-fix** | — |
 | 12 | **Tag inconsistency** | Read all phase tags from `phases/index.yml`. Collect all unique tags across all phases. Using LLM judgment, identify tag pairs that appear to be typos or near-duplicates (e.g., `skil-md` vs `skill-md`). Flag each suspect pair with both the tag value and the phase IDs where it appears. Only flag when confident — false positives are worse than misses. Skip if fewer than 5 unique tags total. Age: phase ID date prefix (e.g., `phase-20260611-*` → 2026-06-11). | `Read: phases/index.yml` | **Escalate** | **low** |
+| 13 | **MCP consistency** | If `check_consistency` is NOT in available tools, skip entirely. Otherwise: call `check_consistency(path_to_dot_project_memory_dir)` where the path is the absolute path to the `.project-memory/` directory in the current project. For each ID in `missing` (file exists, not in DB): if ID starts with `phase-`, read that phase's `phase.yml` + `plan.md` + `implementation.md` and call `index_phase`; if ID starts with `DECISION-`, read the DECISION file and call `index_decision`. For each ID in `orphaned`: no action (will be cleaned on next upsert cycle). | MCP: `check_consistency`; `Read` phase/decision files for missing IDs; MCP: `index_phase`/`index_decision` | **Auto-fix** | — |
 
 ---
 
@@ -59,7 +60,7 @@ Severity controls whether a finding enters interactive triage or appears in the 
 | 12 | phase ID date prefix (e.g., `phase-20260611-*` → 2026-06-11) |
 
 Cat 3 (stub placeholders): no age computation — always report-only (low).
-Cat 5, 7, 11 (auto-fix): severity concept does not apply.
+Cat 5, 7, 11, 13 (auto-fix): severity concept does not apply.
 
 When age > 3 days for a medium finding, the finding still appears in the drift report under `Report only` but is NOT presented via `AskUserQuestion`.
 
@@ -99,7 +100,7 @@ When the user chooses "mark ignored" during interactive triage, write the entry 
 
 # Auto-Fix Rules
 
-Only categories 5, 7, and 11 are auto-fixed. No other category is ever auto-fixed.
+Only categories 5, 7, 11, and 13 are auto-fixed. No other category is ever auto-fixed.
 
 **Category 5 auto-fix steps:**
 1. For each `issues/open/*.md` file with frontmatter `status: closed`:
@@ -120,7 +121,15 @@ Only categories 5, 7, and 11 are auto-fixed. No other category is ever auto-fixe
    b. Remove its row from `discussions/index.md`.
 2. Log: `Auto-archived: DISCUSSION-xxx → discussions/archive/ (outcome: none, age > 30 days)`
 
-Everything outside categories 5, 7, and 11 is escalated. The auto-fix rule is intentionally conservative.
+**Category 13 auto-fix steps:**
+1. Call `check_consistency(project_memory_dir)` to get `{ missing, orphaned }`.
+2. For each ID in `missing`:
+   - If ID starts with `phase-`: read `phases/<ID>/phase.yml` (for id, title, tags, status), `phases/<ID>/plan.md` (truncate to 2000 chars), `phases/<ID>/implementation.md` (truncate to 2000 chars). Call `index_phase` with this data and `commitDiffs: []`.
+   - If ID starts with `DECISION-`: read `decisions/<ID>.md`. Extract `id`, `title`, `status`, `touches` from frontmatter; extract `context` section body (truncate to 1000 chars) and `decision body` (combined # Decision + # Chosen Solution sections, truncate to 1000 chars). Call `index_decision`.
+3. Orphaned IDs: no action.
+4. Log: `MCP sync: N entries updated` (where N = missing.length)
+
+Everything outside categories 5, 7, 11, and 13 is escalated. The auto-fix rule is intentionally conservative.
 
 ---
 
@@ -264,3 +273,6 @@ When the user chooses `"mark ignored (permanent)"` for any finding: write the co
 - **audit_ignore — missing config.yml:** If `.project-memory/config.yml` does not exist, treat `audit_ignore` as an empty list. Do not flag the missing file as a finding.
 
 - **audit_ignore — no `audit_ignore` key in config.yml:** Same as empty list. The key is optional.
+
+- **Cat 13 — MCP unavailable:** If `check_consistency` tool is not in available tools, skip Cat 13 entirely. This is normal when MCP companion is not installed.
+- **Cat 13 — project_memory_dir path:** Derive from the current project root: the directory containing `phases/`, `decisions/`, etc.
