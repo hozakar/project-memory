@@ -27,7 +27,19 @@ Run when the skill is explicitly invoked with the `audit` argument. Same detecti
 5. Cat 12 findings (`category: 12`) always require LLM confirmation before prompting the user — review the `data.tag` / `data.similar_tag` pair and decide if it is genuinely a typo. Only escalate (interactive: false → it's low severity) if confident.
 6. Skip the file-based Detection Procedure section entirely — `run_audit` has already covered all 13 categories.
 
-**When `run_audit` is NOT available:** use the file-based Detection Procedure below.
+**When `run_audit` is NOT available — MCP installation check:**
+
+1. Check if `mcp-server/package.json` exists and read its `version` field.
+2. Read `.project-memory/config.yml` for `mcp_install_offered_for_version`.
+3. If `mcp-server/package.json` version > `mcp_install_offered_for_version` (or `mcp_install_offered_for_version` is null/missing):
+   - Present a single offer: "MCP companion server v{X.Y.Z} is available but not installed. It provides semantic search and faster audits. I can install it for you — want me to?"
+   - Options: "Install now" / "I'll do it myself" / "Not now"
+   - On "Install now" or "I'll do it myself": read `mcp-server/INSTALL.md` and follow the appropriate section.
+   - On "Not now": set `mcp_install_offered_for_version` to the current version to suppress re-offers for this version.
+4. If version matches `mcp_install_offered_for_version` → silent skip (already offered).
+5. If `mcp-server/` does not exist at all → silent skip (MCP is optional).
+
+**When MCP is unavailable entirely:** use the file-based Detection Procedure below.
 
 ---
 
