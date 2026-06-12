@@ -1,7 +1,7 @@
 import * as fs from "fs";
 import * as path from "path";
-import * as os from "os";
-import { execSync } from "child_process";
+import { execSync, spawnSync } from "child_process";
+// execSync used by git() helper; spawnSync used by cat7 for stdin piping
 import type { AuditReport, AuditFinding, PendingFix } from "../types";
 
 // ---------------------------------------------------------------------------
@@ -222,12 +222,11 @@ function cat4OpenPhaseGap(
   const findings: AuditFinding[] = [];
 
   for (const phase of phases) {
-    const p = phase;
-    if (!p.status || p.status === "completed" || p.status === "abandoned") continue;
-    if (ignored.has(`phase-gap:${p.phaseId}`)) continue;
+    if (!phase.status || phase.status === "completed" || phase.status === "abandoned") continue;
+    if (ignored.has(`phase-gap:${phase.phaseId}`)) continue;
 
     let branch = "";
-    const branchMatch = p.block.match(/branch:\s+(\S+)/);
+    const branchMatch = phase.block.match(/branch:\s+(\S+)/);
     if (branchMatch && branchMatch[1] !== "null") {
       branch = branchMatch[1].replace(/^['"]|['"]$/g, "");
     } else {
@@ -244,14 +243,14 @@ function cat4OpenPhaseGap(
     for (const line of logOutput.split("\n")) {
       const lm = line.match(/^([0-9a-f]{7,40})\s+(.+)$/);
       if (!lm) continue;
-      if (!p.commits.has(lm[1]) && !TRIVIAL_RE.test(lm[2])) missing.push(lm[1]);
+      if (!phase.commits.has(lm[1]) && !TRIVIAL_RE.test(lm[2])) missing.push(lm[1]);
     }
 
     if (missing.length > 0) {
       findings.push({
         category: 4, severity: "high", interactive: true,
-        description: `Open phase ${p.phaseId} missing ${missing.length} commit(s) on ${branch}`,
-        data: { phase_id: p.phaseId, branch, missing_hashes: missing },
+        description: `Open phase ${phase.phaseId} missing ${missing.length} commit(s) on ${branch}`,
+        data: { phase_id: phase.phaseId, branch, missing_hashes: missing },
       });
     }
   }
@@ -339,37 +338,43 @@ function cat7OrphanCommitRefs(projectRoot: string, phases: PhaseEntry[]): Pendin
   }
   if (allHashes.length === 0) return [];
 
-  // Write hashes to temp file for git cat-file --batch-check
-  const tempFile = path.join(os.tmpdir(), `pm-audit-cat7-${Date.now()}.txt`);
-  try {
-    fs.writeFileSync(tempFile, allHashes.map(h => h.hash).join("\n"), "utf-8");
-    const checkResult = git(`git cat-file --batch-check < "${tempFile}"`, projectRoot);
-    fs.unlinkSync(tempFile);
+  // Use spawnSync to pass hashes via stdin — avoids shell redirection and temp files
+  const hashInput = allHashes.map(h => h.hash).join("\n");
+  const result = spawnSync("git", ["cat-file", "--batch-check"], {
+    cwd: projectRoot,
+    input: hashInput,
+    encoding: "utf-8",
+  });
+  if (result.error || result.status !== 0) return [];
+  const checkResult = result.stdout || "";
 
-    const missing = new Set<string>();
-    for (const line of checkResult.split("\n")) {
-      if (line.endsWith(" missing")) missing.add(line.split(" ")[0]);
+  // git cat-file outputs the input hash as-is (may be abbreviated) followed by type or "missing"
+  // Index both the full output token and its first 7 chars to match stored abbreviated hashes
+  const missing = new Set<string>();
+  for (const line of checkResult.split("\n")) {
+    if (line.includes(" missing")) {
+      const h = line.split(" ")[0].trim();
+      missing.add(h);
+      missing.add(h.slice(0, 7));
     }
-
-    const fixes: PendingFix[] = [];
-    const seen = new Set<string>();
-    for (const entry of allHashes) {
-      if (missing.has(entry.hash) && !seen.has(entry.hash)) {
-        seen.add(entry.hash);
-        fixes.push({
-          type: "annotate_orphan",
-          phase_id: entry.phaseId,
-          hash: entry.hash,
-          location: entry.isMerge ? "merge_commit" : "commits",
-          date: today(),
-        });
-      }
-    }
-    return fixes;
-  } catch {
-    try { fs.unlinkSync(tempFile); } catch { /* ignore */ }
-    return [];
   }
+
+  const fixes: PendingFix[] = [];
+  const seen = new Set<string>();
+  for (const entry of allHashes) {
+    const isOrphaned = missing.has(entry.hash) || missing.has(entry.hash.slice(0, 7));
+    if (isOrphaned && !seen.has(entry.hash)) {
+      seen.add(entry.hash);
+      fixes.push({
+        type: "annotate_orphan",
+        phase_id: entry.phaseId,
+        hash: entry.hash,
+        location: entry.isMerge ? "merge_commit" : "commits",
+        date: today(),
+      });
+    }
+  }
+  return fixes;
 }
 
 function cat8AdrDrift(projectMemoryDir: string, ignored: Set<string>): AuditFinding[] {
@@ -555,14 +560,13 @@ function cat11DiscussionExpiry(projectMemoryDir: string): string[] {
 function cat12TagInconsistency(phases: PhaseEntry[], ignored: Set<string>): AuditFinding[] {
   const tagsByPhase = new Map<string, string[]>();
   for (const phase of phases) {
-    const p = phase as PhaseEntry & { block: string };
-    const tagsSection = p.block.match(/tags:([\s\S]*?)(?=\n\s{4}\w|\n\s{2}[-\w]|$)/);
+    const tagsSection = phase.block.match(/tags:([\s\S]*?)(?=\n\s{4}\w|\n\s{2}[-\w]|$)/);
     if (!tagsSection) continue;
     const tags: string[] = [];
     const tagRe = /^\s+-\s+(\S+)/gm;
     let tm: RegExpExecArray | null;
     while ((tm = tagRe.exec(tagsSection[1])) !== null) tags.push(tm[1]);
-    if (tags.length > 0) tagsByPhase.set(p.phaseId, tags);
+    if (tags.length > 0) tagsByPhase.set(phase.phaseId, tags);
   }
 
   const allUnique = [...new Set([...tagsByPhase.values()].flat())];
