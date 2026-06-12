@@ -48,7 +48,8 @@ export async function upsert(record: LanceRecord): Promise<void> {
 export async function search(
   vector: number[],
   topK: number,
-  typeFilter?: string
+  typeFilter?: string,
+  excludeCommits: boolean = true
 ): Promise<SearchResult[]> {
   try {
     const table = await getTable();
@@ -73,6 +74,10 @@ export async function search(
         };
       })
       .sort((a: SearchResult, b: SearchResult) => b.similarity - a.similarity);
+
+    if (excludeCommits && !typeFilter) {
+      results = results.filter((r: SearchResult) => r.type !== "commit");
+    }
 
     if (typeFilter) {
       results = results.filter((r: SearchResult) => r.type === typeFilter);

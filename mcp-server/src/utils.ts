@@ -1,4 +1,4 @@
-import type { PhaseIndexData, DecisionIndexData, DiscussionIndexData, CommitDiff } from "./types";
+import type { PhaseIndexData, DecisionIndexData, DiscussionIndexData, CommitDiff, EraIndexData } from "./types";
 
 export function buildPhaseText(data: PhaseIndexData): string {
   const parts: string[] = [
@@ -46,4 +46,16 @@ export function buildCommitText(diff: CommitDiff): string {
   ]
     .join("\n")
     .slice(0, 3000);
+}
+
+export function buildEraText(data: EraIndexData): string {
+  return [
+    data.id,
+    data.title,
+    data.dateRange,
+    data.phases.join(" "),
+    data.narrative,
+  ]
+    .join("\n")
+    .slice(0, 4000);
 }

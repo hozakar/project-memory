@@ -54,6 +54,17 @@ export async function checkConsistency(
       }
     }
 
+    // d. Extract era IDs from eras/era-NNN.md filenames
+    const erasDir = path.join(projectMemoryDir, "eras");
+    if (fs.existsSync(erasDir)) {
+      const entries = fs.readdirSync(erasDir);
+      for (const entry of entries) {
+        if (/^era-\d+\.md$/.test(entry)) {
+          filesystemIds.add(entry.slice(0, -3)); // "era-001"
+        }
+      }
+    }
+
     // 2. Get DB IDs, filter out __init__
     const dbIdList = await listAllIds();
     const dbIds = new Set<string>(dbIdList.filter((id) => id !== "__init__"));

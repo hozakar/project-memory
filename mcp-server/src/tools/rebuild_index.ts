@@ -1,7 +1,7 @@
 import { embed } from "../embedder";
 import { atomicRebuild } from "../db";
-import { buildPhaseText, buildDecisionText, buildDiscussionText, buildCommitText } from "../utils";
-import type { IndexEntry, LanceRecord, PhaseIndexData, DecisionIndexData, DiscussionIndexData } from "../types";
+import { buildPhaseText, buildDecisionText, buildDiscussionText, buildCommitText, buildEraText } from "../utils";
+import type { IndexEntry, LanceRecord, PhaseIndexData, DecisionIndexData, DiscussionIndexData, EraIndexData } from "../types";
 
 export async function rebuildIndex(entries: IndexEntry[]): Promise<{ indexed: number; failed: number }> {
   const records: LanceRecord[] = [];
@@ -14,6 +14,8 @@ export async function rebuildIndex(entries: IndexEntry[]): Promise<{ indexed: nu
         text = buildPhaseText(entry.data as PhaseIndexData);
       } else if (entry.type === "decision") {
         text = buildDecisionText(entry.data as DecisionIndexData);
+      } else if (entry.type === "era") {
+        text = buildEraText(entry.data as EraIndexData);
       } else {
         text = buildDiscussionText(entry.data as DiscussionIndexData);
       }

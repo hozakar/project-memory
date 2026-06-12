@@ -329,3 +329,23 @@ Target size: 500—1500 words.
 - Do not delete overflowed entries — they move, never disappear.
 - Historical Milestones is append-only. It is not capped. Its one-liners are intentionally terse; full detail remains in the phase directory.
 
+---
+
+## Era Summary (era-NNN.md)
+
+Stored in `.project-memory/eras/era-NNN.md`. Created manually when a cohort of ~10 phases forms a natural narrative arc. Indexed into the vector DB via `index_era`.
+
+```markdown
+---
+id: era-NNN
+title: "Era N — Short Descriptive Title (phases X–Y)"
+phases:
+  - phase-YYYYMMDD-slug
+date_range: "YYYY-MM-DD to YYYY-MM-DD"
+---
+
+# Era N — Title
+
+Narrative summary (~500 words) of the era's arc: what motivated the work, the key decisions made, how the project evolved, and what the era left behind for the next cohort.
+```
+

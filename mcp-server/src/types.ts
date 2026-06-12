@@ -34,9 +34,17 @@ export interface DiscussionIndexData {
   bodyText: string;        // first 2000 chars of the DISCUSSION-*.md body
 }
 
+export interface EraIndexData {
+  id: string;              // e.g. "era-001"
+  title: string;
+  phases: string[];        // phase IDs covered
+  dateRange: string;       // e.g. "2026-06-08 to 2026-06-11"
+  narrative: string;       // full body text, up to 3000 chars
+}
+
 export interface SearchResult {
   id: string;
-  type: "phase" | "decision" | "discussion" | "commit";
+  type: "phase" | "decision" | "discussion" | "commit" | "era";
   similarity: number;      // 0 to 1, higher = more similar
   title: string;
 }
@@ -54,8 +62,8 @@ export interface ConsistencyReport {
 }
 
 export interface IndexEntry {
-  type: "phase" | "decision" | "discussion";
-  data: PhaseIndexData | DecisionIndexData | DiscussionIndexData;
+  type: "phase" | "decision" | "discussion" | "era";
+  data: PhaseIndexData | DecisionIndexData | DiscussionIndexData | EraIndexData;
 }
 
 export interface LanceRecord {
