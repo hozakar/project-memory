@@ -64,3 +64,7 @@ New phase created → git checkout -b phase/<phase-id>
    - **Phase closure gate**: `git checkout main`, merge, delete branch
 3. Orphan branches (branches without a corresponding open phase) are considered stale and should be reported in audit.
 4. The build agent is responsible for executing all git operations.
+
+## See Also
+
+DECISION-2026-06-13-branch-per-phase.md
