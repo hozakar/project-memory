@@ -89,6 +89,8 @@ without reconstructing history from source code.
 **Availability check (once per session):**
 If `search_memory`, `index_phase`, and `index_decision` all appear in your available MCP tools → MCP is available. Set a session-level flag. Otherwise → MCP is unavailable; all behavior follows the standard strategy below.
 
+**Version tracking:** At session start, after the availability check, compare `mcp-server/package.json` `version` against `.project-memory/config.yml` `mcp_install_offered_for_version`. If the installed version is newer than the offered version (or offered is null), the audit procedure will handle the offer — see `audit.md` MCP Fast Path section.
+
 **When MCP is available — modified Memory Loading Strategy:**
 
 After loading the 5 summary files (steps 1–5), before loading `phases/index.yml`:

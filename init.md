@@ -53,6 +53,8 @@ Both files must be checked independently — one may exist while the other does 
 
 After creating the structure, create the first phase directory for whatever work is about to begin. Read `.claude/skills/project-memory/templates.md` for all file formats and field definitions before creating phase files.
 
+6. Check if MCP companion server should be offered: if `mcp-server/` directory exists, read `mcp-server/INSTALL.md` and follow its "For the LLM" section to detect platform and offer installation. Set `mcp_install_offered_for_version` in config.yml after offer is made (regardless of user response).
+
 Output:
 ```
 [✅] .project-memory/ initialized — first run detected.
