@@ -15,11 +15,11 @@ When this skill activates:
    - If it **exists**: read `protocol.md` for the Memory Loading Strategy and follow it. Load `.project-memory/summaries/project-memory.md`. If an active phase exists (check `phases/index.yml` for any phase with `status` not equal to `completed`), read that phase directory too.
 
 3. Run Drift Audit (read `audit.md` for the full procedure).
-   - Auto-fix any findings in the auto-fix category silently.
-   - Report all findings in the escalation category in a single block, in the format specified by `audit.md`.
+   - Auto-fix all findings in the auto-fix category silently (includes all low-severity and aged-medium findings).
+   - Present interactive-triage findings (high severity, or medium with age ≤ 3 days) in a single block, in the format specified by `audit.md`.
    - If no findings at all: replace the Step 1 line with 🧠 PROJECT MEMORY LOADED → drift audit clean.
    - If findings exist: keep the Step 1 line as-is and emit the drift report block after it.
-   - If any escalation findings exist after auto-fix, immediately enter Interactive Audit Mode (per `audit.md` Interactive Mode section) without waiting for the user to invoke `audit` manually. Apply user decisions, re-detect, loop until clean.
+   - If any interactive-triage findings exist after auto-fix, immediately enter Interactive Audit Mode (per `audit.md` Interactive Mode section) without waiting for the user to invoke `audit` manually. Apply user decisions, re-detect, loop until clean.
 
 4. Continue with the session. Do not ask the user for anything at this step.
 
