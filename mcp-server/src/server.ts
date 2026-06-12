@@ -8,11 +8,12 @@ import { checkConsistency } from "./tools/check_consistency";
 import { rebuildIndex } from "./tools/rebuild_index";
 import { findSimilarCommit } from "./tools/find_similar_commit";
 import { indexEra } from "./tools/index_era";
+import { runAudit } from "./tools/run_audit";
 import type { IndexEntry } from "./types";
 
 export const server = new McpServer({
   name: "project-memory",
-  version: "0.3.0"
+  version: "0.4.0"
 });
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -135,6 +136,19 @@ srv.tool(
   async (args: any) => {
     const results = await findSimilarCommit(args.diff_snippet, args.top_k);
     return { content: [{ type: "text" as const, text: JSON.stringify(results) }] };
+  }
+);
+
+srv.tool(
+  "run_audit",
+  "Run all deterministic audit checks (13 categories) on a project-memory directory. Returns structured findings: auto_fixed (Cat 5/11 file moves executed), pending_fixes (Cat 7 YAML annotations for LLM to apply), escalations (all other findings with severity and interactive flag).",
+  {
+    project_memory_dir: z.string().describe("Absolute path to the .project-memory/ directory"),
+  },
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  async (args: any) => {
+    const result = await runAudit(args.project_memory_dir);
+    return { content: [{ type: "text" as const, text: JSON.stringify(result) }] };
   }
 );
 

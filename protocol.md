@@ -105,6 +105,8 @@ If MCP is available and the user asks a question about past decisions, phases, o
 
 **Proactive DB sync (session start):** After checking MCP availability, if MCP is active, call `check_consistency(project_memory_dir)`. For each ID in `missing` (file exists but not in DB): call the appropriate index tool (`index_phase`, `index_decision`, `index_discussion`, or `index_era`) with the file's content. Silently auto-fix. Do NOT prompt the user. This supersedes Cat 13 for missing-entry detection when MCP is available at load time; Cat 13 remains a fallback for sessions where MCP was unavailable.
 
+**Drift audit via MCP (session start):** If `run_audit` is in available MCP tools, call `run_audit(project_memory_dir)` instead of running file-based detection. Process the returned `{ auto_fixed, pending_fixes, escalations }` as described in `audit.md` → MCP Fast Path section.
+
 **When MCP is unavailable:**
 All behavior is identical to the standard Memory Loading Strategy. MCP is an optional accelerator, never a requirement.
 

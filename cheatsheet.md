@@ -63,6 +63,7 @@ Ambiguous (test additions, dep upgrades, doc updates)
 | Phase closed (status: completed written) | If `index_phase` tool available: call `index_phase` with full content — plan + implementation (2000 chars each) + commit diffs (2000 chars each) |
 | DECISION-* file created or status changed | If `index_decision` tool available: call `index_decision` with title, status, touches, context[:1000], decisionBody[:1000] |
 | User asks about past phases/decisions/discussions (MCP available) | Call `search_memory(user_question, top_k=8)` → load top results from disk before answering |
-| Drift audit runs (MCP available) | After existing Cat 1–12 checks: run Cat 13 — call `check_consistency`, auto-fix missing entries by re-indexing from files |
+| Drift audit runs — `run_audit` available | Call `run_audit(project_memory_dir)`; apply `pending_fixes` (Cat 7) via Edit; log `auto_fixed`; triage `escalations` per `audit.md` MCP Fast Path |
+| Drift audit runs — `run_audit` NOT available | Run file-based detection (13 categories); Cat 13: call `check_consistency`, auto-fix missing entries |
 | User mentions lost commits after squash/rebase | Call `find_similar_commit(description_of_lost_work, top_k=5)` → load matching phase files from disk |
 **Stub placeholders to clear on sight:** `"None recorded yet"`, `"TBD"`, `"system just initialized"`, `"first run detected"`, or any `*(none)*` in a section that now has content.

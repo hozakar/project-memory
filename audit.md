@@ -13,6 +13,24 @@ Run when the skill is explicitly invoked with the `audit` argument. Same detecti
 
 ---
 
+# MCP Fast Path
+
+**When `run_audit` is in available MCP tools (server v0.4.0+):**
+
+1. Call `run_audit(project_memory_dir)` where `project_memory_dir` is the absolute path to `.project-memory/`.
+2. Receive `{ auto_fixed, pending_fixes, escalations }`:
+   - `auto_fixed`: Cat 5 and Cat 11 file-move operations already executed — log them in the auto-fix line of the report.
+   - `pending_fixes`: Cat 7 orphan annotations — apply each one using the Edit tool (annotate the hash in `phases/index.yml` and the corresponding `phases/<phase_id>/phase.yml`).
+   - `escalations`: all other findings, each with `category`, `severity`, `description`, `interactive` (bool), and `data`.
+3. For each escalation where `interactive: true` → enter interactive triage (same per-category question shapes as below).
+4. For each escalation where `interactive: false` → report-only (same output block as below).
+5. Cat 12 findings (`category: 12`) always require LLM confirmation before prompting the user — review the `data.tag` / `data.similar_tag` pair and decide if it is genuinely a typo. Only escalate (interactive: false → it's low severity) if confident.
+6. Skip the file-based Detection Procedure section entirely — `run_audit` has already covered all 13 categories.
+
+**When `run_audit` is NOT available:** use the file-based Detection Procedure below.
+
+---
+
 # Detection Procedure
 
 Run all 13 categories on every audit pass. Collect findings before acting. Check `audit_ignore` (see Permanent Skip section) before escalating any finding — suppressed findings are omitted entirely.

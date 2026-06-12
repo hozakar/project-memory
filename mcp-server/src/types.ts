@@ -66,6 +66,28 @@ export interface IndexEntry {
   data: PhaseIndexData | DecisionIndexData | DiscussionIndexData | EraIndexData;
 }
 
+export interface AuditFinding {
+  category: number;
+  severity: "high" | "medium" | "low";
+  description: string;
+  interactive: boolean; // true = enters interactive triage, false = report-only
+  data: Record<string, unknown>;
+}
+
+export interface PendingFix {
+  type: "annotate_orphan";
+  phase_id: string;
+  hash: string;
+  location: "commits" | "merge_commit";
+  date: string;
+}
+
+export interface AuditReport {
+  auto_fixed: string[];
+  pending_fixes: PendingFix[];
+  escalations: AuditFinding[];
+}
+
 export interface LanceRecord {
   id: string;
   type: string;
