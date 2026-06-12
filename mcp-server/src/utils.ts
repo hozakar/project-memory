@@ -1,4 +1,4 @@
-import type { PhaseIndexData, DecisionIndexData } from "./types";
+import type { PhaseIndexData, DecisionIndexData, DiscussionIndexData, CommitDiff } from "./types";
 
 export function buildPhaseText(data: PhaseIndexData): string {
   const parts: string[] = [
@@ -23,4 +23,27 @@ export function buildDecisionText(data: DecisionIndexData): string {
   ]
     .join("\n")
     .slice(0, 4000);
+}
+
+export function buildDiscussionText(data: DiscussionIndexData): string {
+  return [
+    data.title,
+    data.status,
+    data.outcome,
+    data.tags.join(" "),
+    data.summary,
+    data.bodyText,
+  ]
+    .join("\n")
+    .slice(0, 3000);
+}
+
+export function buildCommitText(diff: CommitDiff): string {
+  return [
+    diff.message,
+    diff.files.join(" "),
+    diff.diffSnippet,
+  ]
+    .join("\n")
+    .slice(0, 3000);
 }

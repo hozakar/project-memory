@@ -42,6 +42,18 @@ export async function checkConsistency(
       }
     }
 
+    // c. Extract discussion IDs from discussions/DISCUSSION-*.md filenames
+    const discussionsDir = path.join(projectMemoryDir, "discussions");
+    if (fs.existsSync(discussionsDir)) {
+      const entries = fs.readdirSync(discussionsDir);
+      for (const entry of entries) {
+        if (entry.startsWith("DISCUSSION-") && entry.endsWith(".md")) {
+          const id = entry.slice(0, -3); // strip .md extension
+          filesystemIds.add(id);
+        }
+      }
+    }
+
     // 2. Get DB IDs, filter out __init__
     const dbIdList = await listAllIds();
     const dbIds = new Set<string>(dbIdList.filter((id) => id !== "__init__"));
@@ -57,6 +69,7 @@ export async function checkConsistency(
     }
 
     for (const id of dbIds) {
+      if (id.includes("__commit__")) continue; // commit records are not file-backed
       if (!filesystemIds.has(id)) {
         orphaned.push(id);
       }

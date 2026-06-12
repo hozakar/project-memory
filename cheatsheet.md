@@ -38,6 +38,7 @@ Ambiguous (test additions, dep upgrades, doc updates)
 → Write DISCUSSION-YYYY-MM-DD-slug.md to discussions/
 → Add row to discussions/index.md
 → If phase outcome: offer to create the phase. If decision: offer to create DECISION. If issue: offer to create ISSUE. If roadmap: add to roadmap.md.
+→ If `index_discussion` tool available: call `index_discussion({ id, title, status, outcome, tags, summary: one-line summary, bodyText: first 2000 chars of body })`.
 
 ---
 
@@ -55,7 +56,7 @@ Ambiguous (test additions, dep upgrades, doc updates)
 | Issue opened | Add to `active-issues.md` + create file in `issues/open/` |
 | Issue closed | Move file to `issues/closed/`, update frontmatter, update `active-issues.md` |
 | Stub placeholder found when real data exists | Replace immediately — never defer |
-| Discussion concluded | Write `DISCUSSION-*.md` to `discussions/`; add row to `discussions/index.md`; if outcome references a phase/decision/issue/roadmap, create the referenced artifact |
+| Discussion concluded | Write `DISCUSSION-*.md` to `discussions/`; add row to `discussions/index.md`; if outcome references a phase/decision/issue/roadmap, create the referenced artifact; if `index_discussion` tool available: call `index_discussion` with id, title, status, outcome, tags, summary, bodyText (first 2000 chars) |
 | Discussion resumed | Load the existing DISCUSSION file; update it at close; do not create a new file |
 | Discussion triggers a phase | Set `outcome.type: phase` and `outcome.id: <phase-id>` in the DISCUSSION file |
 | Phase opened (status: planning written) | If `index_phase` tool available: call `index_phase` with plan.md content (2000 chars max), empty implementationText, empty commitDiffs |

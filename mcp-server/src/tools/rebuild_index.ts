@@ -1,7 +1,7 @@
 import { embed } from "../embedder";
 import { atomicRebuild } from "../db";
-import { buildPhaseText, buildDecisionText } from "../utils";
-import type { IndexEntry, LanceRecord, PhaseIndexData, DecisionIndexData } from "../types";
+import { buildPhaseText, buildDecisionText, buildDiscussionText, buildCommitText } from "../utils";
+import type { IndexEntry, LanceRecord, PhaseIndexData, DecisionIndexData, DiscussionIndexData } from "../types";
 
 export async function rebuildIndex(entries: IndexEntry[]): Promise<{ indexed: number; failed: number }> {
   const records: LanceRecord[] = [];
@@ -9,9 +9,14 @@ export async function rebuildIndex(entries: IndexEntry[]): Promise<{ indexed: nu
 
   for (const entry of entries) {
     try {
-      const text = entry.type === "phase"
-        ? buildPhaseText(entry.data as PhaseIndexData)
-        : buildDecisionText(entry.data as DecisionIndexData);
+      let text: string;
+      if (entry.type === "phase") {
+        text = buildPhaseText(entry.data as PhaseIndexData);
+      } else if (entry.type === "decision") {
+        text = buildDecisionText(entry.data as DecisionIndexData);
+      } else {
+        text = buildDiscussionText(entry.data as DiscussionIndexData);
+      }
 
       const vector = await embed(text);
       records.push({
@@ -21,6 +26,26 @@ export async function rebuildIndex(entries: IndexEntry[]): Promise<{ indexed: nu
         text,
         vector,
       });
+
+      // For phase entries, also build per-commit records
+      if (entry.type === "phase") {
+        const phaseData = entry.data as PhaseIndexData;
+        for (const diff of phaseData.commitDiffs) {
+          try {
+            const commitText = buildCommitText(diff);
+            const commitVector = await embed(commitText);
+            records.push({
+              id: `${phaseData.id}__commit__${diff.hash}`,
+              type: "commit",
+              title: diff.message,
+              text: commitText,
+              vector: commitVector,
+            });
+          } catch {
+            failCount++;
+          }
+        }
+      }
     } catch {
       failCount++;
     }

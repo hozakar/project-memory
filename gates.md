@@ -157,6 +157,18 @@ Re-call on every status change. The tool upserts by ID, so repeated calls are sa
 
 ---
 
+# Discussion Close — MCP Index Trigger
+
+When a `DISCUSSION-*.md` file is written and added to `discussions/index.md` (at discussion close or on resume/update):
+
+**If `index_discussion` is in available tools:**
+Call `index_discussion({ id, title, status, outcome, tags, summary: one-line summary from discussions/index.md row, bodyText: first 2000 chars of the DISCUSSION-*.md body })`.
+This is best-effort — if the call fails, continue. The file write already completed.
+
+Re-call on any update (status open → concluded, or body changed). The tool upserts by ID, so repeated calls are safe.
+
+---
+
 # Pre-Close Gate — MANDATORY
 
 **Before closing any phase** (merge, logical completion, or explicit user declaration), verify and complete the following. Phase may not close until all four are done:

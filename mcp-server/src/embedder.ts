@@ -1,12 +1,13 @@
-import { pipeline } from "@xenova/transformers";
+// eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-explicit-any
+const transformers: any = require("@xenova/transformers");
 
-type FeatureExtractionPipeline = Awaited<ReturnType<typeof pipeline>>;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let _instance: any = null;
 
-let _instance: FeatureExtractionPipeline | null = null;
-
-async function getInstance(): Promise<FeatureExtractionPipeline> {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function getInstance(): Promise<any> {
   if (!_instance) {
-    _instance = await pipeline("feature-extraction", "Xenova/all-MiniLM-L6-v2");
+    _instance = await transformers.pipeline("feature-extraction", "Xenova/all-MiniLM-L6-v2");
   }
   return _instance;
 }

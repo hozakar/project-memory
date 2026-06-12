@@ -1,32 +1,28 @@
-import * as lancedb from "@lancedb/lancedb";
+// eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-explicit-any
+const lancedb: any = require("@lancedb/lancedb");
 import type { LanceRecord, SearchResult } from "./types";
 
-let _conn: lancedb.Connection | null = null;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let _conn: any = null;
 
 function dbPath(): string {
   const root = process.env.PROJECT_MEMORY_DIR ?? process.cwd();
   return `${root}/.project-memory/vector-index`;
 }
 
-/**
- * Returns a singleton LanceDB connection, creating it on first call.
- */
-export async function getConnection(): Promise<lancedb.Connection> {
+export async function getConnection(): Promise<unknown> {
   if (!_conn) {
     _conn = await lancedb.connect(dbPath());
   }
   return _conn;
 }
 
-/**
- * Opens (or creates) the `memory` table, ensuring it exists.
- * On first access, an empty table is seeded with a dummy record and then cleared.
- */
-async function getTable(): Promise<lancedb.Table> {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function getTable(): Promise<any> {
   const conn = await getConnection();
-  const names = await conn.tableNames();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const names: string[] = await (conn as any).tableNames();
   if (!names.includes("memory")) {
-    // Create with a dummy record so the table schema is established, then remove it
     const dummy: LanceRecord = {
       id: "__init__",
       type: "init",
@@ -34,41 +30,35 @@ async function getTable(): Promise<lancedb.Table> {
       text: "",
       vector: new Array(384).fill(0),
     };
-    const table = await conn.createTable("memory", [dummy]);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const table = await (conn as any).createTable("memory", [dummy]);
     await table.delete('id = "__init__"');
     return table;
   }
-  return conn.openTable("memory");
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return (conn as any).openTable("memory");
 }
 
-/**
- * Insert or update a single record in the memory table.
- * Deletes any existing row with the same id before adding.
- */
 export async function upsert(record: LanceRecord): Promise<void> {
   const table = await getTable();
   await table.delete(`id = '${record.id}'`);
   await table.add([record]);
 }
 
-/**
- * Vector similarity search over the memory table.
- * Converts LanceDB L2 distances to cosine-like similarity scores (0–1).
- * Returns results sorted by similarity descending.
- * If the table is empty or cannot be searched, returns an empty array.
- */
 export async function search(
   vector: number[],
-  topK: number
+  topK: number,
+  typeFilter?: string
 ): Promise<SearchResult[]> {
   try {
     const table = await getTable();
+    const fetchLimit = typeFilter ? topK * 20 : topK;
     const rows = await table
       .vectorSearch(vector)
-      .limit(topK)
+      .limit(fetchLimit)
       .toArray();
 
-    return rows
+    let results = rows
       .map((row: Record<string, unknown>) => {
         const distance = row._distance as number;
         const similarity = Math.max(
@@ -82,16 +72,18 @@ export async function search(
           similarity,
         };
       })
-      .sort((a, b) => b.similarity - a.similarity);
+      .sort((a: SearchResult, b: SearchResult) => b.similarity - a.similarity);
+
+    if (typeFilter) {
+      results = results.filter((r: SearchResult) => r.type === typeFilter);
+    }
+
+    return results.slice(0, topK);
   } catch {
     return [];
   }
 }
 
-/**
- * Lists all record IDs currently stored in the memory table.
- * Returns an empty array if the table does not exist.
- */
 export async function listAllIds(): Promise<string[]> {
   try {
     const table = await getTable();
@@ -102,20 +94,18 @@ export async function listAllIds(): Promise<string[]> {
   }
 }
 
-/**
- * Atomically drops and recreates the memory table with the given records.
- * Returns counts of indexed and failed records.
- */
 export async function atomicRebuild(
   records: LanceRecord[]
 ): Promise<{ indexed: number; failed: number }> {
   try {
     const conn = await getConnection();
-    await conn.dropTable("memory").catch(() => {});
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (conn as any).dropTable("memory").catch(() => {});
     if (records.length === 0) {
       return { indexed: 0, failed: 0 };
     }
-    await conn.createTable("memory", records, { mode: "overwrite" });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (conn as any).createTable("memory", records, { mode: "overwrite" });
     return { indexed: records.length, failed: 0 };
   } catch {
     return { indexed: 0, failed: records.length };

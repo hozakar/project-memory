@@ -24,11 +24,28 @@ export interface DecisionIndexData {
   touches: string[];       // from frontmatter touches field
 }
 
+export interface DiscussionIndexData {
+  id: string;              // e.g. "DISCUSSION-2026-06-12-mcp-companion-architecture"
+  title: string;
+  status: string;          // "open" | "concluded"
+  outcome: string;         // e.g. "phase-20260612-foo" | "DECISION-2026-06-12-bar" | "roadmap" | "none"
+  tags: string[];
+  summary: string;         // one-line summary (from discussions/index.md)
+  bodyText: string;        // first 2000 chars of the DISCUSSION-*.md body
+}
+
 export interface SearchResult {
   id: string;
-  type: "phase" | "decision";
+  type: "phase" | "decision" | "discussion" | "commit";
   similarity: number;      // 0 to 1, higher = more similar
   title: string;
+}
+
+export interface CommitSearchResult {
+  hash: string;
+  phaseId: string;
+  message: string;
+  similarity: number;
 }
 
 export interface ConsistencyReport {
@@ -37,8 +54,8 @@ export interface ConsistencyReport {
 }
 
 export interface IndexEntry {
-  type: "phase" | "decision";
-  data: PhaseIndexData | DecisionIndexData;
+  type: "phase" | "decision" | "discussion";
+  data: PhaseIndexData | DecisionIndexData | DiscussionIndexData;
 }
 
 export interface LanceRecord {
