@@ -1,5 +1,6 @@
 import { embed } from "../embedder";
 import { atomicRebuild } from "../db";
+import { buildPhaseText, buildDecisionText } from "../utils";
 import type { IndexEntry, LanceRecord, PhaseIndexData, DecisionIndexData } from "../types";
 
 export async function rebuildIndex(entries: IndexEntry[]): Promise<{ indexed: number; failed: number }> {
@@ -8,20 +9,9 @@ export async function rebuildIndex(entries: IndexEntry[]): Promise<{ indexed: nu
 
   for (const entry of entries) {
     try {
-      let text: string;
-
-      if (entry.type === "phase") {
-        const data = entry.data as PhaseIndexData;
-        const diffsText = data.commitDiffs
-          .map(d => `[${d.hash}] ${d.message}: ${d.files.join(", ")}\n${d.diffSnippet}`)
-          .join("\n");
-        text = `${data.title}\n${data.tags.join(", ")}\n${data.planText}\n${data.implementationText}\n${diffsText}`;
-        text = text.slice(0, 6000);
-      } else {
-        const data = entry.data as DecisionIndexData;
-        text = `${data.title}\n${data.status}\n${data.touches.join(", ")}\n${data.context}\n${data.decisionBody}`;
-        text = text.slice(0, 4000);
-      }
+      const text = entry.type === "phase"
+        ? buildPhaseText(entry.data as PhaseIndexData)
+        : buildDecisionText(entry.data as DecisionIndexData);
 
       const vector = await embed(text);
       records.push({

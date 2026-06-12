@@ -1,5 +1,6 @@
 import { embed } from "../embedder";
 import { upsert } from "../db";
+import { buildDecisionText } from "../utils";
 import type { DecisionIndexData, LanceRecord } from "../types";
 
 /**
@@ -11,21 +12,8 @@ export async function indexDecision(
   data: DecisionIndexData
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    // Build embeddable text from decision fields
-    const text = [
-      data.title,
-      data.status,
-      data.touches.join(" "),
-      data.context,
-      data.decisionBody,
-    ]
-      .join("\n")
-      .slice(0, 4000);
-
-    // Generate the embedding vector
+    const text = buildDecisionText(data);
     const vector = await embed(text);
-
-    // Build the LanceDB record
     const record: LanceRecord = {
       id: data.id,
       type: "decision",
@@ -34,7 +22,6 @@ export async function indexDecision(
       vector,
     };
 
-    // Upsert into the vector database
     await upsert(record);
 
     return { success: true };

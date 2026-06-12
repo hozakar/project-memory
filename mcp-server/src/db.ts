@@ -36,6 +36,7 @@ async function getTable(): Promise<lancedb.Table> {
     };
     const table = await conn.createTable("memory", [dummy]);
     await table.delete('id = "__init__"');
+    return table;
   }
   return conn.openTable("memory");
 }

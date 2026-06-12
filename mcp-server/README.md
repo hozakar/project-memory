@@ -40,6 +40,10 @@ json
 }
 `PROJECT_MEMORY_DIR` should point to the root of the project that contains `.project-memory/`. The vector index is stored at `<PROJECT_MEMORY_DIR>/.project-memory/vector-index/` (gitignored).
 
+## Module system note
+
+This package uses CommonJS (`"module": "commonjs"` in tsconfig). `@xenova/transformers` v2 ships as ESM but `esModuleInterop: true` in tsconfig handles the interop. If you see `ERR_REQUIRE_ESM` errors, ensure you are using Node.js ≥ 18 and have run `npm run build` before `npm start`.
+
 ## Without MCP
 
 The project-memory skill works identically without this server. MCP is an optional accelerator — removing or disabling it causes zero data loss.
