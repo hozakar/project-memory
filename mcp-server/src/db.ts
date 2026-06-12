@@ -110,7 +110,10 @@ export async function atomicRebuild(
 ): Promise<{ indexed: number; failed: number }> {
   try {
     const conn = await getConnection();
-    await conn.dropTable("memory");
+    await conn.dropTable("memory").catch(() => {});
+    if (records.length === 0) {
+      return { indexed: 0, failed: 0 };
+    }
     await conn.createTable("memory", records, { mode: "overwrite" });
     return { indexed: records.length, failed: 0 };
   } catch {

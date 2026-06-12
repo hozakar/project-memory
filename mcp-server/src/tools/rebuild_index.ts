@@ -38,7 +38,7 @@ export async function rebuildIndex(entries: IndexEntry[]): Promise<{ indexed: nu
 
   try {
     const result = await atomicRebuild(records);
-    return result;
+    return { indexed: result.indexed, failed: result.failed + failCount };
   } catch {
     return { indexed: 0, failed: entries.length };
   }

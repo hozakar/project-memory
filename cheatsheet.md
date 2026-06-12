@@ -31,7 +31,7 @@ Ambiguous (test additions, dep upgrades, doc updates)
 → Set `status: abandoned` in `phase.yml`, add `abandoned_reason` field
 
 **About to implement something significant?**
-→ Step 1: phase open? → Step 2: classify trivial/significant/ambiguous → Step 3: scan `decisions/index.md` and `discussions/index.md` for conflicts → batch any directional conflicts into one question → Step 4: if no candidate exists for an architectural move, offer to record one.
+→ Step 1: phase open? → Step 2: classify trivial/significant/ambiguous → Step 3: scan `decisions/index.md` and `discussions/index.md` for conflicts → batch any directional conflicts into one question → Step 4: if no candidate exists for an architectural move, offer to record one → Step 5: if `search_memory` available, call `search_memory(description, top_k=8)` and load results with similarity ≥ 0.6.
 
 **About to close a discussion?**
 → Determine outcome type (phase / decision / issue / roadmap / none)

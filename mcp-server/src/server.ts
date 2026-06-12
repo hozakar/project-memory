@@ -29,7 +29,7 @@ server.tool(
   "index_phase",
   "Index or update a phase in the vector DB. Call on phase open (empty implementationText) and on phase close (full content). Upsert by ID.",
   {
-    id: z.string(),
+    id: z.string().regex(/^[a-zA-Z0-9-]+$/).describe("Phase ID, e.g. phase-20260612-mcp-companion-mvp"),
     title: z.string(),
     tags: z.array(z.string()),
     planText: z.string(),
@@ -52,7 +52,7 @@ server.tool(
   "index_decision",
   "Index or update a decision in the vector DB. Call on DECISION file creation and on status changes. Upsert by ID.",
   {
-    id: z.string(),
+    id: z.string().regex(/^[a-zA-Z0-9-]+$/).describe("Decision ID, e.g. DECISION-2026-06-12-roadmap-mcp-first"),
     title: z.string(),
     status: z.string(),
     context: z.string(),

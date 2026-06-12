@@ -138,7 +138,7 @@ Git is the source of truth for code changes. `.project-memory/` is the source of
 ├── gates.md          ← Implementation gates, commit rules, phase lifecycle
 ├── protocol.md       ← Agent thinking protocol, memory loading, knowledge preservation
 ├── cheatsheet.md     ← Quick reference, event-based triggers
-├── audit.md          ← Drift detection and repair (6 categories)
+├── audit.md          ← Drift detection and repair (13 categories)
 ├── init.md           ← First-run initialization
 ├── templates.md      ← All document schemas (phases, decisions, issues, discussions)
 ├── conventions.md    ← Naming and lifecycle rules, decision resolution

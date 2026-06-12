@@ -145,6 +145,18 @@ If the user says "skip decision questions for now" (or similar phrasing — "ski
 
 ---
 
+# Decision Creation — MCP Index Trigger
+
+When a `DECISION-*.md` file is created or its `status` field changes (e.g. `active → superseded`):
+
+**If `index_decision` is in available tools:**
+Call `index_decision({ id, title, status, context: context_section[:1000], decisionBody: combined_decision_and_chosen_solution_sections[:1000], touches })`.
+This is best-effort — if the call fails, continue. The file write already completed.
+
+Re-call on every status change. The tool upserts by ID, so repeated calls are safe.
+
+---
+
 # Pre-Close Gate — MANDATORY
 
 **Before closing any phase** (merge, logical completion, or explicit user declaration), verify and complete the following. Phase may not close until all four are done:
