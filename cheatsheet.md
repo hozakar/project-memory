@@ -47,7 +47,8 @@ Ambiguous (test additions, dep upgrades, doc updates)
 |---|---|
 | User requests significant implementation | Create phase BEFORE starting any work |
 | `submit_implementation` about to be called | Phase must exist — create before the call |
-| DECISION-* file created | Add row to `decisions/index.md`; add one-liner per rejected alternative to `project-memory.md` → Rejected Decisions; if `supersedes` is set, update the superseded file's `status` and `superseded_by` and its index row |
+| DECISION-* file created | Add row to `decisions/index.md`; add one-liner per rejected alternative to `project-memory.md` → Rejected Decisions; create `adr/NNNN-slug.md` (assign next integer ID, zero-pad to 4 digits, write ADR template from `templates.md`); set `adr_id` in DECISION frontmatter; if `supersedes` is set, update the superseded file's `status`, `superseded_by`, its index row, and its `adr/` Status line |
+| Decision superseded | Update superseded DECISION frontmatter (`status: superseded`, `superseded_by`); move row in `decisions/index.md` to Superseded section; update superseded `adr/NNNN-slug.md` Status line to `Superseded by [NNNN-slug](NNNN-slug.md)` |
 | New feature or component shipped | Update `current-state.md` → Current Features or Major Components |
 | Technical debt introduced | Update `current-state.md` → Current Technical Debt |
 | Architecture module added or changed | Update `architecture.md` |

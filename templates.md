@@ -137,7 +137,56 @@ Maintenance rules:
 
 ## DECISION-YYYY-MM-DD-slug.md
 
-See `conventions.md` for the required frontmatter schema (`id`, `status`, `primary_scope`, `touches`, `supersedes`, `superseded_by`) and Decision Resolution Rules.
+See `conventions.md` for the required frontmatter schema (`id`, `status`, `primary_scope`, `touches`, `supersedes`, `superseded_by`, `adr_id`) and Decision Resolution Rules.
+
+---
+
+## adr/NNNN-slug.md
+
+ADR file created alongside each `DECISION-*.md`. Human-readable, ADR tooling compatible, no frontmatter. Body content mirrors the DECISION file formatted as MADR.
+
+**`adr_id` assignment:** count `.md` files in `adr_dir` (from `.project-memory/config.yml`, default `adr/`), increment by 1, zero-pad to 4 digits (e.g. `0001`, `0042`).
+
+**Slug:** derived from the DECISION slug (drop the `DECISION-YYYY-MM-DD-` prefix).
+
+```md
+# <Decision Title>
+
+Date: YYYY-MM-DD
+Status: Accepted | Superseded by [NNNN-slug](NNNN-slug.md) | Amended by [NNNN-slug](NNNN-slug.md)
+
+## Context and Problem Statement
+
+<Content from # Context in the DECISION file>
+
+## Considered Options
+
+- Option A
+- Option B
+- Option C
+
+## Decision Outcome
+
+Chosen option: "<option name>", because <brief rationale from # Decision and # Chosen Solution>.
+
+### Positive Consequences
+
+<Benefits from # Consequences>
+
+### Negative Consequences
+
+<Tradeoffs from # Consequences>
+
+## Pros and Cons of the Options
+
+### Option A
+
+<Rejection reasoning from # Alternatives Considered>
+
+### Option B
+
+<Rejection reasoning from # Alternatives Considered>
+```
 
 ---
 

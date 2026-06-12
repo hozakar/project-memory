@@ -17,12 +17,13 @@ Create this directory structure:
 ├── issues/
 │   ├── open/
 │   └── closed/
-└── summaries/
-    ├── project-memory.md
-    ├── current-state.md
-    ├── architecture.md
-    ├── active-issues.md
-    └── roadmap.md
+├── summaries/
+│   ├── project-memory.md
+│   ├── current-state.md
+│   ├── architecture.md
+│   ├── active-issues.md
+│   └── roadmap.md
+└── config.yml
 ```
 
 **`phases/index.yml`** — start empty:
@@ -36,6 +37,11 @@ phases: []
 
 | Date | ID | Status | Outcome | Tags | Summary |
 |---|---|---|---|---|---|
+```
+
+**`.project-memory/config.yml`** — skill configuration. Ask the user: "Where should ADR files be stored? (default: `adr/`)" — accept their answer or use the default. Create that directory in the project root. Write `config.yml`:
+```yaml
+adr_dir: <chosen path>
 ```
 
 **All summaries** — create with a stub header and `Last Updated: <today>`. Use the templates in `.claude/skills/project-memory/templates.md` for section headings. Do not fill in content yet; wait until you have enough context from the session to write something meaningful.

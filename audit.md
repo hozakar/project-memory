@@ -26,6 +26,7 @@ Run all 7 categories on every audit pass. Collect findings before acting.
 | 5 | **Misplaced issue files** | List all files in `issues/open/`. For each file, read its frontmatter and check the `status:` field. If `status: closed`, the file is in the wrong directory. | `Glob: .project-memory/issues/open/*.md`; `Read` frontmatter of each file | **Auto-fix** |
 | 6 | **Decision index drift** | List all `DECISION-*.md` files in `.project-memory/decisions/`. Read each file's frontmatter to extract `id` and `status`. Read `.project-memory/decisions/index.md` and parse the rows (skip header). For each row extract the ID column and Status column. Compute three sets: (a) **missing index row** — file ID not in any index row; (b) **orphan index row** — index ID has no corresponding file; (c) **status mismatch** — file ID matches index ID but file `status` ≠ index `Status`. | `Glob: .project-memory/decisions/DECISION-*.md`; `Read` frontmatter of each; `Read: .project-memory/decisions/index.md` | **Escalate** |
 | 7 | **Orphan commit references** | Read `phases/index.yml`. Collect all hashes from every phase's `commits:` list and `merge_commit` field (skip null values and hashes already annotated with `[orphaned`). Batch-check all hashes with a single `git cat-file --batch-check` call (pipe the hashes to stdin). Any hash that returns `missing` is an orphan reference — its stored hash no longer exists in git (rebase/squash/force-push rewrote it). | `Read: .project-memory/phases/index.yml`; `Bash: echo "<hashes>" \| git cat-file --batch-check` | **Auto-fix** |
+| 8 | **ADR sync drift** | Read `.project-memory/config.yml` for `adr_dir` (default `adr/` if file absent or field missing). If `adr_dir` does not exist in project root, skip this category (ADR not yet set up). For each `DECISION-*.md` file: (a) read frontmatter `adr_id` — if null or missing, flag "missing adr_id"; (b) if `adr_id` is set, glob `<adr_dir>/<adr_id>-*.md` — if no match, flag "missing ADR file"; (c) if file found, read its `Status:` line and compare against expected prose per the ADR Status mapping in `conventions.md` — if mismatch, flag "status mismatch". | `Read: .project-memory/config.yml`; `Glob/Read: .project-memory/decisions/DECISION-*.md` frontmatter; `Glob/Read: <adr_dir>/<adr_id>-*.md` Status line | **Escalate** |
 
 ---
 
@@ -69,6 +70,9 @@ Everything outside categories 5 and 7 is escalated, regardless of how clearly wr
   • Decision index missing row: <DECISION-ID> (file exists, no index row)
   • Decision index orphan row: <DECISION-ID> (index row exists, no file)
   • Decision index status mismatch: <DECISION-ID> (file: <status>, index: <status>)
+  • ADR missing adr_id: <DECISION-ID> (adr_id field absent or null)
+  • ADR missing file: <DECISION-ID> (adr/<NNNN>-slug.md not found)
+  • ADR status mismatch: <DECISION-ID> (DECISION: <status>, adr/ Status: <prose>)
   • Auto-annotated: N orphan commit reference(s) across M phase(s) → marked [orphaned YYYY-MM-DD] in phase.yml and index.yml
   • Auto-fixed: moved <filename> to closed/
 
@@ -126,6 +130,12 @@ When the skill is invoked as `Skill project-memory audit`:
 
 - **Decision index status mismatch:** "`<DECISION-ID>` status differs — file says `<status>`, index says `<status>`. Which is correct?" — options: `"file is correct (update index)"`, `"index is correct (update file)"`, `"skip"`.
 
+- **ADR missing adr_id:** "`<DECISION-ID>` has no `adr_id` field. Assign the next available ID and create the `adr/` file now?" — options: `"yes"`, `"skip"`.
+
+- **ADR missing file:** "`adr/<NNNN>-slug.md` does not exist for `<DECISION-ID>`. Create it now?" — options: `"yes"`, `"skip"`.
+
+- **ADR status mismatch:** "`<DECISION-ID>` status is `<status>` but `adr/<NNNN>-slug.md` Status line says `<prose>`. Which is correct?" — options: `"DECISION is correct (update adr/ file)"`, `"adr/ is correct (update DECISION frontmatter)"`, `"skip"`.
+
 ---
 
 # Edge Cases
@@ -157,3 +167,9 @@ When the skill is invoked as `Skill project-memory audit`:
 - **Category 7 — git cat-file behavior:** `git cat-file --batch-check` accepts one hash per line on stdin and returns `<hash> missing` for non-existent objects. Works cross-platform (Windows/POSIX). If the command is unavailable (non-git directory), skip category 7 entirely and do not flag it as a finding.
 
 - **Category 7 — why auto-fix, not escalation:** The commit hash is gone permanently. The user cannot recover it. The only "decision" would be "annotate" or "ignore" — forcing Interactive Mode for potentially dozens of orphan references across many phases would be pure noise. Auto-annotate preserves the historical record without burdening the user.
+
+- **Category 8 — config.yml absent:** If `.project-memory/config.yml` does not exist, skip Category 8 entirely and do not flag it as a finding. ADR support is opt-in; absence of config is not drift.
+
+- **Category 8 — adr_dir directory missing:** If `config.yml` exists but the resolved `adr_dir` directory does not exist in the project root, flag every DECISION file as "missing ADR file" (the directory itself is missing). This is escalated so the user confirms creation of the directory, not silently created.
+
+- **Category 8 — adr_id zero-padding:** When reading `adr_id` from frontmatter, normalize to a 4-digit zero-padded string for glob matching (e.g. `adr_id: 1` → `0001`). This handles both integer and string YAML representations.
