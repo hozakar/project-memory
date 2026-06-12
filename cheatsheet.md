@@ -64,4 +64,5 @@ Ambiguous (test additions, dep upgrades, doc updates)
 | DECISION-* file created or status changed | If `index_decision` tool available: call `index_decision` with title, status, touches, context[:1000], decisionBody[:1000] |
 | User asks about past phases/decisions/discussions (MCP available) | Call `search_memory(user_question, top_k=8)` → load top results from disk before answering |
 | Drift audit runs (MCP available) | After existing Cat 1–12 checks: run Cat 13 — call `check_consistency`, auto-fix missing entries by re-indexing from files |
+| User mentions lost commits after squash/rebase | Call `find_similar_commit(description_of_lost_work, top_k=5)` → load matching phase files from disk |
 **Stub placeholders to clear on sight:** `"None recorded yet"`, `"TBD"`, `"system just initialized"`, `"first run detected"`, or any `*(none)*` in a section that now has content.

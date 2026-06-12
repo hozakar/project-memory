@@ -63,12 +63,13 @@ The `mcp-server/` subdirectory contains an optional MCP server that accelerates 
 - `search_memory(query, top_k?)` — semantic search over indexed phases and decisions; used at Pre-Implementation Gate and for ad-hoc user questions
 - `index_phase(data)` — upsert a phase into the vector index; called on phase open and close
 - `index_decision(data)` — upsert a decision; called on creation and status change
-- `check_consistency(project_memory_dir)` — returns {missing, orphaned} for DB/filesystem sync; used in drift audit Cat 13
+- `check_consistency(project_memory_dir)` — returns {missing, orphaned} for DB/filesystem sync; used in drift audit Cat 13 and proactive sync at session start
 - `rebuild_index(entries[])` — full atomic rebuild of the index; called when DB is empty or on user request
+- `index_era(data)` — upsert an era summary; called when a new era-NNN.md is written
 
 **Graceful degradation:** File system is always source of truth. DB is a derived index. Write direction is files → DB only, never DB → files. MCP failure at any point does not affect skill functionality.
 
-**Detailed integration rules:** See `protocol.md` → MCP Companion Integration section; `gates.md` → Phase Creation and End-of-Phase Maintenance MCP steps; `audit.md` → Category 13.
+**Detailed integration rules:** See `protocol.md` → MCP Companion Integration section (includes proactive DB sync at session start and squash/rebase recovery via `find_similar_commit`); `gates.md` → Phase Creation and End-of-Phase Maintenance MCP steps; `audit.md` → Category 13.
 
 ---
 

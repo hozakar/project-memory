@@ -101,6 +101,10 @@ At Pre-Implementation Gate Step 3: additionally call `search_memory(natural lang
 **Ad-hoc search rule:**
 If MCP is available and the user asks a question about past decisions, phases, or discussions (e.g. "what did we decide about X?", "did we ever try Y?", "what phases touched Z?"), call `search_memory(user_question)` to retrieve relevant context before answering. This does not require a gate trigger — it is discretionary judgment.
 
+**Squash/rebase recovery:** If the user mentions that a squash, rebase, or force-push lost commits before opening a new phase, call `find_similar_commit(description_of_lost_work, top_k=5)`. Load the returned phase files from disk and use them to pre-populate the new phase's context. Best-effort — proceed normally if no matches found.
+
+**Proactive DB sync (session start):** After checking MCP availability, if MCP is active, call `check_consistency(project_memory_dir)`. For each ID in `missing` (file exists but not in DB): call the appropriate index tool (`index_phase`, `index_decision`, `index_discussion`, or `index_era`) with the file's content. Silently auto-fix. Do NOT prompt the user. This supersedes Cat 13 for missing-entry detection when MCP is available at load time; Cat 13 remains a fallback for sessions where MCP was unavailable.
+
 **When MCP is unavailable:**
 All behavior is identical to the standard Memory Loading Strategy. MCP is an optional accelerator, never a requirement.
 
