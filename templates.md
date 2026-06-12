@@ -200,9 +200,10 @@ One-row-per-discussion summary table. Loaded at session start by SKILL.md Memory
 
 Maintenance rules:
 - Every new DISCUSSION-*.md file gets a row added in the same write batch.
-- When a discussion is concluded, update its Status to concluded.
+- When a discussion is concluded, update its Status to `concluded`.
 - Outcome column shows the linked artifact ID or `none`.
 - Rows sorted newest first.
+- Expired discussions (`outcome: none` AND older than 30 days) are removed from this index and moved to `discussions/archive/`. See `conventions.md` Expiry rule.
 
 ## project-memory.md
 

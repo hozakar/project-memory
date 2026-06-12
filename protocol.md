@@ -47,8 +47,8 @@ At session start and after any context compaction:
 8. .project-memory/decisions/index.md — Active section only (primary input to Pre-Implementation Gate); Superseded section is available on demand for historical lookups but is NOT scanned during Pre-Implementation Gate
 9. Individual DECISION-YYYY-MM-DD-* files (only when planning in a scope the index flags as relevant)
 10. Open issues (as needed)
-11. .project-memory/discussions/index.md (load fully — surfaces prior discussions relevant to current scope)
-12. Individual DISCUSSION-YYYY-MM-DD-* files (when resuming a discussion or when planning in a scope the index flags as relevant)
+11. .project-memory/discussions/index.md (load fully — active entries only; archived discussions in discussions/archive/ are excluded)
+12. Individual DISCUSSION-YYYY-MM-DD-* files (when resuming a discussion or when planning in a scope the index flags as relevant; archived files loaded on explicit request only)
 13. Recent git commits (as needed)
 ```
 

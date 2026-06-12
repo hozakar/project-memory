@@ -149,6 +149,14 @@ Trigger (explicit or implicit)
 **Resume:**
 User says "continue discussion X" -> load the full DISCUSSION file -> continue conversation -> UPDATE the same file at close. Status remains `open` until conclusively finished. If the outcome changes on resume, update the frontmatter accordingly.
 
+**Expiry:**
+Discussions with `outcome.type: none` AND `date` older than 30 days are expired:
+1. Move the file from `discussions/` to `discussions/archive/`.
+2. Remove its row from `discussions/index.md`.
+3. Archived discussions are excluded from session-start loading and Pre-Implementation Gate scanning — accessible on explicit request only.
+
+Discussions with any other outcome type (`phase`, `decision`, `issue`, `roadmap`) are never expired automatically regardless of age. The 30-day threshold is intentionally lenient; tighten in conventions.md if noise accumulates faster than expected.
+
 **Pre-Implementation Gate integration:**
 When the gate scans `decisions/index.md` for `touches` overlap, also scan `discussions/index.md` for discussions with outcome types that relate to the proposed implementation. If a past discussion explicitly concluded against the current direction, surface it as a directional conflict alongside decision conflicts.
 
