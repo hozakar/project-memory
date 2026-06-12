@@ -53,6 +53,25 @@ When invoked as `Skill project-memory discuss`, or when the user uses implicit d
 
 ---
 
+# MCP Companion
+
+The `mcp-server/` subdirectory contains an optional MCP server that accelerates project-memory with semantic search.
+
+**Availability detection:** At session start, check if `search_memory`, `index_phase`, and `index_decision` are in your available MCP tools. If yes → MCP is active for this session. If no → all behavior is identical to standard file-based operation.
+
+**Tools provided:**
+- `search_memory(query, top_k?)` — semantic search over indexed phases and decisions; used at Pre-Implementation Gate and for ad-hoc user questions
+- `index_phase(data)` — upsert a phase into the vector index; called on phase open and close
+- `index_decision(data)` — upsert a decision; called on creation and status change
+- `check_consistency(project_memory_dir)` — returns {missing, orphaned} for DB/filesystem sync; used in drift audit Cat 13
+- `rebuild_index(entries[])` — full atomic rebuild of the index; called when DB is empty or on user request
+
+**Graceful degradation:** File system is always source of truth. DB is a derived index. Write direction is files → DB only, never DB → files. MCP failure at any point does not affect skill functionality.
+
+**Detailed integration rules:** See `protocol.md` → MCP Companion Integration section; `gates.md` → Phase Creation and End-of-Phase Maintenance MCP steps; `audit.md` → Category 13.
+
+---
+
 # CRITICAL GATES (READ FIRST)
 
 `
