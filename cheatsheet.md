@@ -58,5 +58,9 @@ Ambiguous (test additions, dep upgrades, doc updates)
 | Discussion concluded | Write `DISCUSSION-*.md` to `discussions/`; add row to `discussions/index.md`; if outcome references a phase/decision/issue/roadmap, create the referenced artifact |
 | Discussion resumed | Load the existing DISCUSSION file; update it at close; do not create a new file |
 | Discussion triggers a phase | Set `outcome.type: phase` and `outcome.id: <phase-id>` in the DISCUSSION file |
-
+| Phase opened (status: planning written) | If `index_phase` tool available: call `index_phase` with plan.md content (2000 chars max), empty implementationText, empty commitDiffs |
+| Phase closed (status: completed written) | If `index_phase` tool available: call `index_phase` with full content — plan + implementation (2000 chars each) + commit diffs (2000 chars each) |
+| DECISION-* file created or status changed | If `index_decision` tool available: call `index_decision` with title, status, touches, context[:1000], decisionBody[:1000] |
+| User asks about past phases/decisions/discussions (MCP available) | Call `search_memory(user_question, top_k=8)` → load top results from disk before answering |
+| Drift audit runs (MCP available) | After existing Cat 1–12 checks: run Cat 13 — call `check_consistency`, auto-fix missing entries by re-indexing from files |
 **Stub placeholders to clear on sight:** `"None recorded yet"`, `"TBD"`, `"system just initialized"`, `"first run detected"`, or any `*(none)*` in a section that now has content.
