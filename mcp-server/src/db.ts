@@ -53,7 +53,7 @@ export async function search(
 ): Promise<SearchResult[]> {
   try {
     const table = await getTable();
-    const fetchLimit = typeFilter ? topK * 20 : topK;
+    const fetchLimit = (typeFilter || excludeCommits) ? topK * 20 : topK;
     const rows = await table
       .vectorSearch(vector)
       .limit(fetchLimit)

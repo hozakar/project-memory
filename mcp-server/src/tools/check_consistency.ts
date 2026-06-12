@@ -59,7 +59,7 @@ export async function checkConsistency(
     if (fs.existsSync(erasDir)) {
       const entries = fs.readdirSync(erasDir);
       for (const entry of entries) {
-        if (/^era-\d+\.md$/.test(entry)) {
+        if (/^era-[0-9]{3,}\.md$/.test(entry)) {
           filesystemIds.add(entry.slice(0, -3)); // "era-001"
         }
       }
