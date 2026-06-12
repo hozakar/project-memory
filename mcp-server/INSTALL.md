@@ -32,35 +32,19 @@ npm run build
 
 ### 4. Register the MCP server
 
-#### Option A — OpenCode
+Register the MCP server in your platform's configuration file. The exact format depends on whether you use OpenCode, Claude Desktop, or another MCP-compatible client.
 
-Add to `opencode.json` (or `~/.config/opencode/opencode.json`):
+**For OpenCode:** Add a `"local"` type MCP server entry in your `opencode.json`. Run `node dist/index.js` as the command.
 
-```json
-"mcp": {
-  "project-memory": {
-    "type": "local",
-    "command": ["node", ".claude/skills/project-memory/mcp-server/dist/index.js"]
-  }
-}
-```
+**For Claude Code / Claude Desktop:** Add a stdio MCP server entry in `~/.claude.json` (global), `.mcp.json` (project-level), or use `claude mcp add`.
 
-#### Option B — Claude Desktop
-
-Add to `claude_desktop_config.json` (or `~/.config/Claude/claude_desktop_config.json`):
-
-```json
-"mcpServers": {
-  "project-memory": {
-    "command": "node",
-    "args": [".claude/skills/project-memory/mcp-server/dist/index.js"]
-  }
-}
-```
+**For the most up-to-date configuration format**, consult your platform's documentation:
+- OpenCode: https://opencode.ai/docs/mcp-servers
+- Claude Code: https://docs.anthropic.com/en/docs/claude-code/mcp
 
 ### 5. Restart
 
-Restart OpenCode or Claude Desktop for the MCP server to load.
+Restart your application for the MCP server to load.
 
 ### 6. Verify
 
@@ -70,38 +54,48 @@ On next session start, the project-memory skill will detect MCP availability. Yo
 
 ## For the LLM (Automated Installation)
 
-When the user accepts the automatic install offer ("Ben kurayım" / "Go ahead"), execute these steps:
+When the user accepts the automatic install offer, execute these steps:
 
-### 1. Detect platform
+### 1. Detect the platform
 
-Check which configuration file is active:
-- If `opencode.json` or `~/.config/opencode/opencode.json` exists → OpenCode
-- If `claude_desktop_config.json` exists → Claude Desktop
-- If both/neither → ask the user which platform
+Check which configuration files exist:
+- `~/.config/opencode/opencode.json` or project-root `opencode.json` → OpenCode
+- `~/.claude.json` or project-root `.mcp.json` → Claude Code
+- If neither is found, or both are found → ask the user: "I can't determine your platform. Are you using OpenCode or Claude Code?"
 
-### 2. Install dependencies
+### 2. Look up the current MCP config format
+
+**Do NOT hardcode the configuration format.** Instead, query Context7 for the latest documentation:
+
+For OpenCode: call `context7_resolve-library-id` with library name "OpenCode", then `context7_query-docs` with query "local MCP server configuration opencode.json command array format".
+
+For Claude Code: call `context7_resolve-library-id` with library name "Claude Code", then `context7_query-docs` with query "MCP server configuration registration claude mcp add local stdio server".
+
+Use the returned format to construct the registration.
+
+### 3. Install dependencies
 
 ```bash
 cd <skill_dir>/mcp-server
 npm install
 ```
 
-### 3. Build
+### 4. Build
 
 ```bash
 npm run build
 ```
 
-### 4. Register server
+### 5. Register the server
 
-For OpenCode: add the `"project-memory"` entry to the `"mcp"` object in the active opencode.json. If `"mcp"` object does not exist, create it.
+Apply the configuration format from step 2 to the detected config file. The server entry name should be `"project-memory"`. The command should run `node dist/index.js` from the mcp-server directory.
 
-For Claude Desktop: add the `"project-memory"` entry to `"mcpServers"` in the config file.
+Use the server's absolute path (e.g., `C:\Users\...\.claude\skills\project-memory\mcp-server\dist\index.js` or `~/.claude/skills/project-memory/mcp-server/dist/index.js`).
 
-### 5. Update version tracking
+### 6. Update version tracking
 
 Set `mcp_install_offered_for_version` in `.project-memory/config.yml` to the current version from `mcp-server/package.json`.
 
-### 6. Report
+### 7. Report
 
 Tell the user to restart the application. Verify by checking MCP tools on next session start.
