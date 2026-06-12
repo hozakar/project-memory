@@ -115,7 +115,7 @@ function isInteractive(severity: "high" | "medium" | "low", ageDays: number): bo
   return false;
 }
 
-const TRIVIAL_RE = /^(docs|chore\(lint|chore\(format|chore\(deps|chore\(memory|chore\(audit|fix\(lint)/;
+const TRIVIAL_RE = /^(docs|chore\(lint|chore\(format|chore\(deps|chore\(memory|chore\(audit|fix\(lint|phase:)/;
 
 // ---------------------------------------------------------------------------
 // Audit categories
