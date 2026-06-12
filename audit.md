@@ -145,7 +145,7 @@ Only categories 5, 7, 11, and 13 are auto-fixed. No other category is ever auto-
    - If ID starts with `phase-`: read `phases/<ID>/phase.yml` (for id, title, tags, status), `phases/<ID>/plan.md` (truncate to 2000 chars), `phases/<ID>/implementation.md` (truncate to 2000 chars). Call `index_phase` with this data and `commitDiffs: []`.
    - If ID starts with `DECISION-`: read `decisions/<ID>.md`. Extract `id`, `title`, `status`, `touches` from frontmatter; extract `context` section body (truncate to 1000 chars) and `decision body` (combined # Decision + # Chosen Solution sections, truncate to 1000 chars). Call `index_decision`.
    - If ID starts with `DISCUSSION-`: read `discussions/<ID>.md`. Call `index_discussion` with id, title, status, outcome, tags, summary, and bodyText (first 2000 chars).
-   - If ID starts with `era-`: read the era file. Call `index_era` with its content.
+   - If ID starts with `era-`: read the era file. Extract `id` and `title` from frontmatter, `phases` list from frontmatter, `date_range` as `dateRange`, and body text after `---` as `narrative` (truncate to 3000 chars). Call `index_era({ id, title, phases, dateRange, narrative })`.
 3. Orphaned IDs: no action.
 4. Log: `MCP sync: N entries updated` (where N = missing.length)
 

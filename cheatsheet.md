@@ -1,4 +1,4 @@
-﻿---
+---
 name: project-memory-cheatsheet
 description: Quick reference cheatsheet and event-based trigger table for project-memory.
 ---
@@ -66,4 +66,5 @@ Ambiguous (test additions, dep upgrades, doc updates)
 | Drift audit runs — `run_audit` available | Call `run_audit(project_memory_dir)`; apply `pending_fixes` (Cat 7) via Edit; log `auto_fixed`; triage `escalations` per `audit.md` MCP Fast Path |
 | Drift audit runs — `run_audit` NOT available | Run file-based detection (13 categories); Cat 13: call `check_consistency`, auto-fix missing entries |
 | User mentions lost commits after squash/rebase | Call `find_similar_commit(description_of_lost_work, top_k=5)` → load matching phase files from disk |
+| ~10 phases accumulated since last era | Create `era-NNN.md` (write narrative covering the new phases), add entry to `eras/index.yml`, call `index_era` with id, title, phases, date_range from frontmatter + body as narrative |
 **Stub placeholders to clear on sight:** `"None recorded yet"`, `"TBD"`, `"system just initialized"`, `"first run detected"`, or any `*(none)*` in a section that now has content.
