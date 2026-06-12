@@ -15,7 +15,7 @@ Run when the skill is explicitly invoked with the `audit` argument. Same detecti
 
 # Detection Procedure
 
-Run all 6 categories on every audit pass. Collect findings before acting.
+Run all 7 categories on every audit pass. Collect findings before acting.
 
 | # | Category | Detection Rule | Tool Calls | Classification |
 |---|---|---|---|---|
@@ -25,12 +25,13 @@ Run all 6 categories on every audit pass. Collect findings before acting.
 | 4 | **Open-phase commit gap** | In `phases/index.yml`, find every phase with `status` equal to `planning`, `implementation`, or `review` (skip `completed` and `abandoned`). For each such phase: identify the branch (if `branch` is null, try `main`, `master`, `staging` in order and use the first branch that exists; if none exist, skip this phase's gap detection). Get the list of commit hashes already recorded in `commits[]`. Run `git log --oneline <branch>` and compare against the recorded commits. Commits on the branch that came after the last recorded commit in the phase, and are not in the phase's `commits[]` list, are the gap. | `Read: .project-memory/phases/index.yml`; `Bash: git log --oneline <branch>` for each open phase | **Escalate** |
 | 5 | **Misplaced issue files** | List all files in `issues/open/`. For each file, read its frontmatter and check the `status:` field. If `status: closed`, the file is in the wrong directory. | `Glob: .project-memory/issues/open/*.md`; `Read` frontmatter of each file | **Auto-fix** |
 | 6 | **Decision index drift** | List all `DECISION-*.md` files in `.project-memory/decisions/`. Read each file's frontmatter to extract `id` and `status`. Read `.project-memory/decisions/index.md` and parse the rows (skip header). For each row extract the ID column and Status column. Compute three sets: (a) **missing index row** — file ID not in any index row; (b) **orphan index row** — index ID has no corresponding file; (c) **status mismatch** — file ID matches index ID but file `status` ≠ index `Status`. | `Glob: .project-memory/decisions/DECISION-*.md`; `Read` frontmatter of each; `Read: .project-memory/decisions/index.md` | **Escalate** |
+| 7 | **Orphan commit references** | Read `phases/index.yml`. Collect all hashes from every phase's `commits:` list and `merge_commit` field (skip null values and hashes already annotated with `[orphaned`). Batch-check all hashes with a single `git cat-file --batch-check` call (pipe the hashes to stdin). Any hash that returns `missing` is an orphan reference — its stored hash no longer exists in git (rebase/squash/force-push rewrote it). | `Read: .project-memory/phases/index.yml`; `Bash: echo "<hashes>" \| git cat-file --batch-check` | **Auto-fix** |
 
 ---
 
 # Auto-Fix Rules
 
-Only category 5 is auto-fixed. No other category is ever auto-fixed.
+Only categories 5 and 7 are auto-fixed. No other category is ever auto-fixed.
 
 **Category 5 auto-fix steps:**
 1. For each `issues/open/*.md` file with frontmatter `status: closed`:
@@ -39,7 +40,15 @@ Only category 5 is auto-fixed. No other category is ever auto-fixed.
 2. Log the action as: `Auto-fixed: moved <filename> to closed/`
 3. Include this log line in the drift report output (see Output Format).
 
-Everything outside category 5 is escalated, regardless of how clearly wrong it appears. The auto-fix rule is intentionally conservative.
+**Category 7 auto-fix steps:**
+1. For each orphan hash found:
+   a. In `phases/index.yml`, replace the bare hash with `<hash> [orphaned YYYY-MM-DD]` (today's date). Apply to both `commits:` list entries and `merge_commit` field.
+   b. In the phase's `phase.yml`, apply the same annotation to any matching hash in `commits:` or `merge_commit`.
+2. Count total orphan hashes and the number of distinct phases affected.
+3. Log: `Auto-annotated: N orphan commit reference(s) across M phase(s) → marked [orphaned YYYY-MM-DD] in phase.yml and index.yml`
+4. If `N > 0`, add or update an entry in `summaries/project-memory.md` under Technical Debt: `N orphan commit reference(s) across M phase(s) (rebased/squashed history) — annotated YYYY-MM-DD, no automated recovery`
+
+Everything outside categories 5 and 7 is escalated, regardless of how clearly wrong it appears. The auto-fix rule is intentionally conservative.
 
 ---
 
@@ -60,6 +69,7 @@ Everything outside category 5 is escalated, regardless of how clearly wrong it a
   • Decision index missing row: <DECISION-ID> (file exists, no index row)
   • Decision index orphan row: <DECISION-ID> (index row exists, no file)
   • Decision index status mismatch: <DECISION-ID> (file: <status>, index: <status>)
+  • Auto-annotated: N orphan commit reference(s) across M phase(s) → marked [orphaned YYYY-MM-DD] in phase.yml and index.yml
   • Auto-fixed: moved <filename> to closed/
 
 Entering interactive triage — answering each finding in turn.
@@ -137,3 +147,13 @@ When the skill is invoked as `Skill project-memory audit`:
 - **`decisions/index.md` missing or has only the header:** If the file is missing entirely, every DECISION file is a "missing index row" finding. If the file exists but has no data rows, same outcome. This is intentional — surfacing every missing row forces the user to recreate the index or confirm intent.
 
 - **Why no auto-fix for "missing index row":** The `Claim` column is human-authored prose, not derivable from frontmatter. Auto-inserting a row with all fields except Claim produces a half-fix that pollutes the index. Escalation is safer.
+
+- **Category 7 — hashes already annotated:** Skip hashes that already contain `[orphaned` in their stored value. They were handled in a prior audit pass; re-annotating is a no-op and would corrupt the field.
+
+- **Category 7 — empty commits list:** If a phase has no entries in `commits:` and `merge_commit` is null, skip that phase. Zero hashes to check.
+
+- **Category 7 — all commits in a phase orphaned:** Annotate all of them. The phase record itself is preserved; only the commit linkage is severed.
+
+- **Category 7 — git cat-file behavior:** `git cat-file --batch-check` accepts one hash per line on stdin and returns `<hash> missing` for non-existent objects. Works cross-platform (Windows/POSIX). If the command is unavailable (non-git directory), skip category 7 entirely and do not flag it as a finding.
+
+- **Category 7 — why auto-fix, not escalation:** The commit hash is gone permanently. The user cannot recover it. The only "decision" would be "annotate" or "ignore" — forcing Interactive Mode for potentially dozens of orphan references across many phases would be pure noise. Auto-annotate preserves the historical record without burdening the user.

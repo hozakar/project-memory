@@ -15,8 +15,8 @@ status: planning
 summary: null                # written at Pre-Close Gate: 2-3 sentences — what was done and why
 branch: null                 # set if a dedicated branch exists; null for direct commits
 related_phases: []
-commits: []
-merge_commit: null           # set only if branch was merged; null for direct-commit phases
+commits: []                  # list of commit hashes; orphaned entries annotated as: abc1234 [orphaned YYYY-MM-DD]
+merge_commit: null           # set only if branch was merged; null for direct-commit phases; orphaned form: abc1234 [orphaned YYYY-MM-DD]
 closed_at: null              # set to YYYY-MM-DD when phase completes or is abandoned (non-merge)
 abandoned_reason: null       # set only when status: abandoned
 issues_created: []
@@ -24,6 +24,8 @@ issues_resolved: []
 decisions_referenced: []
 tags: []
 ```
+
+**Orphan annotation format:** When a commit hash stored in `commits:` or `merge_commit` no longer exists in git (due to rebase, squash, or force-push), the drift audit (Category 7) annotates it in place: `<hash> [orphaned YYYY-MM-DD]`. Do NOT delete orphaned entries — the annotation preserves the historical record while making the broken linkage explicit. Annotated hashes are skipped in subsequent audit passes.
 
 **Sorting rule:** Phases are sorted newest first in `index.yml`. When a new phase is created, prepend it to the `phases` array. This matches the convention in `decisions/index.md` and ensures the Memory Loading Strategy can truncate safely.
 

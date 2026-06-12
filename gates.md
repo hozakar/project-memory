@@ -65,6 +65,8 @@ Next significant work begins → New phase created
 - Branch merged → set `merge_commit` in phase.yml and close the phase if it was tracking that branch's work
 - No branch (direct to staging/main) → phase still opens and closes based on significance; `branch` and `merge_commit` remain null
 
+**Rebase/squash hygiene:** If you intentionally rebase or squash commits that are already recorded in `phase.yml`, update `commits:` with the new hashes after the rewrite. Do not leave old hashes in place — they become orphan references (detected and auto-annotated by audit Category 7, but cannot be recovered automatically).
+
 **Phase close criteria (any one is sufficient):**
 - Branch merged into target → set `merge_commit`, `status: completed`
 - Logical work unit finished with no branch → set `closed_at`, `status: completed`
