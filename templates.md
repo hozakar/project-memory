@@ -208,9 +208,13 @@ adr_dir: adr          # directory for ADR files relative to project root (defaul
 audit_ignore: []      # permanently suppressed audit findings (see audit.md Permanent Skip section)
 # Each entry:
 #   category: <integer>          # audit category number (1–12)
-#   key: "<fingerprint>"         # format is category-specific — see audit.md fingerprint table
+#   key: "<fingerprint|pattern>" # exact match or glob pattern with * wildcard
 #   reason: "<why ignored>"      # human-readable note
 #   ignored_at: YYYY-MM-DD       # date the ignore was added
+# Pattern examples:
+#   "tag-typo:*:skil-md"         — suppresses this tag typo in ALL phases
+#   "phase-completeness:phase-2026*:*.md" — suppresses completeness for a phase cohort
+# Auto-clean: entries referencing phases that get archived in an era are automatically removed.
 ```
 
 Example with entries:
@@ -218,14 +222,21 @@ Example with entries:
 adr_dir: adr
 
 audit_ignore:
+  # Exact match
   - category: 12
     key: "phase-20260611-skill-md-refactor:skil-md"
     reason: "legacy typo in completed phase, accepted as-is"
     ignored_at: 2026-06-12
+  # Pattern match — suppresses tag typo across ALL phases
+  - category: 12
+    key: "tag-typo:*:skil-md"
+    reason: "recurring typo, suppressed globally"
+    ignored_at: 2026-06-13
+  # Pattern match — suppresses completeness for a phase cohort
   - category: 10
-    key: "phase-20260608-initial-setup:review-and-fixes.md"
-    reason: "initial setup phase pre-dates review discipline"
-    ignored_at: 2026-06-12
+    key: "phase-completeness:phase-202606*:*.md"
+    reason: "cohort phases pre-date file completeness discipline"
+    ignored_at: 2026-06-13
 ```
 
 ---

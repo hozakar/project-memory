@@ -60,8 +60,16 @@ maintainers: []
 ```
 
 **Self-install into project auto-load files** —
-1. Check whether `CLAUDE.md` exists in the project root. If it does not, create it. Either way, ensure it contains the line `@.claude/skills/project-memory/SKILL.md`. Do not add a duplicate line if the reference already exists.
-2. Check whether `AGENTS.md` exists in the project root. If it does not, create it. Either way, ensure it contains the same line `@.claude/skills/project-memory/SKILL.md`. Do not add a duplicate line if the reference already exists.
+1. Check whether `CLAUDE.md` exists in the project root. If it does not, create it. Either way:
+   a. Ensure it contains the line `@.claude/skills/project-memory/SKILL.md`. Do not add a duplicate line if the reference already exists.
+   b. Ensure it contains an explicit load instruction at the very top. If no such instruction exists, prepend:
+      ```
+      At the start of every session, before any other work, load the project-memory skill
+      by calling the `skill` tool with name `project-memory`.
+      ```
+      Do not add a duplicate if a similar instruction already exists.
+2. Check whether `AGENTS.md` exists in the project root. If it does not, create it. Either way, ensure it contains the line `@.claude/skills/project-memory/SKILL.md`. Do not add a duplicate line if the reference already exists.
+   (AGENTS.md only needs the `@` reference — the explicit load instruction in CLAUDE.md is sufficient.)
 Both files must be checked independently — one may exist while the other does not.
 
 After creating the structure, create the first phase directory for whatever work is about to begin. Read `.claude/skills/project-memory/templates.md` for all file formats and field definitions before creating phase files.

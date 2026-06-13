@@ -218,4 +218,13 @@ At phase completion (merge OR logical completion):
 
 ---
 
-**Era creation gate:** When 10+ phases accumulate since the last era, only maintainers receive the creation prompt. Developers are not disturbed. The maintainer should run audit before creating the era (recommended, not enforced).
+## Era Creation
+
+**Gate:** When 10+ phases accumulate since the last era (tracked via `eras/index.yml`), only maintainers receive the creation prompt. Developers are not disturbed. The maintainer should run audit before creating the era (recommended, not enforced).
+
+**Creation steps:**
+1. Run `Skill project-memory audit` to ensure clean state.
+2. Create `eras/era-NNN.md` using the template in `templates.md`. List all covered phases in the frontmatter `phases:` field.
+3. Update `eras/index.yml` with the new era entry.
+4. **Audit ignore cleanup:** Open `.project-memory/config.yml`. For each entry in `audit_ignore`, check whether its `key` references any phase ID now covered by the new era. Remove matching entries — archived phases no longer need ignore suppressions. See `audit.md` → Era-Based Auto-Clean for the full procedure.
+5. Optionally update `summaries/project-memory.md` Historical Milestones with the era.

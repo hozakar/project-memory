@@ -92,6 +92,15 @@ The model has 2 effective tiers:
 
 Before escalating any finding, check the `audit_ignore` list in `.project-memory/config.yml`. If a finding's fingerprint matches an entry's `key`, suppress it entirely — omit from both the report and interactive triage.
 
+**Matching rules:**
+- Exact match: `key` equals the finding fingerprint exactly (backward-compatible).
+- Pattern match: `key` contains `*` as a wildcard. A `*` matches any sequence of characters in that segment. Examples:
+  - `tag-typo:*:skil-md` — matches any phase with tag typo "skil-md"
+  - `phase-completeness:phase-2026*:*.md` — matches missing files across a cohort of phases
+  - `commit:*` — matches ALL orphan commit findings in category 1
+- Patterns are checked AFTER exact matches. If an exact match exists, pattern matching is skipped for that finding.
+- Pattern matching is glob-style: `*` matches within a single segment (between `:` delimiters). To match across segments, use multiple `*` wildcards.
+
 **Fingerprint format per category:**
 
 | # | Key format |
@@ -114,9 +123,34 @@ audit_ignore:
     key: "phase-20260611-skill-md-refactor:skil-md"
     reason: "legacy typo, accepted as-is"
     ignored_at: 2026-06-12
+  # Pattern-based example — suppresses tag typo "skil-md" across ALL phases:
+  - category: 12
+    key: "tag-typo:*:skil-md"
+    reason: "recurring typo, suppressed globally"
+    ignored_at: 2026-06-13
+  # Suppress all phase-completeness findings for a cohort:
+  - category: 10
+    key: "phase-completeness:phase-202606*:*.md"
+    reason: "cohort phases pre-date file completeness discipline"
+    ignored_at: 2026-06-13
 ```
 
 When the user chooses "mark ignored" during interactive triage, write the entry to `config.yml` immediately before moving to the next finding.
+
+---
+
+# Era-Based Auto-Clean
+
+When an era (`era-NNN.md`) is created or updated in `.project-memory/eras/`:
+
+1. Read the new or updated era file's frontmatter `phases:` list — these are the phase IDs covered by this era.
+2. Open `.project-memory/config.yml` and read the `audit_ignore` list (if absent, nothing to clean — skip).
+3. For each `audit_ignore` entry, check whether its `key` references any phase ID in the era's `phases` list. A reference is any match where the phase ID appears as a segment in the key (between `:` delimiters or as the full key for single-segment keys).
+4. Remove any entry that matches — the phase is now archived in an era, so suppressing its findings is no longer needed.
+5. If entries were removed, log: `Era auto-clean: removed N audit_ignore entry/entries for archived phase(s) in era-XXX`.
+6. This cleanup runs automatically when the era is created/updated. Do NOT prompt the user — it is a maintenance operation.
+
+**MCP note:** When Cat 13 (MCP consistency) detects a new `era-` entry during `check_consistency` and indexes it, the auto-clean does NOT re-trigger. Auto-clean fires only on explicit era file creation/update, not on DB sync.
 
 ---
 
