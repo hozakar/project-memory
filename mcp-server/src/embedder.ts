@@ -1,5 +1,5 @@
 // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-explicit-any
-const transformers: any = require("@xenova/transformers");
+const transformers: any = require("@huggingface/transformers");
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let _instance: any = null;
