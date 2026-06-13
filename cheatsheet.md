@@ -56,12 +56,13 @@ Ambiguous (test additions, dep upgrades, doc updates)
 | Issue opened | Add to `active-issues.md` + create file in `issues/open/` |
 | Issue closed | Move file to `issues/closed/`, update frontmatter, update `active-issues.md` |
 | Stub placeholder found when real data exists | Replace immediately — never defer |
-| Discussion concluded | Write `DISCUSSION-*.md` to `discussions/`; add row to `discussions/index.md`; if outcome references a phase/decision/issue/roadmap, create the referenced artifact; if `index_discussion` tool available: call `index_discussion` with id, title, status, outcome, tags, summary, bodyText (first 2000 chars) |
+| Status-changing write on phase / decision / discussion / issue | Append current git identity (`git config user.name` + `user.email`; missing → `unknown`) to `contributors` (dedup by email). See `conventions.md` → Author Attribution |
+| Discussion concluded | Write `DISCUSSION-*.md` to `discussions/`; add row to `discussions/index.md`; if outcome references a phase/decision/issue/roadmap, create the referenced artifact; if `index_discussion` tool available: call `index_discussion` with id, title, status, outcome, tags, summary, bodyText (first 2000 chars), plus `created_by` + `contributors` from frontmatter |
 | Discussion resumed | Load the existing DISCUSSION file; update it at close; do not create a new file |
 | Discussion triggers a phase | Set `outcome.type: phase` and `outcome.id: <phase-id>` in the DISCUSSION file |
-| Phase opened (status: planning written) | If `index_phase` tool available: call `index_phase` with plan.md content (2000 chars max), empty implementationText, empty commitDiffs |
-| Phase closed (status: completed written) | If `index_phase` tool available: call `index_phase` with full content — plan + implementation (2000 chars each) + commit diffs (2000 chars each) |
-| DECISION-* file created or status changed | If `index_decision` tool available: call `index_decision` with title, status, touches, context[:1000], decisionBody[:1000] |
+| Phase opened (status: planning written) | If `index_phase` tool available: call `index_phase` with plan.md content (2000 chars max), empty implementationText, empty commitDiffs, plus `created_by` + `contributors` from phase.yml |
+| Phase closed (status: completed written) | If `index_phase` tool available: call `index_phase` with full content — plan + implementation (2000 chars each) + commit diffs (2000 chars each), plus `created_by` + `contributors` from phase.yml |
+| DECISION-* file created or status changed | If `index_decision` tool available: call `index_decision` with title, status, touches, context[:1000], decisionBody[:1000], plus `created_by` + `contributors` from frontmatter |
 | User asks about past phases/decisions/discussions (MCP available) | Call `search_memory(user_question, top_k=8)` → load top results from disk before answering |
 | Drift audit runs — `run_audit` available | Call `run_audit(project_memory_dir)`; apply `pending_fixes` (Cat 7) via Edit; log `auto_fixed`; triage `escalations` per `audit.md` MCP Fast Path |
 | Drift audit runs — `run_audit` NOT available | Run file-based detection (13 categories); Cat 13: call `check_consistency`, auto-fix missing entries |

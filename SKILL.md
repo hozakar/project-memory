@@ -99,6 +99,8 @@ Project Memory answers: why it was changed, what alternatives were considered an
 
 Git is the source of truth for code changes. `.project-memory/` is the source of truth for engineering reasoning. Never duplicate information already available in git unless summarization provides additional value.
 
+Phase / decision / discussion / issue records carry author attribution via `created_by` and `contributors` frontmatter fields, populated from `git config user.name` + `user.email` at every status-changing write. Missing git identity falls back silently to `unknown`. Full rules: `conventions.md` → Author Attribution.
+
 ---
 
 # Project Structure

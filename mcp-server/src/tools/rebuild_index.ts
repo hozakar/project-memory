@@ -1,7 +1,9 @@
 import { embed } from "../embedder";
 import { atomicRebuild } from "../db";
 import { buildPhaseText, buildDecisionText, buildDiscussionText, buildCommitText, buildEraText } from "../utils";
-import type { IndexEntry, LanceRecord, PhaseIndexData, DecisionIndexData, DiscussionIndexData, EraIndexData } from "../types";
+import type { IndexEntry, LanceRecord, PhaseIndexData, DecisionIndexData, DiscussionIndexData, EraIndexData, Identity } from "../types";
+
+const UNKNOWN_IDENTITY: Identity = { name: "unknown", email: "unknown" };
 
 export async function rebuildIndex(entries: IndexEntry[]): Promise<{ indexed: number; failed: number }> {
   const records: LanceRecord[] = [];
@@ -10,24 +12,46 @@ export async function rebuildIndex(entries: IndexEntry[]): Promise<{ indexed: nu
   for (const entry of entries) {
     try {
       let text: string;
+      let createdBy: Identity | undefined;
+      let contributors: Identity[] | undefined;
       if (entry.type === "phase") {
-        text = buildPhaseText(entry.data as PhaseIndexData);
+        const d = entry.data as PhaseIndexData;
+        text = buildPhaseText(d);
+        createdBy = d.createdBy ?? UNKNOWN_IDENTITY;
+        contributors = d.contributors ?? [];
       } else if (entry.type === "decision") {
-        text = buildDecisionText(entry.data as DecisionIndexData);
+        const d = entry.data as DecisionIndexData;
+        text = buildDecisionText(d);
+        createdBy = d.createdBy ?? UNKNOWN_IDENTITY;
+        contributors = d.contributors ?? [];
       } else if (entry.type === "era") {
         text = buildEraText(entry.data as EraIndexData);
+        // Eras are out of scope for author attribution
       } else {
-        text = buildDiscussionText(entry.data as DiscussionIndexData);
+        const d = entry.data as DiscussionIndexData;
+        text = buildDiscussionText(d);
+        createdBy = d.createdBy ?? UNKNOWN_IDENTITY;
+        contributors = d.contributors ?? [];
+      }
+
+      if (createdBy) {
+        text += `\nAuthor: ${createdBy.name} <${createdBy.email}>`;
       }
 
       const vector = await embed(text);
-      records.push({
+      const record: LanceRecord = {
         id: entry.data.id,
         type: entry.type,
         title: entry.data.title,
         text,
         vector,
-      });
+      };
+      if (createdBy) {
+        record.createdByName = createdBy.name;
+        record.createdByEmail = createdBy.email;
+        record.contributorsJson = JSON.stringify(contributors ?? []);
+      }
+      records.push(record);
 
       // For phase entries, also build per-commit records
       if (entry.type === "phase") {

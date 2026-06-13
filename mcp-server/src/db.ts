@@ -74,12 +74,18 @@ export async function search(
           0,
           1 - (distance * distance) / 2
         );
-        return {
+        const createdByName = row.createdByName as string | undefined;
+        const createdByEmail = row.createdByEmail as string | undefined;
+        const result: SearchResult = {
           id: row.id as string,
           type: row.type as SearchResult["type"],
           title: row.title as string,
           similarity,
         };
+        if (createdByName && createdByEmail) {
+          result.createdBy = { name: createdByName, email: createdByEmail };
+        }
+        return result;
       })
       .sort((a: SearchResult, b: SearchResult) => b.similarity - a.similarity);
 

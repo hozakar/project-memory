@@ -1,7 +1,7 @@
 import { embed } from "../embedder";
 import { upsert } from "../db";
 import { buildDecisionText } from "../utils";
-import type { DecisionIndexData, LanceRecord } from "../types";
+import type { DecisionIndexData, LanceRecord, Identity } from "../types";
 
 /**
  * Indexes or updates a decision in the vector database.
@@ -12,7 +12,12 @@ export async function indexDecision(
   data: DecisionIndexData
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    const text = buildDecisionText(data);
+    const createdBy: Identity = data.createdBy ?? { name: "unknown", email: "unknown" };
+    const contributors: Identity[] = data.contributors ?? [];
+
+    let text = buildDecisionText(data);
+    text += `\nAuthor: ${createdBy.name} <${createdBy.email}>`;
+
     const vector = await embed(text);
     const record: LanceRecord = {
       id: data.id,
@@ -20,6 +25,9 @@ export async function indexDecision(
       title: data.title,
       text,
       vector,
+      createdByName: createdBy.name,
+      createdByEmail: createdBy.email,
+      contributorsJson: JSON.stringify(contributors),
     };
 
     await upsert(record);

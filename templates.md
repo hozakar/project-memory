@@ -23,6 +23,12 @@ issues_created: []
 issues_resolved: []
 decisions_referenced: []
 tags: []
+created_by:                  # required — see "Author Attribution Fields" below
+  name: "Hakan Ozakar"
+  email: "hozakar@gmail.com"
+contributors:                # required — list grows on status-changing writes
+  - name: "Hakan Ozakar"
+    email: "hozakar@gmail.com"
 ```
 
 **Orphan annotation format:** When a commit hash stored in `commits:` or `merge_commit` no longer exists in git (due to rebase, squash, or force-push), the drift audit (Category 7) annotates it in place: `<hash> [orphaned YYYY-MM-DD]`. Do NOT delete orphaned entries — the annotation preserves the historical record while making the broken linkage explicit. Annotated hashes are skipped in subsequent audit passes.
@@ -240,6 +246,12 @@ outcome:
   id: phase-YYYYMMDD-... | DECISION-YYYY-... | ISSUE-YYYY-... | null
   summary: ""               # free-text for roadmap entries; null otherwise
 tags: []
+created_by:                 # required — see "Author Attribution Fields"
+  name: "Hakan Ozakar"
+  email: "hozakar@gmail.com"
+contributors:               # required — appended on resume / close
+  - name: "Hakan Ozakar"
+    email: "hozakar@gmail.com"
 ---
 ```
 
@@ -328,6 +340,37 @@ Target size: 500—1500 words.
 - Overflow destination: moved entries are condensed into one-liners and appended to **Historical Milestones**, grouped by era (e.g. `2026-06 early`, `2026-Q3`). One era line covers multiple phases.
 - Do not delete overflowed entries — they move, never disappear.
 - Historical Milestones is append-only. It is not capped. Its one-liners are intentionally terse; full detail remains in the phase directory.
+
+---
+
+## Author Attribution Fields
+
+The `created_by` and `contributors` fields are **required** on phase / decision / discussion / issue records. Full rules are in `conventions.md` → Author Attribution. This subsection covers the schema only.
+
+**Shape:**
+```yaml
+created_by:
+  name: "Hakan Ozakar"
+  email: "hozakar@gmail.com"
+contributors:
+  - name: "Hakan Ozakar"
+    email: "hozakar@gmail.com"
+```
+
+**Sentinel for missing git identity:** `{ name: "unknown", email: "unknown" }`. Used when `git config user.name` or `git config user.email` is empty. No user escalation.
+
+**Dedup rule:** Same email is never added twice to `contributors`.
+
+**`contributors` growth triggers (per record type):**
+
+| Record     | Triggers that append the current identity to `contributors` |
+|------------|-------------------------------------------------------------|
+| phase      | first or substantive write of `implementation.md` / `review-and-fixes.md` / `followup.md`; phase close (status: completed) |
+| decision   | initial write; status change (active → superseded / amended) |
+| discussion | initial write; resume update; close (status: concluded) |
+| issue      | initial write; status change (open → closed) |
+
+**Out of scope (do NOT add these fields):** `era-*.md`, `summaries/*.md`, `MEMORY.md`, `adr/NNNN-*.md`, all index files (`phases/index.yml`, `decisions/index.md`, `discussions/index.md`).
 
 ---
 

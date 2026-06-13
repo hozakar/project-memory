@@ -55,6 +55,15 @@ After creating the structure, create the first phase directory for whatever work
 
 6. Check if MCP companion server should be offered: if `mcp-server/` directory exists, read `mcp-server/INSTALL.md` and follow its "For the LLM" section to detect platform and offer installation. Set `mcp_install_offered_for_version` in config.yml after offer is made (regardless of user response).
 
+7. **Git identity advisory (non-blocking).** Run `git config user.name` and `git config user.email`. If either is empty or the command fails, print:
+   ```
+   [ℹ] Git identity not configured — project-memory records will be attributed to "unknown".
+       To enable attribution, run:
+         git config --global user.name "Your Name"
+         git config --global user.email "you@example.com"
+   ```
+   Installation proceeds normally either way. Never block, never prompt, never escalate. See `conventions.md` → Author Attribution for the soft-fail rule.
+
 Output:
 ```
 [✅] .project-memory/ initialized — first run detected.
