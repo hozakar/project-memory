@@ -93,9 +93,11 @@ Required files: `phase.yml`, `plan.md`, `implementation.md`, `review-and-fixes.m
 
 For file formats and templates, read `templates.md`.
 
+**Author attribution:** Set `created_by` and seed `contributors` in `phase.yml` from the current git identity (run `git config user.name` + `git config user.email`; missing → `{ name: "unknown", email: "unknown" }`). Full rules: `conventions.md` → Author Attribution.
+
 **MCP index on phase open (if available):**
 After writing `phase.yml` and `plan.md`, if `index_phase` is in available tools:
-- Call `index_phase({ id, title, tags, planText: plan.md content truncated to 2000 chars, implementationText: "", commitDiffs: [], status: "planning" })`
+- Call `index_phase({ id, title, tags, planText: plan.md content truncated to 2000 chars, implementationText: "", commitDiffs: [], status: "planning", created_by, contributors })` (pass the `created_by` + `contributors` from `phase.yml`)
 - Best-effort: if the call fails, continue — file writes already completed.
 
 ---
@@ -149,8 +151,10 @@ If the user says "skip decision questions for now" (or similar phrasing — "ski
 
 When a `DECISION-*.md` file is created or its `status` field changes (e.g. `active → superseded`):
 
+**Author attribution:** On initial write, set `created_by` and seed `contributors` from the current git identity. On status change, append the current identity to `contributors` of the changed decision AND any decision it supersedes / amends (dedup by email). See `conventions.md` → Author Attribution.
+
 **If `index_decision` is in available tools:**
-Call `index_decision({ id, title, status, context: context_section[:1000], decisionBody: combined_decision_and_chosen_solution_sections[:1000], touches })`.
+Call `index_decision({ id, title, status, context: context_section[:1000], decisionBody: combined_decision_and_chosen_solution_sections[:1000], touches, created_by, contributors })`.
 This is best-effort — if the call fails, continue. The file write already completed.
 
 Re-call on every status change. The tool upserts by ID, so repeated calls are safe.
@@ -161,8 +165,10 @@ Re-call on every status change. The tool upserts by ID, so repeated calls are sa
 
 When a `DISCUSSION-*.md` file is written and added to `discussions/index.md` (at discussion close or on resume/update):
 
+**Author attribution:** On initial write, set `created_by` and seed `contributors`. On resume update and on close, append the current git identity to `contributors` (dedup by email).
+
 **If `index_discussion` is in available tools:**
-Call `index_discussion({ id, title, status, outcome, tags, summary: one-line summary from discussions/index.md row, bodyText: first 2000 chars of the DISCUSSION-*.md body })`.
+Call `index_discussion({ id, title, status, outcome, tags, summary: one-line summary from discussions/index.md row, bodyText: first 2000 chars of the DISCUSSION-*.md body, created_by, contributors })`.
 This is best-effort — if the call fails, continue. The file write already completed.
 
 Re-call on any update (status open → concluded, or body changed). The tool upserts by ID, so repeated calls are safe.
@@ -177,6 +183,7 @@ Re-call on any update (status open → concluded, or body changed). The tool ups
 2. `review-and-fixes.md` — all review rounds closed; findings and actions recorded
 3. `followup.md` — debt, open issues, and recommended next phases captured
 4. **`summary` field in `phase.yml`** — write a 2-3 sentence summary of what was done and why. This enables informed tag-aware filtering without loading the full phase directory.
+5. **`contributors` in `phase.yml`** — append the current git identity (dedup by email). See `conventions.md` → Author Attribution.
 
 If any of these are missing or stub-only, write them first, then close.
 
@@ -195,7 +202,7 @@ At phase completion (merge OR logical completion):
 3. followup.md → roadmap.md — transfer all items
 4. phase.yml — set status: completed; set merge_commit if branch merged, closed_at if direct close
 5. phases/index.yml — update phase entry
-5a. **MCP index on phase close (if available):** If `index_phase` is in available tools, call `index_phase` with the full phase data: `{ id, title, tags, planText: plan.md[:2000], implementationText: implementation.md[:2000], commitDiffs: [for each commit hash in phase.yml commits: { hash, message, files: list of changed files, diffSnippet: first 2000 chars of git show output }], status: "completed" }`. Best-effort.
+5a. **MCP index on phase close (if available):** If `index_phase` is in available tools, call `index_phase` with the full phase data: `{ id, title, tags, planText: plan.md[:2000], implementationText: implementation.md[:2000], commitDiffs: [for each commit hash in phase.yml commits: { hash, message, files: list of changed files, diffSnippet: first 2000 chars of git show output }], status: "completed", created_by, contributors }` (pass the `created_by` + `contributors` from `phase.yml`). Best-effort.
 6. current-state.md — always update: features, components, debt, risks, recommended next actions
 7. project-memory.md — always update Recent Completed Work; also update Active Tensions, Anti-Patterns, Current Priorities if changed
 ```

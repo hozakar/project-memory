@@ -15,6 +15,47 @@ This applies to all text inside the skill files: prose, comments, placeholder id
 
 ---
 
+## Author Attribution
+
+All phase / decision / discussion / issue records carry author attribution via two required frontmatter fields:
+
+```yaml
+created_by:
+  name: "Hakan Ozakar"
+  email: "hozakar@gmail.com"
+contributors:
+  - name: "Hakan Ozakar"
+    email: "hozakar@gmail.com"
+```
+
+**Capture.** At every record-creating or status-changing write, the LLM runs:
+
+```
+git config user.name
+git config user.email
+```
+
+The pair becomes the current identity. If either command fails or returns an empty string, the current identity falls back to the sentinel `{ name: "unknown", email: "unknown" }`. **The user is NEVER prompted** — soft-fail is intentional, so the skill works during install, trial, or external contributor scenarios without git identity configured.
+
+**`created_by`** is set once at record creation and never changed.
+
+**`contributors`** is appended on **status-changing writes only** — not on re-indents, format fixes, or passive reads. Dedup by `email`: the same contributor is not added twice. Growth triggers per record type:
+
+| Record     | Triggers that append the current identity to `contributors` |
+|------------|-------------------------------------------------------------|
+| phase      | first or substantive write of `implementation.md` / `review-and-fixes.md` / `followup.md`; phase close (status: completed) |
+| decision   | initial write; status change (active → superseded / amended) |
+| discussion | initial write; resume update; close (status: concluded) |
+| issue      | initial write; status change (open → closed) |
+
+**In scope:** `phase.yml`, `DECISION-YYYY-MM-DD-*.md`, `DISCUSSION-YYYY-MM-DD-*.md`, `ISSUE-YYYY-MM-DD-*.md`.
+
+**Out of scope (do NOT add these fields):** `era-NNN.md` (project-wide), `summaries/*.md` (project-wide), `MEMORY.md` (single-user), `adr/NNNN-*.md` (MADR has no Author field — DECISION is canonical), index files (`phases/index.yml`, `decisions/index.md`, `discussions/index.md` — token economy).
+
+**No audit category.** Soft-fall to `unknown` makes "missing field" impossible by construction; the drift audit does not check attribution.
+
+---
+
 ## Architectural Decision Records
 
 Create when architecture changes, major dependencies are introduced, important tradeoffs are made, or a significant alternative was rejected.
@@ -35,6 +76,12 @@ touches: [entity1, entity2]         # concrete names â€” see Touches Field 
 supersedes: DECISION-YYYY-MM-DD-... # null if none
 superseded_by: DECISION-YYYY-MM-DD-... # null if none; set when a later decision overrides this
 adr_id: null                         # assigned integer (0001, 0002, ...) at write time; matches adr/ filename prefix
+created_by:                          # required — see Author Attribution section below
+  name: "Hakan Ozakar"
+  email: "hozakar@gmail.com"
+contributors:                        # required — appended on status change
+  - name: "Hakan Ozakar"
+    email: "hozakar@gmail.com"
 ---
 ```
 
@@ -54,6 +101,7 @@ adr_id: null                         # assigned integer (0001, 0002, ...) at wri
 Rejected alternatives are first-class content. Future agents need to know what was tried and why it didn't fit.
 
 **After writing any DECISION file:**
+0. Set `created_by` and seed `contributors` from current git identity (see Author Attribution section above). On a status change (`active → superseded` / `amended`), append the current identity to `contributors` of BOTH the new decision and the affected superseded decision; dedup by email.
 1. Add a one-liner per rejected alternative to `project-memory.md` â†’ Rejected Decisions. The DECISION file has the full reasoning; the summary entry is a one-line pointer (using the full DECISION-YYYY-MM-DD-slug identifier).
 2. Add a row to `decisions/index.md` (see `templates.md`) â€” this is the file Claude loads at session start to surface active decisions during the Pre-Implementation Gate.
 3. If `supersedes` is set, update the superseded file: change its `status` to `superseded` and set its `superseded_by` field. Move its row in `decisions/index.md` from the **Active** section to the **Superseded** section and update the Status cell. The index has two sections; only the Active section is scanned during the Pre-Implementation Gate.
@@ -118,10 +166,18 @@ area: pipeline | git | ui | config | ...
 discovered: YYYY-MM-DD
 resolved: YYYY-MM-DD          # set when closing
 resolved_in: phase-id (commit hash)   # set when closing
+created_by:                   # required — see Author Attribution section
+  name: "Hakan Ozakar"
+  email: "hozakar@gmail.com"
+contributors:                 # required — appended on close
+  - name: "Hakan Ozakar"
+    email: "hozakar@gmail.com"
 ---
 ```
 
-**On close:** update `status` to `closed`, add `resolved` and `resolved_in` fields, then move the file from `issues/open/` to `issues/closed/`.
+**On close:** update `status` to `closed`, add `resolved` and `resolved_in` fields, append current git identity to `contributors` (dedup by email), then move the file from `issues/open/` to `issues/closed/`.
+
+**On open:** set `created_by` and seed `contributors` with the current git identity (see Author Attribution section).
 
 ## Discussions
 
@@ -158,7 +214,7 @@ Trigger (explicit or implicit)
 ```
 
 **Resume:**
-User says "continue discussion X" -> load the full DISCUSSION file -> continue conversation -> UPDATE the same file at close. Status remains `open` until conclusively finished. If the outcome changes on resume, update the frontmatter accordingly.
+User says "continue discussion X" -> load the full DISCUSSION file -> continue conversation -> UPDATE the same file at close. Status remains `open` until conclusively finished. If the outcome changes on resume, update the frontmatter accordingly. On every resume update AND on close, append the current git identity to `contributors` (dedup by email).
 
 **Expiry:**
 Discussions with `outcome.type: none` AND `date` older than 30 days are expired:
