@@ -13,6 +13,16 @@ All notable changes to the project-memory skill and MCP companion server.
 - **Era creation trigger** in cheatsheet.md and protocol.md: auto-create era when ~10 phases accumulate
 - **Author attribution** — structured `created_by` + `contributors` ({name, email}) added to phase / decision / discussion / issue frontmatter. LLM captures git identity at write time; missing → `unknown` sentinel (no escalation). MCP record schema extended with `createdByName`, `createdByEmail`, `contributorsJson`; rebuild_index required after backfill. Era / summaries / ADR / index files unchanged. See DECISION-2026-06-13-author-attribution and ADR 0010.
 
+### Era 3 — Stabilization & Polish (phases 22–32)
+
+- **Bugfix cohort:** Fixed 6 audit bugs — Cat 1 infinite loop, Cat 4 branch:null boundary, Cat 4 same-day exclusion, CRLF parser, BOM parser, Cat12 ignore key prefix mismatch. Eliminated all false-positive audit escalations.
+- **Branch-per-phase workflow:** ADR 0008 — every phase gets its own git branch. DECISION-2026-06-13-branch-per-phase.
+- **MCP install guide:** mcp-server/INSTALL.md with version-aware one-time offer.
+- **INSTRUCTION record type:** User-scoped workflow preferences separated from architectural decisions. index_instruction MCP tool. search_memory created_by_email filter.
+- **Author attribution:** created_by + contributors frontmatter across all record types. MCP schema extended. 50-record backfill script.
+- **Cat 1 frictionless:** Author-filtered orphan commits, 3-day age boundary, informational notice pattern.
+- **Documentation:** README, mcp-server/README, CHANGELOG, and all summaries synced to current state.
+
 ### 2026-06-12
 - **Audit expansion**: 6 → 13 categories (Cat 7 orphan commits, Cat 8 ADR sync, Cat 9 discussion index drift, Cat 10 phase completeness, Cat 11 discussion expiry, Cat 12 tag inconsistency, Cat 13 MCP consistency)
 - **Severity model**: high/medium/low with 3-day time boundary for medium findings; permanent skip via `audit_ignore` in config.yml

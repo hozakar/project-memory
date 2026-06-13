@@ -32,6 +32,8 @@ The skill maintains a `.project-memory/` directory in your project root, structu
 ├── eras/
 │   ├── index.yml
 │   └── era-NNN.md
+├── instructions/
+│   └── INSTRUCTION-YYYY-MM-DD-slug.md
 ├── issues/
 │   ├── open/
 │   └── closed/
@@ -77,11 +79,19 @@ Discussions can be resumed — the existing file is updated rather than duplicat
 
 ### MCP Companion Server (optional)
 
-An optional MCP server (`mcp-server/`) provides semantic search over phases and decisions using LanceDB + local embeddings (no API key needed). Nine tools are available: `search_memory`, `index_phase`, `index_decision`, `index_discussion`, `find_similar_commit`, `check_consistency`, `rebuild_index`, `index_era`, and `run_audit` (deterministic audit delegation). Graceful degradation — the skill works identically without the server.
+An optional MCP server (`mcp-server/`) provides semantic search over all record types (phases, decisions, discussions, eras, instructions) using LanceDB + local embeddings (no API key needed). Ten tools are available: `search_memory` (with `created_by_email` and `type_filter` params), `index_phase`, `index_decision`, `index_discussion`, `find_similar_commit`, `check_consistency`, `rebuild_index`, `index_era`, `index_instruction`, and `run_audit` (deterministic audit delegation). Graceful degradation — the skill works identically without the server.
+
+### Instructions
+
+Workflow preferences and agent behavior rules are captured as INSTRUCTION files in `.project-memory/instructions/`. Unlike decisions (which constrain the project), instructions constrain the agent. Each instruction carries a `prompt` field and a `state` (active or dropped). Instructions are user-scoped by email — only the current user's active instructions are loaded at session start. Cross-user sharing uses a fork model with origin tracking.
 
 ### Eras
 
-Every ~10 phases, a narrative `era-NNN.md` file is written to `.project-memory/eras/`, providing a human-readable summary of that period's work. Eras are indexed for semantic search and provide long-term narrative continuity.
+Every ~10 phases (28 completed as of Era 3), a narrative `era-NNN.md` file is written to `.project-memory/eras/`, providing a human-readable summary of that period's work. Three eras are complete: Era 1 (Foundation), Era 2 (MCP & Audit Expansion), and Era 3 (Stabilization & Polish). Eras are indexed for semantic search and provide long-term narrative continuity.
+
+### Author Attribution
+
+All record types (phases, decisions, discussions, instructions) carry structured `created_by` and `contributors` frontmatter with `{name, email}` identity pairs. The LLM captures git identity at write time; if identity cannot be determined, the system soft-fails to an `unknown` sentinel without escalation. MCP records include `createdByName`, `createdByEmail`, and `contributorsJson` columns.
 
 ## Skill Files
 

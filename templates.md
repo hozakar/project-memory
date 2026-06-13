@@ -440,3 +440,14 @@ origin_updated: false      # true when origin instruction has been modified sinc
 - NOT a deterministic rule engine — mode is always `prompt`
 - Filesystem is source of truth; vector DB is derived read-optimized index
 
+---
+
+## maintainers.md
+
+```yaml
+maintainers:
+  - email: "first-maintainer@example.com"
+```
+
+Flat list of maintainer emails. Anyone can edit. No owner role. Read at session start to determine whether the current user receives era creation prompts.
+

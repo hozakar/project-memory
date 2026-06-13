@@ -215,3 +215,7 @@ At phase completion (merge OR logical completion):
 ```
 
 `current-state.md` and `project-memory.md` are **always** updated. Skipping them is the most common source of stale memory.
+
+---
+
+**Era creation gate:** When 10+ phases accumulate since the last era, only maintainers receive the creation prompt. Developers are not disturbed. The maintainer should run audit before creating the era (recommended, not enforced).

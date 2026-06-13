@@ -15,10 +15,19 @@ When this skill activates:
    - If it **does not exist**: read `init.md` and follow its instructions.
    - If it **exists**: read `protocol.md` for the Memory Loading Strategy and follow it. Load `.project-memory/summaries/project-memory.md`. If an active phase exists (check `phases/index.yml` for any phase with `status` not equal to `completed`), read that phase directory too.
 
+   After loading summaries and active phase, determine role:
+   - Read `.project-memory/maintainers.md` if it exists
+   - Run `git config user.email`
+   - If the email is in the maintainers list → role is `maintainer`
+   - If not (or file doesn't exist) → role is `developer`
+   - Store role for the session
+
    If `.project-memory/instructions/` exists:
      - If MCP is available: call `search_memory("instruction", top_k=20, created_by_email=<current git user email>, type_filter="instruction")` to load current user's active instructions. Inject each instruction's prompt into context.
      - If MCP is unavailable: scan `.project-memory/instructions/` directory for files where frontmatter `created_by.email` matches current git user email AND `state: active`. Inject each instruction's `# Prompt` body into context.
-     - If ≥5 active instructions are loaded, emit: "⚠️ N active instructions loaded. Consider dropping unused ones with 'drop instruction X'."
+      - If ≥5 active instructions are loaded, emit: "⚠️ N active instructions loaded. Consider dropping unused ones with 'drop instruction X'."
+   - If the session role is `maintainer` and 10+ phases have accumulated since the last era: emit "📊 X phases accumulated since last era. Create era-NNN? I recommend running audit first."
+   - If the session role is `developer`: suppress the era prompt.
 
 3. Run Drift Audit (read `audit.md` for the full procedure).
    - Auto-fix all findings in the auto-fix category silently (includes all low-severity and aged-medium findings).

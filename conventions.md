@@ -277,3 +277,44 @@ origin_updated: false     # true when origin modified since fork
 - NOT in decisions/index.md or discussions/index.md
 
 **Vector DB:** Instructions are indexed via `index_instruction` MCP tool. File system is source of truth; DB is derived read-optimized index.
+
+---
+
+## Maintainer Role
+
+Project-memory uses a lightweight two-role system for era creation gating only. All other operations are unrestricted.
+
+**Roles:**
+- **Maintainer** — receives era creation prompts when ~10 phases accumulate. Can decide to create an era.
+- **Developer** — default role. No era prompts. Everything else is identical to maintainer.
+
+**Source of truth:** `.project-memory/maintainers.md` — a flat YAML file:
+
+```yaml
+maintainers:
+  - email: "alice@example.com"
+  - email: "bob@example.com"
+```
+
+**Role determination (session start):**
+1. Read `maintainers.md`
+2. Run `git config user.email`
+3. If email is in the list → maintainer
+4. Otherwise → developer
+
+**Editing rules:**
+- Anyone can edit `maintainers.md` (no restrictions — git controls push permissions)
+- Add or remove emails to promote/demote
+- Changes take effect next session
+
+**Gated actions:**
+| Action | Developer | Maintainer |
+|--------|-----------|------------|
+| Audit | ✅ | ✅ |
+| Phase management | ✅ | ✅ |
+| Era creation decision | ❌ (silent) | ✅ (prompted) |
+
+**What this is NOT:**
+- NOT a security boundary (git handles that)
+- NOT tamper-proof
+- NOT a general access-control system
