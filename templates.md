@@ -198,12 +198,13 @@ Chosen option: "<option name>", because <brief rationale from # Decision and # C
 
 ## .project-memory/config.yml
 
-Project-level configuration for project-memory. Created during first-run initialization if ADR support is desired. All fields are optional — defaults apply when file is absent.
+Project-level configuration for project-memory. Always created during first-run initialization. All fields are optional — defaults apply when file or key is absent.
 
 ```yaml
 # .project-memory/config.yml
 
-adr_dir: adr          # directory for ADR files relative to project root (default: adr)
+adr_enabled: true     # opt-in flag: true = ADR support active, false = skip ADR creation and Cat 8 audit. Absent = true (backward compat).
+adr_dir: adr          # directory for ADR files relative to project root (default: adr). Only meaningful when adr_enabled: true.
 
 audit_ignore: []      # permanently suppressed audit findings (see audit.md Permanent Skip section)
 # Each entry:

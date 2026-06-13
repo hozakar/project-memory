@@ -42,10 +42,22 @@ phases: []
 |---|---|---|---|---|---|
 ```
 
-**`.project-memory/config.yml`** — skill configuration. Ask the user: "Where should ADR files be stored? (default: `adr/`)" — accept their answer or use the default. Create that directory in the project root. Write `config.yml`:
-```yaml
-adr_dir: <chosen path>
-```
+**`.project-memory/config.yml`** — skill configuration. Ask the user:
+
+> "Do you want ADR (Architecture Decision Record) support? (y/n)"
+
+- **If yes:** Ask "Where should ADR files be stored? (default: `adr/`)" — accept their answer or use the default. Create that directory in the project root. Write `config.yml`:
+  ```yaml
+  adr_enabled: true
+  adr_dir: <chosen path>
+  ```
+- **If no:** Write `config.yml`:
+  ```yaml
+  adr_enabled: false
+  ```
+  Do NOT create an `adr/` directory. `adr_dir` is omitted when ADR is disabled.
+
+ADR support can be toggled at any time by editing `config.yml`. See `audit.md` Cat 8 for behavior when re-enabling on an existing project.
 
 **All summaries** — create with a stub header and `Last Updated: <today>`. Use the templates in `.claude/skills/project-memory/templates.md` for section headings. Do not fill in content yet; wait until you have enough context from the session to write something meaningful.
 
