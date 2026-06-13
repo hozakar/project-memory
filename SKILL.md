@@ -177,7 +177,10 @@ Phase / decision / discussion / issue records carry author attribution via `crea
 ├── audit-mcp.md      ← MCP-driven drift detection (run_audit fast path)
 ├── audit-fs.md       ← File-system drift detection (14 categories)
 ├── init.md           ← First-run initialization
-├── templates.md      ← All document schemas (phases, decisions, issues, discussions)
+├── templates.md           ← Template dispatcher — routes to sub-files by record type
+├── templates-phase.md     ← Phase and era templates
+├── templates-records.md   ← Decision, discussion, instruction, assignment templates + author attribution
+├── templates-config.md    ← Config and summary templates
 ├── conventions.md    ← Naming and lifecycle rules, decision resolution
 └── README.md         ← Human-readable overview
 `
