@@ -105,6 +105,10 @@ srv.tool(
     id: z.string().regex(/^[a-zA-Z0-9-]+$/).describe("Instruction ID, e.g. INSTRUCTION-2026-06-13-branch-per-phase"),
     prompt: z.string(),
     state: z.string(),
+    createdBy: z.object({
+      name: z.string(),
+      email: z.string(),
+    }).optional().describe("Author identity from git config. Defaults to unknown if omitted."),
   },
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async (args: any) => {
