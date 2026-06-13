@@ -220,6 +220,12 @@ function cat3StubPlaceholders(projectMemoryDir: string, ignored: Set<string>): A
   return findings;
 }
 
+function offsetDate(dateStr: string, days: number): string {
+  const d = new Date(dateStr);
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+
 function cat4OpenPhaseGap(
   projectRoot: string,
   phases: PhaseEntry[],
@@ -242,7 +248,7 @@ function cat4OpenPhaseGap(
     }
     if (!branch) continue;
 
-    const afterFlag = phase.startedAt ? ` --after=${phase.startedAt}` : "";
+    const afterFlag = phase.startedAt ? ` --after=${offsetDate(phase.startedAt, -1)}` : "";
     const logOutput = git(`git log --oneline --max-count=200${afterFlag} ${branch}`, projectRoot);
     if (!logOutput) continue;
 
