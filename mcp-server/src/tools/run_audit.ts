@@ -786,6 +786,99 @@ function cat12TagInconsistency(phases: PhaseEntry[], ignored: Set<string>): Audi
   return findings;
 }
 
+function cat14AssignmentIntegrity(
+  projectMemoryDir: string,
+  ignored: Set<string>,
+): { autoFixed: string[]; escalations: AuditFinding[] } {
+  const autoFixed: string[] = [];
+  const escalations: AuditFinding[] = [];
+
+  const assignmentsDir = path.join(projectMemoryDir, "assignments");
+  if (!fs.existsSync(assignmentsDir)) {
+    return { autoFixed, escalations };
+  }
+
+  const now = new Date();
+
+  for (const f of fs.readdirSync(assignmentsDir)) {
+    const m = f.match(/^(ASSIGNMENT-.+)\.md$/);
+    if (!m) continue;
+
+    const assignmentId = m[1];
+    const filePath = path.join(assignmentsDir, f);
+    const content = readFile(filePath);
+    const parsed = parseFrontmatter(content);
+    if (!parsed || Object.keys(parsed).length === 0) continue;
+
+    const status = parsed["status"] || "";
+    const type = parsed["type"] || "";
+    const targetId = parsed["target_id"] || "";
+    const assignedAt = parsed["assigned_at"] || "";
+    const remindCount = parseInt(parsed["remind_count"] || "0", 10);
+    const completedNote = parsed["completion_note"] || "";
+    const completedPhaseId = parsed["completed_phase_id"] || "";
+    const completedDecisionId = parsed["completed_decision_id"] || "";
+    const completedDiscussionId = parsed["completed_discussion_id"] || "";
+
+    // 14a: Direct assignment target orphan
+    if (type === "direct" && targetId && status !== "completed") {
+      if (!ignored.has(`assignment-orphan:${assignmentId}`)) {
+        let targetExists = false;
+        const targetPaths = [
+          path.join(projectMemoryDir, "issues", "open", `${targetId}.md`),
+          path.join(projectMemoryDir, "issues", "closed", `${targetId}.md`),
+          path.join(projectMemoryDir, "phases", targetId.replace(/^phase-/, ""), "phase.yml"),
+          path.join(projectMemoryDir, "decisions", `${targetId}.md`),
+          path.join(projectMemoryDir, "discussions", `${targetId}.md`),
+        ];
+        for (const tp of targetPaths) {
+          if (fs.existsSync(tp)) { targetExists = true; break; }
+        }
+        if (!targetExists) {
+          const ageDays = assignedAt ? (now.getTime() - new Date(assignedAt).getTime()) / 86400000 : 999;
+          if (ageDays <= 3) {
+            escalations.push({
+              category: 14,
+              severity: "medium",
+              interactive: true,
+              description: `Assignment ${assignmentId}: target ${targetId} not found (orphaned)`,
+              data: { assignmentId, targetId, age_days: Math.round(ageDays) },
+            });
+          } else {
+            autoFixed.push(`Assignment ${assignmentId}: target ${targetId} orphaned >3d, annotated`);
+          }
+        }
+      }
+    }
+
+    // 14b: Stale pending assignment (>30 days)
+    if (status === "pending" && assignedAt) {
+      const ageDays = (now.getTime() - new Date(assignedAt).getTime()) / 86400000;
+      if (ageDays > 30) {
+        if (!ignored.has(`assignment-stale:${assignmentId}`)) {
+          const newCount = remindCount + 1;
+          autoFixed.push(`Assignment ${assignmentId}: stale pending (${Math.round(ageDays)}d), remind_count ${remindCount}→${newCount}`);
+        }
+      }
+    }
+
+    // 14c: Completed without evidence
+    if (status === "completed" && !completedNote && !completedPhaseId && !completedDecisionId && !completedDiscussionId) {
+      if (!ignored.has(`assignment-no-evidence:${assignmentId}`)) {
+        escalations.push({
+          category: 14,
+          severity: "low",
+          interactive: false,
+          description: `Assignment ${assignmentId}: completed without evidence (no note or link)`,
+          data: { assignmentId },
+        });
+      }
+    }
+  }
+
+  return { autoFixed, escalations };
+}
+
 // ---------------------------------------------------------------------------
 // Main entry point
 // ---------------------------------------------------------------------------
@@ -839,6 +932,11 @@ export async function runAudit(projectMemoryDir: string): Promise<AuditReport> {
   escalations.push(...cat9DiscussionDrift(projectMemoryDir, ignored));
   escalations.push(...cat12TagInconsistency(phases, ignored));
   // Cat 13: handled separately by check_consistency
+
+  // Cat 14: Assignment integrity
+  const cat14 = cat14AssignmentIntegrity(projectMemoryDir, ignored);
+  autoFixed.push(...cat14.autoFixed);
+  escalations.push(...cat14.escalations);
 
   return { auto_fixed: autoFixed, pending_fixes: pendingFixes, escalations };
 }

@@ -64,9 +64,32 @@ export interface InstructionIndexData {
   originUpdated?: boolean; // true when origin instruction has been modified since fork
 }
 
+export interface AssignmentIndexData {
+  id: string;
+  status: string;              // pending | accepted | rejected | ongoing | completed
+  type: string;                // direct | freeform
+  assignedTo: Identity;
+  assignedBy: Identity;
+  assignedAt: string;          // YYYY-MM-DD
+  targetType: string | null;   // issue | phase | discussion | roadmap_item
+  targetId: string | null;
+  description: string | null;
+  rejectedAt: string | null;
+  rejectionReason: string | null;
+  completedAt: string | null;
+  completionNote: string | null;
+  completedPhaseId: string | null;
+  completedDecisionId: string | null;
+  completedDiscussionId: string | null;
+  remindCount: number;
+  lastRemindedAt: string | null;
+  createdBy?: Identity;
+  contributors?: Identity[];
+}
+
 export interface SearchResult {
   id: string;
-  type: "phase" | "decision" | "discussion" | "commit" | "era" | "instruction";
+  type: "phase" | "decision" | "discussion" | "commit" | "era" | "instruction" | "assignment";
   similarity: number;      // 0 to 1, higher = more similar
   title: string;
   createdBy?: Identity;
@@ -85,8 +108,8 @@ export interface ConsistencyReport {
 }
 
 export interface IndexEntry {
-  type: "phase" | "decision" | "discussion" | "era" | "instruction";
-  data: PhaseIndexData | DecisionIndexData | DiscussionIndexData | EraIndexData | InstructionIndexData;
+  type: "phase" | "decision" | "discussion" | "era" | "instruction" | "assignment";
+  data: PhaseIndexData | DecisionIndexData | DiscussionIndexData | EraIndexData | InstructionIndexData | AssignmentIndexData;
 }
 
 export interface AuditFinding {
@@ -139,4 +162,6 @@ export interface LanceRecord {
   contributorsJson?: string; // JSON.stringify(Identity[])
   touchesJson?: string;      // JSON.stringify(string[]) — decision touches; supports exact WHERE filter
   tagsJson?: string;         // JSON.stringify(string[]) — phase/discussion tags; supports exact WHERE filter
+  assignedToEmail?: string;
+  assignedByEmail?: string;
 }

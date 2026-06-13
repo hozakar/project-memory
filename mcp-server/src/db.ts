@@ -64,7 +64,9 @@ export async function search(
   excludeCommits: boolean = true,
   createdByEmail?: string,
   touchesFilter?: string[],
-  tagsFilter?: string[]
+  tagsFilter?: string[],
+  assignedToEmail?: string,
+  assignedByEmail?: string
 ): Promise<SearchResult[]> {
   try {
     const table = await getTable();
@@ -78,6 +80,12 @@ export async function search(
     }
     if (createdByEmail) {
       whereClauses.push(`createdByEmail = '${createdByEmail}'`);
+    }
+    if (assignedToEmail) {
+      whereClauses.push(`assignedToEmail = '${assignedToEmail.replace(/'/g, "''")}'`);
+    }
+    if (assignedByEmail) {
+      whereClauses.push(`assignedByEmail = '${assignedByEmail.replace(/'/g, "''")}'`);
     }
     if (touchesFilter && touchesFilter.length > 0) {
       for (const touch of touchesFilter) {

@@ -1,7 +1,7 @@
 import { embed } from "../embedder";
 import { atomicRebuild } from "../db";
-import { buildPhaseText, buildDecisionText, buildDiscussionText, buildCommitText, buildEraText, buildInstructionText } from "../utils";
-import type { IndexEntry, LanceRecord, PhaseIndexData, DecisionIndexData, DiscussionIndexData, EraIndexData, InstructionIndexData, Identity } from "../types";
+import { buildPhaseText, buildDecisionText, buildDiscussionText, buildCommitText, buildEraText, buildInstructionText, buildAssignmentText } from "../utils";
+import type { IndexEntry, LanceRecord, PhaseIndexData, DecisionIndexData, DiscussionIndexData, EraIndexData, InstructionIndexData, AssignmentIndexData, Identity } from "../types";
 
 const UNKNOWN_IDENTITY: Identity = { name: "unknown", email: "unknown" };
 
@@ -32,6 +32,11 @@ export async function rebuildIndex(entries: IndexEntry[]): Promise<{ indexed: nu
         text = buildInstructionText(d);
         createdBy = d.createdBy ?? UNKNOWN_IDENTITY;
         contributors = [];
+      } else if (entry.type === "assignment") {
+        const d = entry.data as AssignmentIndexData;
+        text = buildAssignmentText(d);
+        createdBy = d.createdBy ?? UNKNOWN_IDENTITY;
+        contributors = d.contributors ?? [];
       } else {
         const d = entry.data as DiscussionIndexData;
         text = buildDiscussionText(d);
@@ -56,6 +61,11 @@ export async function rebuildIndex(entries: IndexEntry[]): Promise<{ indexed: nu
         record.createdByName = createdBy.name;
         record.createdByEmail = createdBy.email;
         record.contributorsJson = JSON.stringify(contributors ?? []);
+      }
+      if (entry.type === "assignment") {
+        const aData = entry.data as AssignmentIndexData;
+        record.assignedToEmail = aData.assignedTo.email;
+        record.assignedByEmail = aData.assignedBy.email;
       }
       records.push(record);
 

@@ -1,4 +1,4 @@
-import type { PhaseIndexData, DecisionIndexData, DiscussionIndexData, CommitDiff, EraIndexData, InstructionIndexData } from "./types";
+import type { PhaseIndexData, DecisionIndexData, DiscussionIndexData, CommitDiff, EraIndexData, InstructionIndexData, AssignmentIndexData } from "./types";
 
 export function buildPhaseText(data: PhaseIndexData): string {
   const parts: string[] = [
@@ -71,4 +71,34 @@ export function buildInstructionText(data: InstructionIndexData): string {
   ]
     .join("\n")
     .slice(0, 2000);
+}
+
+export function buildAssignmentText(data: AssignmentIndexData): string {
+  const parts: string[] = [];
+  parts.push(`Assignment: ${data.id}`);
+  parts.push(`Status: ${data.status}`);
+  parts.push(`Type: ${data.type}`);
+  parts.push(`Assigned To: ${data.assignedTo.name} <${data.assignedTo.email}>`);
+  parts.push(`Assigned By: ${data.assignedBy.name} <${data.assignedBy.email}>`);
+  parts.push(`Assigned At: ${data.assignedAt}`);
+  if (data.type === "direct" && data.targetType && data.targetId) {
+    parts.push(`Target: ${data.targetType} ${data.targetId}`);
+  }
+  if (data.description) {
+    parts.push(`Description: ${data.description}`);
+  }
+  if (data.status === "rejected" && data.rejectedAt) {
+    parts.push(`Rejected: ${data.rejectedAt}`);
+    if (data.rejectionReason) {
+      parts.push(`Rejection Reason: ${data.rejectionReason}`);
+    }
+  }
+  if (data.status === "completed" && data.completedAt) {
+    parts.push(`Completed: ${data.completedAt}`);
+    if (data.completionNote) {
+      parts.push(`Completion Note: ${data.completionNote}`);
+    }
+  }
+  parts.push(`Reminders: ${data.remindCount}`);
+  return parts.join("\n").slice(0, 2000);
 }

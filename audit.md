@@ -25,7 +25,7 @@ Run when the skill is explicitly invoked with the `audit` argument. Same detecti
 3. For each escalation where `interactive: true` → enter interactive triage (same per-category question shapes as below).
 4. For each escalation where `interactive: false` → these are pre-classified for auto-fix by MCP's severity/time-boundary logic. Report them in the auto-fixed log (not interactive triage).
 5. Cat 12 findings (`category: 12`) always require LLM confirmation before prompting the user — review the `data.tag` / `data.similar_tag` pair and decide if it is genuinely a typo. Only escalate (interactive: false → it's low severity) if confident.
-6. Skip the file-based Detection Procedure section entirely — `run_audit` has already covered all 13 categories.
+6. Skip the file-based Detection Procedure section entirely — `run_audit` has already covered all 14 categories.
 
 **When `run_audit` is NOT available — MCP installation check:**
 
@@ -45,7 +45,7 @@ Run when the skill is explicitly invoked with the `audit` argument. Same detecti
 
 # Detection Procedure
 
-Run all 13 categories on every audit pass. Collect findings before acting. Check `audit_ignore` (see Permanent Skip section) before escalating any finding — suppressed findings are omitted entirely.
+Run all 14 categories on every audit pass. Collect findings before acting. Check `audit_ignore` (see Permanent Skip section) before escalating any finding — suppressed findings are omitted entirely.
 
 | # | Category | Detection Rule | Tool Calls | Classification | Severity |
 |---|---|---|---|---|---|---|
@@ -62,6 +62,7 @@ Run all 13 categories on every audit pass. Collect findings before acting. Check
 | 11 | **Discussion expiry** | For each `DISCUSSION-*.md` in `discussions/` (not `discussions/archive/`): read frontmatter `outcome.type` and `date`. If `outcome.type == none` AND `today - date > 30 days` → expired. Handles both nested format (`outcome:\n  type: none`) and flat format (`outcome: none`). | `Glob: discussions/DISCUSSION-*.md`; `Read` frontmatter of each | **Auto-fix** | — |
 | 12 | **Tag inconsistency** | Read all phase tags from `phases/index.yml`. Collect all unique tags across all phases. Using LLM judgment, identify tag pairs that appear to be typos or near-duplicates (e.g., `skil-md` vs `skill-md`). Flag each suspect pair with both the tag value and the phase IDs where it appears. Only flag when confident — false positives are worse than misses. Skip if fewer than 5 unique tags total. | `Read: phases/index.yml` | **Auto-fix** | **low** |
 | 13 | **MCP consistency** | If `check_consistency` is NOT in available tools, skip entirely. Otherwise: call `check_consistency(path_to_dot_project_memory_dir)` where the path is the absolute path to the `.project-memory/` directory in the current project. For each ID in `missing` (file exists, not in DB): if ID starts with `phase-`, read that phase's `phase.yml` + `plan.md` + `implementation.md` and call `index_phase`; if ID starts with `DECISION-`, read the DECISION file and call `index_decision`. For each ID in `orphaned`: no action (will be cleaned on next upsert cycle). **Note:** Cat 13 runs when MCP was unavailable at session start. If proactive sync (see `protocol.md` → MCP Companion Integration) already ran this session, Cat 13 will find no missing entries and can be skipped. Cat 13 is a fallback, not a duplicate. | MCP: `check_consistency`; `Read` phase/decision files for missing IDs; MCP: `index_phase`/`index_decision` | **Auto-fix** | — |
+| 14 | **Assignment integrity** | Scan all `ASSIGNMENT-*.md` files in `.project-memory/assignments/`. **(14a)** For each with `type: direct` and `status != completed`, verify `target_id` references an existing file in `issues/`, `phases/`, `discussions/`, or `decisions/`. Missing target → finding. **(14b)** For each with `status: pending` and `assigned_at` > 30 days ago → finding. **(14c)** For each with `status: completed` where `completion_note`, `completed_phase_id`, `completed_decision_id`, and `completed_discussion_id` are ALL null/empty → finding. | `Glob: .project-memory/assignments/ASSIGNMENT-*.md`; `Read` frontmatter of each | **Auto-fix** | **low** (14b,14c) / **medium** (14a) |
 
 ---
 
@@ -84,7 +85,7 @@ The model has 2 effective tiers:
 | Severity | Categories | Behavior |
 |----------|-----------|----------|
 | **high** | Cat 4 | Heuristic auto-resolves same-user commits. Escalates only on author mismatch or ambiguous file matching. |
-| **auto-fix** | Cat 1,2,3,5,6,7,8,9,10,11,12,13 | Applied silently; logged in drift report. |
+| **auto-fix** | Cat 1,2,3,5,6,7,8,9,10,11,12,13,14 | Applied silently; logged in drift report. |
 
 ---
 
@@ -114,6 +115,7 @@ Before escalating any finding, check the `audit_ignore` list in `.project-memory
 | 9 | `discussion-drift:<DISCUSSION-ID>:<missing-row|orphan-row|status-mismatch>` |
 | 10 | `phase-completeness:<phase-id>:<missing-filename>` |
 | 12 | `tag-typo:<phase-id>:<tag-value>` |
+| 14 | `assignment-orphan:<ASSIGNMENT-ID>` / `assignment-stale:<ASSIGNMENT-ID>` / `assignment-no-evidence:<ASSIGNMENT-ID>` |
 
 **`config.yml` format:**
 
@@ -156,7 +158,7 @@ When an era (`era-NNN.md`) is created or updated in `.project-memory/eras/`:
 
 # Auto-Fix Rules
 
-All 13 categories are auto-fixed per the simplified severity model. Cat 4 uses a heuristic that auto-resolves same-user commits and escalates only on author mismatch or ambiguous file matching.
+All 14 categories are auto-fixed per the simplified severity model. Cat 4 uses a heuristic that auto-resolves same-user commits and escalates only on author mismatch or ambiguous file matching.
 
 **Category 5 auto-fix steps:**
 1. For each `issues/open/*.md` file with frontmatter `status: closed`:
@@ -186,6 +188,20 @@ All 13 categories are auto-fixed per the simplified severity model. Cat 4 uses a
    - If ID starts with `era-`: read the era file. Extract `id` and `title` from frontmatter, `phases` list from frontmatter, `date_range` as `dateRange`, and body text after `---` as `narrative` (truncate to 3000 chars). Call `index_era({ id, title, phases, dateRange, narrative })`.
 3. Orphaned IDs: no action.
 4. Log: `MCP sync: N entries updated` (where N = missing.length)
+
+**Category 14 auto-fix steps:**
+1. **14a — Direct assignment target orphan:**
+   a. For each orphaned `target_id`, annotate the `target_id` value in the ASSIGNMENT file frontmatter with `[orphaned YYYY-MM-DD]` (e.g., `phase-20260601-goal-tracking [orphaned 2026-06-14]`).
+   b. If age ≤ 3 days: escalate as interactive triage instead of auto-fixing. The LLM should ask if the user wants to (1) fix the target_id, (2) mark the assignment completed, or (3) mark ignored.
+   c. Log: `Auto-annotated: N orphan assignment target(s) → [orphaned YYYY-MM-DD]`
+2. **14b — Stale pending assignment:**
+   a. For each stale pending assignment: increment `remind_count` by 1, update `last_reminded_at` to today's date (YYYY-MM-DD).
+   b. Log: `Bumped remind_count for N stale pending assignment(s)`
+3. **14c — Completed without evidence:**
+   a. For each evidence-less completion: annotate the frontmatter with `# Warning: completed without evidence [YYYY-MM-DD]`.
+   b. Log: `Flagged N evidence-less assignment completion(s)`
+   c. **LLM post-auto-fix:** Suggest the user add a completion note or link during the session. The annotation is a nudge, not a block.
+4. Log summary: `Assignment integrity: N issue(s) across 14a/14b/14c auto-fixed`
 
 **Category 3 auto-fix steps:**
 1. For each summary file containing `None recorded yet`, `TBD`, `system just initialized`, or `first run detected`:
@@ -235,6 +251,27 @@ All 13 categories are auto-fixed per the simplified severity model. Cat 4 uses a
 1. For each missing phase file: Return pendingFix { type: "create_phase_stub", phaseId, missingFile }.
 2. LLM creates stub with `*(none)*` content.
 3. Log: "Created N stub file(s) for M phase(s)"
+
+### Category 14 — Assignment Integrity
+
+Detects issues with ASSIGNMENT records in `.project-memory/assignments/`. Three sub-categories.
+
+**Detection:**
+- **14a — Direct assignment target orphan:** Scan all `ASSIGNMENT-*.md` files with `type: direct` and `status != completed`. For each, verify `target_id` references a file that exists (check issues/, phases/, discussions/, decisions/). Missing target = finding.
+- **14b — Stale pending assignment:** Scan all `ASSIGNMENT-*.md` files with `status: pending` and `assigned_at` older than 30 days.
+- **14c — Completed without evidence:** Scan all `ASSIGNMENT-*.md` files with `status: completed` where `completion_note`, `completed_phase_id`, `completed_decision_id`, and `completed_discussion_id` are ALL null/empty.
+
+**Severity and handling:**
+
+| Sub | Severity | Boundary | Action |
+|-----|----------|----------|--------|
+| 14a | medium | Age ≤ 3 days → interactive triage; > 3 days → auto-fix | Auto-fix: annotate `target_id` with `[orphaned YYYY-MM-DD]` (same format as Cat 7) |
+| 14b | low | N/A (auto-fix always) | Auto-fix: increment `remind_count` by 1, update `last_reminded_at` to today. Annotation: `[stale pending — bump remind_count to N]` |
+| 14c | low | N/A (auto-fix always) | Auto-fix: annotate frontmatter with `# Warning: completed without evidence [YYYY-MM-DD]`. No structural change. |
+
+**Permanent skip:** Standard `audit_ignore` entries in `config.yml` apply. Keys: `"assignment-orphan:<ASSIGNMENT-ID>"` for 14a, `"assignment-stale:<ASSIGNMENT-ID>"` for 14b, `"assignment-no-evidence:<ASSIGNMENT-ID>"` for 14c. Pattern matching (`*`) supported.
+
+**LLM post-auto-fix actions for 14c:** When an evidence-less completion is detected, the LLM should suggest the user add a completion note or link during the session. The annotation is a nudge, not a block.
 
 ---
 
@@ -302,7 +339,7 @@ When the skill is invoked as `Skill project-memory audit`:
 
 **Question shapes per category:**
 
-Cat 4 is the only interactive category. All others (Cat 1,2,3,5,6,7,8,9,10,11,12,13) are auto-fixed silently.
+Cat 4 is the only interactive category. All others (Cat 1,2,3,5,6,7,8,9,10,11,12,13,14) are auto-fixed silently.
 
 - **Open-phase commit gap (simplified):** Only escalated when heuristic can't resolve.
   "Open phase <id> has <N> commit(s) by <author> that couldn't be auto-assigned. What should I do?"
