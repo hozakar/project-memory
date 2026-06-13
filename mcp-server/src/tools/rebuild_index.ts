@@ -57,6 +57,16 @@ export async function rebuildIndex(entries: IndexEntry[]): Promise<{ indexed: nu
         text,
         vector,
       };
+      if (entry.type === "phase") {
+        const pData = entry.data as PhaseIndexData;
+        record.tagsJson = JSON.stringify(pData.tags ?? []);
+      } else if (entry.type === "decision") {
+        const dData = entry.data as DecisionIndexData;
+        record.touchesJson = JSON.stringify(dData.touches ?? []);
+      } else if (entry.type === "discussion") {
+        const discData = entry.data as DiscussionIndexData;
+        record.tagsJson = JSON.stringify(discData.tags ?? []);
+      }
       if (createdBy) {
         record.createdByName = createdBy.name;
         record.createdByEmail = createdBy.email;

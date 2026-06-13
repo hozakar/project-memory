@@ -32,6 +32,13 @@ async function getTable(): Promise<any> {
       title: "",
       text: "",
       vector: new Array(384).fill(0),
+      createdByName: undefined as any,
+      createdByEmail: undefined as any,
+      contributorsJson: undefined as any,
+      tagsJson: undefined as any,
+      touchesJson: undefined as any,
+      assignedToEmail: undefined as any,
+      assignedByEmail: undefined as any,
     };
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const table = await (conn as any).createTable("memory", [dummy]);

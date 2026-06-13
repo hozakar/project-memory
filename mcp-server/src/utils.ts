@@ -3,7 +3,7 @@ import type { PhaseIndexData, DecisionIndexData, DiscussionIndexData, CommitDiff
 export function buildPhaseText(data: PhaseIndexData): string {
   const parts: string[] = [
     data.title,
-    data.tags.join(" "),
+    (data.tags ?? []).join(" "),
     data.planText,
     data.implementationText,
   ];
@@ -18,7 +18,7 @@ export function buildDecisionText(data: DecisionIndexData): string {
     data.title,
     data.status,
     data.provenance ?? "",
-    data.touches.join(" "),
+    (data.touches ?? []).join(" "),
     data.context,
     data.decisionBody,
   ]
@@ -32,7 +32,7 @@ export function buildDiscussionText(data: DiscussionIndexData): string {
     data.status,
     data.provenance ?? "",
     data.outcome,
-    data.tags.join(" "),
+    (data.tags ?? []).join(" "),
     data.summary,
     data.bodyText,
   ]
