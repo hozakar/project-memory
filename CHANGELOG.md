@@ -11,6 +11,7 @@ All notable changes to the project-memory skill and MCP companion server.
 - **ADR 0008 — Branch-Per-Phase Workflow**: every phase gets its own git branch; rejected trunk-based and fork-based alternatives
 - **Era 2** (`era-002.md`): narrative covering phases 11–21 (memory scalability through fix-open-issues)
 - **Era creation trigger** in cheatsheet.md and protocol.md: auto-create era when ~10 phases accumulate
+- **Author attribution** — structured `created_by` + `contributors` ({name, email}) added to phase / decision / discussion / issue frontmatter. LLM captures git identity at write time; missing → `unknown` sentinel (no escalation). MCP record schema extended with `createdByName`, `createdByEmail`, `contributorsJson`; rebuild_index required after backfill. Era / summaries / ADR / index files unchanged. See DECISION-2026-06-13-author-attribution and ADR 0010.
 
 ### 2026-06-12
 - **Audit expansion**: 6 → 13 categories (Cat 7 orphan commits, Cat 8 ADR sync, Cat 9 discussion index drift, Cat 10 phase completeness, Cat 11 discussion expiry, Cat 12 tag inconsistency, Cat 13 MCP consistency)

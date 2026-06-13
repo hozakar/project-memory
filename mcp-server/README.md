@@ -18,6 +18,8 @@ Optional MCP companion server for the [project-memory](../) skill. Provides sema
 
 **Write direction:** files → DB only. MCP may write `.project-memory/` files for file-move auto-fixes (Cat 5/11). YAML mutations (Cat 7) remain LLM-only. Zero data loss on MCP absence.
 
+As of v0.4.x+, records may carry `createdByName`, `createdByEmail`, and `contributorsJson` columns (JSON-stringified `Identity[]`). Optional; defaults to `unknown`.
+
 ## Prerequisites
 
 - Node.js ≥ 18
