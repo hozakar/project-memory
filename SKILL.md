@@ -181,7 +181,11 @@ Phase / decision / discussion / issue records carry author attribution via `crea
 ├── templates-phase.md     ← Phase and era templates
 ├── templates-records.md   ← Decision, discussion, instruction, assignment templates + author attribution
 ├── templates-config.md    ← Config and summary templates
-├── conventions.md    ← Naming and lifecycle rules, decision resolution
+├── conventions.md              ← Conventions dispatcher — routes to sub-files by topic
+├── conventions-decisions.md    ← Decision lifecycle, ADR, touches, resolution rules
+├── conventions-discussions.md  ← Discussion lifecycle, relevancy scoring, expiry
+├── conventions-records.md      ← Issues, Instructions, Assignments lifecycles
+├── conventions-maintainer.md   ← Language, Author Attribution, Maintainer Role
 └── README.md         ← Human-readable overview
 `
 
