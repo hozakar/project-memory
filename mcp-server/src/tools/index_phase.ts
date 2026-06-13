@@ -1,13 +1,18 @@
 import { embed } from "../embedder";
 import { upsert } from "../db";
 import { buildPhaseText, buildCommitText } from "../utils";
-import type { PhaseIndexData, LanceRecord } from "../types";
+import type { PhaseIndexData, LanceRecord, Identity } from "../types";
 
 export async function indexPhase(
   data: PhaseIndexData
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    const text = buildPhaseText(data);
+    const createdBy: Identity = data.createdBy ?? { name: "unknown", email: "unknown" };
+    const contributors: Identity[] = data.contributors ?? [];
+
+    let text = buildPhaseText(data);
+    text += `\nAuthor: ${createdBy.name} <${createdBy.email}>`;
+
     const vector = await embed(text);
     const record: LanceRecord = {
       id: data.id,
@@ -15,6 +20,9 @@ export async function indexPhase(
       title: data.title,
       text,
       vector,
+      createdByName: createdBy.name,
+      createdByEmail: createdBy.email,
+      contributorsJson: JSON.stringify(contributors),
     };
     await upsert(record);
 
