@@ -59,7 +59,7 @@ When invoked as `Skill project-memory discuss`, or when the user uses implicit d
 1. Read `conventions.md` Discussion Lifecycle section for the full procedure.
 2. Load `discussions/index.md` to surface prior discussions relevant to the current topic.
 3. Engage in structured discussion with the user → explore ideas, tradeoffs, alternatives, plans.
-4. At discussion close, determine the outcome (Phase / Decision / Issue / Roadmap / None) and write a `DISCUSSION-YYYY-MM-DD-slug.md` file to `.project-memory/discussions/`.
+4. At discussion close, apply the Relevancy Scoring Gate (see `conventions.md` → Discussion Lifecycle): compute weighted score (25-55-10-10), apply thresholds (<60 silent drop / 60-80 ask user / ≥80 auto-save), check safety rule (long-term impact >75% of max → always escalate). If saving: determine the outcome (Phase / Decision / Issue / Roadmap / None) and write a `DISCUSSION-YYYY-MM-DD-slug.md` file to `.project-memory/discussions/`.
 5. Update `discussions/index.md` with the new row.
 6. If outcome is `phase`, offer to create the phase immediately. If `decision`, offer to create the DECISION file. If `issue`, offer to create the ISSUE file. If `roadmap`, add the entry to `roadmap.md`.
 

@@ -203,7 +203,13 @@ Trigger (explicit or implicit)
       -> LLM loads discussions/index.md for prior context
       -> Conversation proceeds
   -> Close discussion
-      -> Determine outcome type:
+      -> Apply Relevancy Scoring Gate (see below)
+          explicit user save -> skip scoring, always write
+          score < 60        -> silent drop; proceed to phase/decision if applicable
+          score 60–80       -> ask user: "Do you think we should save this discussion?" (yes/no)
+          score >= 80       -> auto-save
+          safety rule hit   -> escalate to user (overrides silent drop)
+      -> If saving: determine outcome type:
           phase -> offer to create phase
           decision -> offer to create DECISION file
           issue -> offer to create ISSUE file
@@ -211,6 +217,46 @@ Trigger (explicit or implicit)
           none -> just save the discussion
       -> Write DISCUSSION-YYYY-MM-DD-slug.md
       -> Add row to discussions/index.md
+```
+
+**Relevancy Scoring Gate:**
+
+Score is computed at discussion close using four weighted criteria (100-point total):
+
+| # | Criterion | Weight |
+|---|-----------|--------|
+| 1 | Conclusion reached (explicit rejection with reasoning counts) | 25 |
+| 2 | Long-term impact on future decisions | 55 |
+| 3 | Enough material to fill a discussion file | 10 |
+| 4 | Enough material to fill a decision file | 10 |
+
+**Thresholds:**
+
+| Score | Action |
+|-------|--------|
+| < 60 | Silent drop — no file written |
+| 60–80 | Escalate to user: "Do you think we should save this discussion?" (yes/no) |
+| ≥ 80 | Auto-save — write file immediately |
+
+**Safety rule:** If the long-term impact subscore (criterion 2) exceeds 75% of its maximum (i.e., > ~41/55), the discussion is always escalated to the user regardless of total score. This prevents silently dropping systemically important conversations that lack a formal conclusion.
+
+**Long-term impact rubric** (for LLM scoring consistency):
+
+| Score | Level | Examples |
+|-------|-------|---------|
+| 0–10 | Trivial/cosmetic | Separator line color, minor naming tweak |
+| 10–25 | Local | Approach choice within a single module |
+| 25–40 | Significant | Architectural decision affecting one domain |
+| 40–55 | Systemic | Shapes how future decisions are made; cross-cutting concerns |
+
+**Outcome chain** (when a discussion is saved, it must link to its downstream artifact):
+
+```
+discussion → decision (if conclusion without immediate implementation)
+                └→ phase    (when decision is implemented later)
+                └→ roadmap  (if decision is pending / no phase yet)
+
+discussion → phase (if conversation leads directly to implementation)
 ```
 
 **Resume:**
