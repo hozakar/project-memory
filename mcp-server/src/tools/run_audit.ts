@@ -59,6 +59,7 @@ interface PhaseEntry {
   mergeCommit: string | null;
   status: string;
   block: string;
+  startedAt: string | null;
 }
 
 function parsePhasesFromIndex(indexContent: string): PhaseEntry[] {
@@ -89,7 +90,10 @@ function parsePhasesFromIndex(indexContent: string): PhaseEntry[] {
     const statusMatch = block.match(/status:\s+(\S+)/);
     const status = statusMatch ? statusMatch[1].replace(/^['"]|['"]$/g, "") : "";
 
-    entries.push({ phaseId, commits, mergeCommit, status, block });
+    const startedAtMatch = block.match(/started_at:\s+(\d{4}-\d{2}-\d{2})/);
+    const startedAt = startedAtMatch ? startedAtMatch[1] : null;
+
+    entries.push({ phaseId, commits, mergeCommit, status, block, startedAt });
   }
   return entries;
 }
@@ -238,7 +242,8 @@ function cat4OpenPhaseGap(
     }
     if (!branch) continue;
 
-    const logOutput = git(`git log --oneline --max-count=200 ${branch}`, projectRoot);
+    const afterFlag = phase.startedAt ? ` --after=${phase.startedAt}` : "";
+    const logOutput = git(`git log --oneline --max-count=200${afterFlag} ${branch}`, projectRoot);
     if (!logOutput) continue;
 
     const missing: string[] = [];
