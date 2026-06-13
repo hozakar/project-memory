@@ -9,6 +9,7 @@ import { rebuildIndex } from "./tools/rebuild_index";
 import { findSimilarCommit } from "./tools/find_similar_commit";
 import { indexEra } from "./tools/index_era";
 import { indexInstruction } from "./tools/index_instruction";
+import { indexAssignment } from "./tools/index_assignment";
 import { runAudit } from "./tools/run_audit";
 import type { IndexEntry } from "./types";
 
@@ -28,13 +29,15 @@ srv.tool(
     top_k: z.number().int().min(1).max(20).optional().default(8).describe("Number of results"),
     include_commits: z.boolean().optional().default(false).describe("Include per-commit vector records in results (default: false)"),
     created_by_email: z.string().optional().describe("Filter results to a specific creator email. Default: no filter. Use to scope instruction searches to current user."),
+    assigned_to_email: z.string().optional(),
+    assigned_by_email: z.string().optional(),
     type_filter: z.string().optional().describe("Filter results to a specific type (phase, decision, discussion, era, instruction). Default: no filter."),
     touches_filter: z.array(z.string()).optional().describe("Exact AND-filter on decision touches field. E.g. [\"conventions_md\"] returns only decisions that touch conventions_md. Multiple values narrow further (AND semantics). Only effective on type=decision records."),
     tags_filter: z.array(z.string()).optional().describe("Exact AND-filter on phase/discussion tags field. E.g. [\"mcp\", \"schema\"] returns records tagged with both. Only effective on type=phase and type=discussion records."),
   },
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async (args: any) => {
-    const results = await searchMemory(args.query, args.top_k, args.include_commits, args.created_by_email, args.type_filter, args.touches_filter, args.tags_filter);
+    const results = await searchMemory(args.query, args.top_k, args.include_commits, args.created_by_email, args.type_filter, args.touches_filter, args.tags_filter, args.assigned_to_email, args.assigned_by_email);
     return { content: [{ type: "text" as const, text: JSON.stringify(results) }] };
   }
 );
@@ -119,6 +122,48 @@ srv.tool(
     const result = await indexInstruction(args);
     return { content: [{ type: "text" as const, text: JSON.stringify(result) }] };
   }
+);
+
+srv.tool(
+  "index_assignment",
+  "Index or update an assignment in the vector DB. Call on ASSIGNMENT file creation and on status change (pending→accepted/rejected, accepted→ongoing, ongoing→completed). Upsert by ID.",
+  {
+    id: z.string().regex(/^[a-zA-Z0-9-]+$/),
+    title: z.string(),
+    status: z.string(),
+    description: z.string().optional(),
+    assignedTo: z.object({ name: z.string(), email: z.string() }).optional(),
+    assignedBy: z.object({ name: z.string(), email: z.string() }).optional(),
+    assignedAt: z.string().optional(),
+    targetType: z.string().nullable().optional(),
+    targetId: z.string().nullable().optional(),
+    rejectReason: z.string().nullable().optional(),
+    completionNote: z.string().nullable().optional(),
+    createdBy: z.object({ name: z.string(), email: z.string() }).optional(),
+    contributors: z.array(z.object({ name: z.string(), email: z.string() })).optional(),
+  },
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  async (args: any) => {
+    const data: any = {
+      id: args.id,
+      title: args.title,
+      status: args.status,
+      description: args.description || null,
+      type: args.targetType && args.targetId ? "direct" : "freeform",
+      assignedTo: args.assignedTo || { name: "unknown", email: "unknown" },
+      assignedBy: args.assignedBy || { name: "unknown", email: "unknown" },
+      assignedAt: args.assignedAt || new Date().toISOString().slice(0, 10),
+      targetType: args.targetType || null,
+      targetId: args.targetId || null,
+      rejectionReason: args.rejectReason || null,
+      completionNote: args.completionNote || null,
+      remindCount: 0,
+      createdBy: args.createdBy,
+      contributors: args.contributors,
+    };
+    await indexAssignment(data);
+    return { content: [{ type: "text", text: `Indexed assignment: ${args.id}` }] };
+  },
 );
 
 srv.tool(
