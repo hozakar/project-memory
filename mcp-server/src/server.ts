@@ -48,7 +48,8 @@ srv.tool(
   {
     id: z.string().regex(/^[a-zA-Z0-9-]+$/).describe("Phase ID, e.g. phase-20260612-mcp-companion-mvp"),
     title: z.string(),
-    tags: z.array(z.string()),
+    tags: z.array(z.string()).optional(),
+    tagsJson: z.string().optional(),
     planText: z.string(),
     implementationText: z.string(),
     commitDiffs: z.array(z.object({
@@ -61,6 +62,9 @@ srv.tool(
   },
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async (args: any) => {
+    if (!args.tags && args.tagsJson) {
+      try { args.tags = JSON.parse(args.tagsJson); } catch {}
+    }
     const result = await indexPhase(args);
     return { content: [{ type: "text" as const, text: JSON.stringify(result) }] };
   }
@@ -76,10 +80,14 @@ srv.tool(
     provenance: z.enum(["directive", "collaborative"]).optional().describe("How the decision originated: directive (user-imposed) or collaborative (joint design)"),
     context: z.string(),
     decisionBody: z.string(),
-    touches: z.array(z.string()),
+    touches: z.array(z.string()).optional(),
+    touchesJson: z.string().optional(),
   },
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async (args: any) => {
+    if (!args.touches && args.touchesJson) {
+      try { args.touches = JSON.parse(args.touchesJson); } catch {}
+    }
     const result = await indexDecision(args);
     return { content: [{ type: "text" as const, text: JSON.stringify(result) }] };
   }
@@ -94,12 +102,16 @@ srv.tool(
     status: z.string(),
     provenance: z.enum(["directive", "collaborative"]).optional().describe("How the discussion originated: directive (user-imposed save) or collaborative (joint exploration)"),
     outcome: z.string(),
-    tags: z.array(z.string()),
+    tags: z.array(z.string()).optional(),
+    tagsJson: z.string().optional(),
     summary: z.string(),
     bodyText: z.string(),
   },
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async (args: any) => {
+    if (!args.tags && args.tagsJson) {
+      try { args.tags = JSON.parse(args.tagsJson); } catch {}
+    }
     const result = await indexDiscussion(args);
     return { content: [{ type: "text" as const, text: JSON.stringify(result) }] };
   }
