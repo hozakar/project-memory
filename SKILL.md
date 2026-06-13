@@ -96,7 +96,7 @@ The `mcp-server/` subdirectory contains an optional MCP server that accelerates 
 
 **Graceful degradation:** File system is always source of truth. DB is a derived index. Write direction is files → DB only, never DB → files. MCP failure at any point does not affect skill functionality.
 
-**Detailed integration rules:** See `protocol.md` → MCP Companion Integration section (includes proactive DB sync at session start and squash/rebase recovery via `find_similar_commit`); `gates.md` → Phase Creation and End-of-Phase Maintenance MCP steps; `audit.md` → Category 13.
+**Detailed integration rules:** See `protocol.md` → MCP Companion Integration section (includes proactive DB sync at session start and squash/rebase recovery via `find_similar_commit`); `gates.md` → Phase Creation and End-of-Phase Maintenance MCP steps; `audit-fs.md` → Category 13.
 
 ---
 
@@ -173,7 +173,9 @@ Phase / decision / discussion / issue records carry author attribution via `crea
 ├── gates.md          ← Implementation gates, commit rules, phase lifecycle
 ├── protocol.md       ← Agent thinking protocol, memory loading, knowledge preservation
 ├── cheatsheet.md     ← Quick reference, event-based triggers
-├── audit.md          ← Drift detection and repair (13 categories): single escalation gate (Cat 4 — same-user heuristic with auto-assignment, escalates only on author mismatch or ambiguous matching). All other 12 categories auto-fix silently.
+├── audit.md          ← Drift audit dispatcher — routes to audit-mcp.md or audit-fs.md
+├── audit-mcp.md      ← MCP-driven drift detection (run_audit fast path)
+├── audit-fs.md       ← File-system drift detection (14 categories)
 ├── init.md           ← First-run initialization
 ├── templates.md      ← All document schemas (phases, decisions, issues, discussions)
 ├── conventions.md    ← Naming and lifecycle rules, decision resolution
