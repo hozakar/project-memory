@@ -17,6 +17,7 @@ export function buildDecisionText(data: DecisionIndexData): string {
   return [
     data.title,
     data.status,
+    data.provenance ?? "",
     data.touches.join(" "),
     data.context,
     data.decisionBody,
@@ -29,6 +30,7 @@ export function buildDiscussionText(data: DiscussionIndexData): string {
   return [
     data.title,
     data.status,
+    data.provenance ?? "",
     data.outcome,
     data.tags.join(" "),
     data.summary,

@@ -143,7 +143,7 @@ Maintenance rules:
 
 ## DECISION-YYYY-MM-DD-slug.md
 
-See `conventions.md` for the required frontmatter schema (`id`, `status`, `primary_scope`, `touches`, `supersedes`, `superseded_by`, `adr_id`) and Decision Resolution Rules.
+See `conventions.md` for the required frontmatter schema (`id`, `status`, `provenance`, `primary_scope`, `touches`, `supersedes`, `superseded_by`, `adr_id`) and Decision Resolution Rules.
 
 ---
 
@@ -250,6 +250,7 @@ id: DISCUSSION-YYYY-MM-DD-short-slug
 title: Human readable title
 date: YYYY-MM-DD
 status: open | concluded
+provenance: directive | collaborative  # directive = user-imposed; collaborative = joint design
 summary: Brief summary of the discussion
 conclusion: What was decided or resolved
 outcome:

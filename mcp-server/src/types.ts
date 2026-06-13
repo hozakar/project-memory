@@ -26,6 +26,7 @@ export interface DecisionIndexData {
   id: string;              // e.g. "DECISION-2026-06-12-roadmap-mcp-first"
   title: string;
   status: string;          // "active" | "superseded"
+  provenance?: string;     // "directive" | "collaborative" — how the decision originated
   context: string;         // first 1000 chars of # Context section body
   decisionBody: string;    // first 1000 chars of # Decision + # Chosen Solution bodies
   touches: string[];       // from frontmatter touches field
@@ -37,6 +38,7 @@ export interface DiscussionIndexData {
   id: string;              // e.g. "DISCUSSION-2026-06-12-mcp-companion-architecture"
   title: string;
   status: string;          // "open" | "concluded"
+  provenance?: string;     // "directive" | "collaborative" — how the discussion originated
   outcome: string;         // e.g. "phase-20260612-foo" | "DECISION-2026-06-12-bar" | "roadmap" | "none"
   tags: string[];
   summary: string;         // one-line summary (from discussions/index.md)

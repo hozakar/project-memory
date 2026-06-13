@@ -71,6 +71,7 @@ Create when architecture changes, major dependencies are introduced, important t
 ---
 id: DECISION-YYYY-MM-DD-short-slug
 status: active | superseded | amended
+provenance: directive | collaborative  # directive = user-imposed rule; collaborative = joint design
 primary_scope: <category>           # auth, persistence, deployment, ui, schema, ...
 touches: [entity1, entity2]         # concrete names â€” see Touches Field Guidance
 supersedes: DECISION-YYYY-MM-DD-... # null if none
