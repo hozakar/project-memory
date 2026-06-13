@@ -131,32 +131,58 @@ function cat1CommitOrphans(
   projectRoot: string,
   phases: PhaseEntry[],
   ignored: Set<string>
-): AuditFinding[] {
-  const logOutput = git("git log --oneline -30", projectRoot);
-  if (!logOutput) return [];
+): { autoFixed: string[]; escalations: AuditFinding[] } {
+  // Get current user email for author filtering
+  const currentUserEmail = git("git config user.email", projectRoot) || "";
+
+  // Use --format to get author email (%ae) and ISO date (%aI) alongside hash and subject
+  const logOutput = git("git log --format='%h %ae %aI %s' -30", projectRoot);
+  if (!logOutput) return { autoFixed: [], escalations: [] };
 
   const allTracked = new Set<string>();
   for (const p of phases) for (const h of p.commits) allTracked.add(h);
   // Also index abbreviated form (git log --oneline returns 7-char hashes)
   for (const p of phases) for (const h of p.commits) allTracked.add(h.slice(0, 7));
 
-  const orphans: string[] = [];
+  const agedOrphans: string[] = [];
+  const freshOrphans: string[] = [];
+
   for (const line of logOutput.split("\n")) {
-    const lm = line.match(/^([0-9a-f]{7,40})\s+(.+)$/);
+    // Parse: hash author_email iso_date subject
+    const lm = line.match(/^([0-9a-f]{7,40})\s+(\S+)\s+(\S+)\s+(.+)$/);
     if (!lm) continue;
-    const [, hash, subject] = lm;
+    const [, hash, authorEmail, isoDate, subject] = lm;
     if (allTracked.has(hash)) continue;
     if (TRIVIAL_RE.test(subject)) continue;
     if (ignored.has(`commit:${hash}`)) continue;
-    orphans.push(hash);
+
+    // User scope: skip commits by other users on-load
+    if (currentUserEmail && authorEmail !== currentUserEmail) continue;
+
+    // Age boundary: > 3 days → auto-trivial
+    const ageDays = daysDiff(isoDate.split("T")[0]);
+    if (ageDays > 3) {
+      agedOrphans.push(hash);
+    } else {
+      freshOrphans.push(hash);
+    }
   }
 
-  if (orphans.length === 0) return [];
-  return [{
-    category: 1, severity: "high", interactive: true,
-    description: `${orphans.length} commit(s) not tracked in any phase`,
-    data: { hashes: orphans },
-  }];
+  const autoFixed: string[] = [];
+  if (agedOrphans.length > 0) {
+    autoFixed.push(`Auto-trivially classified ${agedOrphans.length} aged orphan commit(s): ${agedOrphans.join(" ")} (age > 3 days)`);
+  }
+
+  const escalations: AuditFinding[] = [];
+  if (freshOrphans.length > 0) {
+    escalations.push({
+      category: 1, severity: "low", interactive: false,
+      description: `${freshOrphans.length} orphan commit(s) (last 3 days). Run audit to review.`,
+      data: { hashes: freshOrphans },
+    });
+  }
+
+  return { autoFixed, escalations };
 }
 
 function cat2SummaryStaleness(
@@ -645,7 +671,9 @@ export async function runAudit(projectMemoryDir: string): Promise<AuditReport> {
   pendingFixes.push(...cat7OrphanCommitRefs(projectRoot, phases));
 
   // Escalation categories
-  escalations.push(...cat1CommitOrphans(projectRoot, phases, ignored));
+  const cat1Result = cat1CommitOrphans(projectRoot, phases, ignored);
+  autoFixed.push(...cat1Result.autoFixed);
+  escalations.push(...cat1Result.escalations);
   escalations.push(...cat2SummaryStaleness(projectRoot, projectMemoryDir, ignored));
   escalations.push(...cat3StubPlaceholders(projectMemoryDir, ignored));
   escalations.push(...cat4OpenPhaseGap(projectRoot, phases, ignored));
