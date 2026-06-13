@@ -160,7 +160,7 @@ After that, every session starts with `🧠 PROJECT MEMORY LOADED` and a drift a
 | Start significant work | Checks a phase is open; creates one if not |
 | Make a commit | Classifies significance; attaches to the open phase |
 | Plan a change touching a past decision | Surfaces any directional conflicts before you implement |
-| Say "let's discuss X" or "tartışalım" | Enters discussion mode; saves outcome at close |
+| Say "let's discuss X" | Enters discussion mode; saves outcome at close |
 | Close a phase | Verifies all five phase documents are complete |
 | ~10 phases since last era (maintainer only) | Prompts to create a new era summary |
 
