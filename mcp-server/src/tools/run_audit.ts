@@ -32,7 +32,9 @@ function readFile(filePath: string): string {
 
 function parseFrontmatter(content: string): Record<string, string> {
   const result: Record<string, string> = {};
-  const match = content.match(/^---\n([\s\S]*?)\n---/);
+  // Normalize CRLF → LF and strip BOM before parsing
+  const normalized = content.replace(/\r\n/g, "\n").replace(/\r/g, "\n").replace(/^\uFEFF/, "");
+  const match = normalized.match(/^---\n([\s\S]*?)\n---/);
   if (!match) return result;
   for (const line of match[1].split("\n")) {
     const kv = line.match(/^(\w+):\s*(.+)$/);
@@ -610,7 +612,7 @@ function cat12TagInconsistency(phases: PhaseEntry[], ignored: Set<string>): Audi
         const dist = levenshtein(tag, other);
         if (dist > 0 && dist <= 2 && (!best || dist < best.dist)) best = { other, dist };
       }
-      if (best && !ignored.has(`tag-typo:${phaseId}:${tag}`)) {
+      if (best && !ignored.has(`${phaseId}:${tag}`)) {
         findings.push({
           category: 12, severity: "low", interactive: false,
           description: `Tag "${tag}" in ${phaseId} resembles "${best.other}" (distance ${best.dist})`,
