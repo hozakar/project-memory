@@ -22,9 +22,10 @@ When this skill activates:
 
 3. Run Drift Audit (read `audit.md` for the full procedure).
    - Auto-fix all findings in the auto-fix category silently (includes all low-severity and aged-medium findings).
+   - Cat 1 findings with `interactive: false` (fresh orphan commits, ≤ 3 days, current user): present as a single informational notice — "ℹ️ N orphan commit(s) (last 3 days). Run `audit` to review." Do NOT enter interactive mode for these.
    - Present interactive-triage findings (high severity, or medium with age ≤ 3 days) in a single block, in the format specified by `audit.md`.
-   - If no findings at all: replace the Step 1 line with 🧠 PROJECT MEMORY LOADED → drift audit clean.
-   - If findings exist: keep the Step 1 line as-is and emit the drift report block after it.
+   - If no findings at all (no interactive, no info, no auto-fix): replace the Step 1 line with 🧠 PROJECT MEMORY LOADED → drift audit clean.
+   - If auto-fix or info findings exist but no interactive-triage findings: keep the Step 1 line as-is, emit the drift report block, and continue to step 4 (do NOT enter interactive mode).
    - If any interactive-triage findings exist after auto-fix, immediately enter Interactive Audit Mode (per `audit.md` Interactive Mode section) without waiting for the user to invoke `audit` manually. Apply user decisions, re-detect, loop until clean.
 
 4. Continue with the session. Do not ask the user for anything at this step.

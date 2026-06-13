@@ -49,7 +49,7 @@ Run all 13 categories on every audit pass. Collect findings before acting. Check
 
 | # | Category | Detection Rule | Tool Calls | Classification | Severity |
 |---|---|---|---|---|---|
-| 1 | **Commit orphans** | Run `git log --oneline -30`. For each commit hash, check `phases/index.yml` for a match in any `commits:` list or as a `merge_commit`. Commits not found in the index are candidates. Apply trivial-commit regex (see Edge Cases) to filter: commits whose subject matches `^(docs|chore\(lint|chore\(format|chore\(deps|chore\(memory|chore\(audit|fix\(lint|phase:)` are filtered out. Remaining unmatched commits = orphan significant commits. Age: git commit timestamp. | `Bash: git log --oneline -30`; `Read: .project-memory/phases/index.yml` | **Escalate** | **high** |
+| 1 | **Commit orphans** | Run `git log --format='%h %ae %aI %s' -30`. For each commit hash, check `phases/index.yml` for a match in any `commits:` list or as a `merge_commit`. Apply trivial-commit regex (see Edge Cases). Apply author filter: compare commit author email against `git config user.email` — skip non-current-user commits. Apply age boundary: commits older than 3 days → auto-trivial (auto_fixed log). Commits ≤ 3 days AND author matches → informational notice (severity: low, interactive: false), not an interactive question. All filters removed on explicit `audit` invocation. | MCP: `run_audit` Cat 1 function | **Auto-fix / Info** | — |
 | 2 | **Summary staleness** | Run `git log -1 --format=%cs` to get the date of the most recent project commit. For each file in `summaries/*.md`, parse the `Last Updated:` field. If the summary date is older than the project commit date, it is stale. If a summary file has no `Last Updated:` field, treat as a separate finding (see Edge Cases). Age: date of the most recent project commit. | `Bash: git log -1 --format=%cs`; `Read` each `summaries/*.md` file | **Escalate** | **medium** |
 | 3 | **Stub placeholders** | Grep all `summaries/*.md` for: `None recorded yet`, `TBD`, `system just initialized`, `first run detected`. Record the file path and which section header the match falls under. No age computation — always auto-fix. | `Grep` over `.project-memory/summaries/*.md` | **Auto-fix** | **low** |
 | 4 | **Open-phase commit gap** | In `phases/index.yml`, find every phase with `status` equal to `planning`, `implementation`, or `review`. For each: identify branch (if null, try `main`, `master`, `staging`; if none exist, skip). Get commits already in `commits[]`. Run `git log --oneline --max-count=200 --after=<started_at - 1 day> <branch>` and find commits on branch not in the phase's list. Age: timestamp of the earliest untracked commit. | `Read: .project-memory/phases/index.yml`; `Bash: git log --oneline --max-count=200 --after=<started_at - 1 day> <branch>` | **Escalate** | **high** |
@@ -239,6 +239,9 @@ Everything not listed above enters interactive triage (high severity, or medium 
   • Auto-fixed: moved <filename> to closed/
   • MCP sync: N entries updated
 
+  Info:
+  • Cat 1: N orphan commit(s) (last 3 days). Run `audit` to review.
+
 Entering interactive triage — answering each finding in turn.
 ```
 
@@ -275,7 +278,7 @@ When the skill is invoked as `Skill project-memory audit`:
 
 **Question shapes per category:**
 
-- **Commit orphans:** "These N commits are not tracked in any phase: `<hashes>`. What should I do?" — options: `[open phase name(s) if any]`, `"new phase"`, `"mark trivial (skip)"`, `"mark ignored (permanent)"`
+- **Commit orphans (explicit audit only):** On explicit `audit` invocation, Cat 1 runs unfiltered (no author scope, no age boundary). "These N commits are not tracked in any phase: `<hashes>`. What should I do?" — options: `[open phase name(s) if any]`, `"new phase"`, `"mark trivial (skip)"`, `"mark ignored (permanent)"`. On-load: filtered by author + 3-day boundary → info notice or auto-fixed.
 
 - **Summary staleness:** "`<filename>` is stale (Last Updated `<date>`, memory commit `<date>`). How should I resolve this?" — options: `"update content"`, `"bump Last Updated date only"`, `"skip"`, `"mark ignored (permanent)"`
 
@@ -311,7 +314,13 @@ When the user chooses `"mark ignored (permanent)"` for any finding: write the co
 
 # Edge Cases
 
-- **Trivial-commit regex:** `^(docs|chore\(lint|chore\(format|chore\(deps|chore\(memory|chore\(audit|fix\(lint`. Apply to the commit subject line. If a commit subject matches this pattern AND no open phase exists, exclude it from the orphan list. If a commit subject matches AND an open phase exists, also exclude it — but if the count of such trivial unattached commits exceeds 3, add a silent note in the auto-fixed log.
+- **Trivial-commit regex:** `^(docs|chore\(lint|chore\(format|chore\(deps|chore\(memory|chore\(audit|fix\(lint|phase:)`. Apply to the commit subject line. If a commit subject matches this pattern AND no open phase exists, exclude it from the orphan list.
+
+- **Cat 1 author filtering:** On-load, `git config user.email` identifies the current user. Commits where `author_email != current_user_email` are skipped. If `git config user.email` returns empty (unknown user), all commits are shown (safe default).
+
+- **Cat 1 age boundary:** Commit age computed from `%aI` (ISO 8601 date). Age > 3 days → auto-trivial (logged in auto_fixed). Age ≤ 3 days → informational notice (escalation, low severity, interactive: false). Explicit `audit` removal of age boundary is handled by the LLM layer, not the MCP tool.
+
+- **Cat 1 explicit audit:** When the user invokes `Skill project-memory audit`, the LLM ignores `interactive: false` for Cat 1 and re-runs detection unfiltered. The MCP tool always applies the filter; explicit-audit unfiltering is a layer above (LLM re-reads config or runs raw git log).
 
 - **`*(none)*` is not a stub:** `*(none)*` is the canonical placeholder for a legitimately-empty section. Do not include it in the stub grep patterns.
 
