@@ -26,6 +26,15 @@ When this skill activates:
      - If MCP is available: call `search_memory("instruction", top_k=20, created_by_email=<current git user email>, type_filter="instruction")` to load current user's active instructions. Inject each instruction's prompt into context.
      - If MCP is unavailable: scan `.project-memory/instructions/` directory for files where frontmatter `created_by.email` matches current git user email AND `state: active`. Inject each instruction's `# Prompt` body into context.
       - If ≥5 active instructions are loaded, emit: "⚠️ N active instructions loaded. Consider dropping unused ones with 'drop instruction X'."
+
+   If `.project-memory/assignments/` exists:
+     - If MCP is available: call `search_memory("assignment", top_k=20, assigned_to_email=<current git user email>)` for pending/accepted/ongoing assignments; also call `search_memory("rejected assignment", top_k=10, assigned_by_email=<current git user email>)` for rejected assignments.
+     - If MCP is unavailable: scan `.project-memory/assignments/` for files where frontmatter `assigned_to.email` matches current user AND `status` is `pending`/`accepted`/`ongoing`; also scan for files where `assigned_by.email` matches AND `status` is `rejected`/`completed`.
+     - Present pending assignments interactively: `[Show Details] [Accept] [Reject] [Remind Me Later]`.
+     - Present rejected assignments interactively: `[Show Details] [Assign to Another] [Do It Yourself] [Remind Me Later]`.
+     - Present completed assignments once (non-persistent): `[View Details] [Dismiss]`.
+     - After 3 reminders on any assignment, ask "Auto-reject?".
+
    - If the session role is `maintainer` and 10+ phases have accumulated since the last era: emit "📊 X phases accumulated since last era. Create era-NNN? I recommend running audit first."
    - If the session role is `developer`: suppress the era prompt.
 
@@ -76,13 +85,14 @@ The `mcp-server/` subdirectory contains an optional MCP server that accelerates 
 **Availability detection:** At session start, check if `search_memory`, `index_phase`, `index_decision`, and `index_instruction` are in your available MCP tools. If yes → MCP is active for this session. If no → all behavior is identical to standard file-based operation.
 
 **Tools provided:**
-- `search_memory(query, top_k?, type_filter?, created_by_email?, touches_filter?, tags_filter?)` — hybrid search: vector similarity + optional exact pre-filters. `touches_filter: string[]` narrows to decisions whose `touches` contains ALL listed entities; `tags_filter: string[]` narrows to phases/discussions whose `tags` contains ALL listed tags. Used at Pre-Implementation Gate and for ad-hoc user questions.
+- `search_memory(query, top_k?, type_filter?, created_by_email?, assigned_to_email?, assigned_by_email?, touches_filter?, tags_filter?)` — hybrid search: vector similarity + optional exact pre-filters. `touches_filter: string[]` narrows to decisions whose `touches` contains ALL listed entities; `tags_filter: string[]` narrows to phases/discussions whose `tags` contains ALL listed tags; `assigned_to_email` and `assigned_by_email` filter assignments by recipient/assigner. Used at Pre-Implementation Gate, session-start assignment loading, and for ad-hoc user questions.
 - `index_phase(data)` — upsert a phase into the vector index; called on phase open and close
 - `index_decision(data)` — upsert a decision; called on creation and status change
 - `index_instruction(data)` — upsert an instruction; called on creation and state change (active ↔ dropped)
 - `check_consistency(project_memory_dir)` — returns {missing, orphaned} for DB/filesystem sync; used in drift audit Cat 13 and proactive sync at session start
 - `rebuild_index(entries[])` — full atomic rebuild of the index; called when DB is empty or on user request
 - `index_era(data)` — upsert an era summary; called when a new era-NNN.md is written
+- `index_assignment(data)` — upsert an assignment; called on creation and status change
 
 **Graceful degradation:** File system is always source of truth. DB is a derived index. Write direction is files → DB only, never DB → files. MCP failure at any point does not affect skill functionality.
 
@@ -144,6 +154,9 @@ Phase / decision / discussion / issue records carry author attribution via `crea
 │   └── closed/
 ├── instructions/
 │   └── INSTRUCTION-YYYY-MM-DD-slug.md
+├── assignments/
+│   ├── index.yml
+│   └── ASSIGNMENT-YYYY-MM-DD-slug.md
 └── summaries/
     ├── project-memory.md
     ├── current-state.md
@@ -216,11 +229,13 @@ phases:
 
 ---
 
-# Decisions, Issues, and Discussions
+# Decisions, Issues, Discussions, and Assignments
 
 For naming conventions, file templates, lifecycle rules, and the Decision Resolution Rules → read `conventions.md`.
 
 For discussion lifecycle, implicit triggers, resume, and outcome types → read `conventions.md` Discussion Lifecycle section.
+
+For assignment lifecycle, state machine, session-start UX, and completion rules → read `conventions.md` Assignments section.
 
 For index maintenance (adding/updating rows in `decisions/index.md` and `discussions/index.md`) → read `conventions.md` and `templates.md`.
 
@@ -233,7 +248,9 @@ About to commit?          → Classify significance, check phase exists
 About to open a phase?    → phase.yml + plan.md stub + index.yml entry
 About to close a phase?   → Verify 3 files: implementation + review + followup
 About to close discussion?→ Determine outcome, write file, update index
+About to assign work?    → Create ASSIGNMENT-YYYY-MM-DD-slug.md + index entry
 About to implement?       → Pre-Implementation Gate (gates.md): phase open → classify → decision check → batch conflicts
+About to receive assignment?→ Accept / Reject / Remind at session start
 `
 
 For the full quick reference cheatsheet and event-based triggers → read `cheatsheet.md`.

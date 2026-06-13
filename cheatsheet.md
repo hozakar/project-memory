@@ -33,6 +33,12 @@ Ambiguous (test additions, dep upgrades, doc updates)
 **About to implement something significant?**
 → Step 1: phase open? → Step 2: classify trivial/significant/ambiguous → Step 3: scan `decisions/index.md` and `discussions/index.md` for conflicts → batch any directional conflicts into one question → Step 4: if no candidate exists for an architectural move, offer to record one → Step 5: if `search_memory` available, call `search_memory(description, top_k=8)` and load results with similarity ≥ 0.6. For targeted lookups, add `touches_filter` (decisions) or `tags_filter` (phases/discussions) to pre-filter by exact entity before ranking.
 
+**About to route work to a teammate?**
+→ Determine type: direct (linked to existing record) or freeform (standalone task)
+→ Create `ASSIGNMENT-YYYY-MM-DD-slug.md` in `.project-memory/assignments/`
+→ Add row to `assignments/index.yml` (newest first)
+→ If `index_assignment` tool available: call `index_assignment` with full frontmatter + body[:2000]
+
 **About to close a discussion?**
 → Determine outcome type (phase / decision / issue / roadmap / none)
 → Write DISCUSSION-YYYY-MM-DD-slug.md to discussions/
@@ -68,4 +74,10 @@ Ambiguous (test additions, dep upgrades, doc updates)
 | Drift audit runs — `run_audit` NOT available | Run file-based detection (13 categories); Cat 13: call `check_consistency`, auto-fix missing entries |
 | User mentions lost commits after squash/rebase | Call `find_similar_commit(description_of_lost_work, top_k=5)` → load matching phase files from disk |
 | ~10 phases accumulated since last era | Prompt maintainer to create era (developers: silent), then create `era-NNN.md` (write narrative covering the new phases), add entry to `eras/index.yml`, call `index_era` with id, title, phases, date_range from frontmatter + body as narrative |
+| Assignment created | Add row to `assignments/index.yml` (newest first); if `index_assignment` tool available: call `index_assignment` with id, title, status, type, assigned_to, assigned_by, target info, full body[:2000], plus `created_by` + `contributors` from frontmatter |
+| Assignment status changed (accepted, rejected, ongoing, completed) | Update `assignments/index.yml` row; append current git identity to ASSIGNMENT file `contributors` (dedup by email); if `index_assignment` available: re-call `index_assignment` with updated data |
+| Session start — pending assignments exist for current user | Present interactively: `[Show Details] [Accept] [Reject] [Remind Me Later]`. After 3rd reminder: ask "Auto-reject?" |
+| Session start — rejected assignments created by current user | Present interactively: `[Show Details] [Assign to Another] [Do It Yourself] [Remind Me Later]` |
+| Session start — completed assignment notifications for current user | Present once: `[View Details] [Dismiss]`. Do NOT re-present on subsequent sessions |
+| Assignment target (`type: direct`) becomes orphan (file deleted/moved) | Cat 14a detection; auto-annotate `target_id` with `[orphaned YYYY-MM-DD]` |
 **Stub placeholders to clear on sight:** `"None recorded yet"`, `"TBD"`, `"system just initialized"`, `"first run detected"`, or any `*(none)*` in a section that now has content.

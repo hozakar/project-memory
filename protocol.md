@@ -45,6 +45,9 @@ At session start and after any context compaction:
 6. .project-memory/phases/index.yml
 7. Active phase directory (if open)
 8. Current user's active instructions (via `search_memory` with `created_by_email` filter and `type_filter: "instruction"` if MCP available; directory scan fallback otherwise)
+8a. Current user's pending assignments (via `search_memory` with `assigned_to_email` filter and `type_filter: "assignment"` if MCP available; directory scan fallback otherwise). Present interactively with accept/reject/remind options.
+8b. Current user's rejected assignments they created (via `search_memory` with `assigned_by_email` filter and `type_filter: "assignment"` if MCP available). Present interactively with assign-to-another/do-it-yourself/remind options.
+8c. Current user's completed assignment notifications (via same filter as 8b, shown once, non-persistent).
 9. .project-memory/decisions/index.md — Active section only (primary input to Pre-Implementation Gate); Superseded section is available on demand for historical lookups but is NOT scanned during Pre-Implementation Gate
 10. Individual DECISION-YYYY-MM-DD-* files (only when planning in a scope the index flags as relevant)
 11. Open issues (as needed)
@@ -67,6 +70,7 @@ Do not load all historical phases unless necessary. Prefer summarized memory bef
 - Active phase directory: always load in full — it is the most time-sensitive memory.
 - Historical phase directories: load only when the user's task explicitly relates to that phase's area.
 - `discussions/index.md` is loaded at session start alongside `decisions/index.md`. Individual DISCUSSION files are loaded on demand.
+- `assignments/index.yml` is loaded at session start. Individual ASSIGNMENT files matching the current user are loaded in full — they are time-sensitive workflow items.
 
 ---
 
@@ -108,6 +112,8 @@ When the question targets a specific entity (file, module, system area), combine
 - "decisions about X that touch `conventions_md`" → `search_memory(query, touches_filter=["conventions_md"], type_filter="decision")`
 - "phases tagged `mcp` about schema changes" → `search_memory(query, tags_filter=["mcp"], type_filter="phase")`
 - Multiple filter values use AND semantics — each additional value narrows further. Use a single value when in doubt.
+
+**Assignment search:** At session start, when assignments exist, call `search_memory` with both `assigned_to_email` (pending/ongoing) and `assigned_by_email` (rejected/completed) filters and `type_filter: "assignment"`. For targeted lookups (e.g., "what did I assign to Mehmet?"), combine with the user's question text for semantic ranking.
 
 **Squash/rebase recovery:** If the user mentions that a squash, rebase, or force-push lost commits before opening a new phase, call `find_similar_commit(description_of_lost_work, top_k=5)`. Load the returned phase files from disk and use them to pre-populate the new phase's context. Best-effort — proceed normally if no matches found.
 
