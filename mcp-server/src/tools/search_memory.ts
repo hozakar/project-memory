@@ -7,11 +7,13 @@ export async function searchMemory(
   topK: number = 8,
   include_commits: boolean = false,
   createdByEmail?: string,
-  typeFilter?: string
+  typeFilter?: string,
+  touchesFilter?: string[],
+  tagsFilter?: string[]
 ): Promise<SearchResult[]> {
   try {
     const vector = await embed(query);
-    const results = await search(vector, topK, typeFilter, !include_commits, createdByEmail);
+    const results = await search(vector, topK, typeFilter, !include_commits, createdByEmail, touchesFilter, tagsFilter);
     return results;
   } catch {
     return [];

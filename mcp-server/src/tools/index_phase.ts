@@ -23,6 +23,7 @@ export async function indexPhase(
       createdByName: createdBy.name,
       createdByEmail: createdBy.email,
       contributorsJson: JSON.stringify(contributors),
+      tagsJson: JSON.stringify(data.tags),
     };
     await upsert(record);
 

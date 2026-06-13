@@ -28,6 +28,7 @@ export async function indexDecision(
       createdByName: createdBy.name,
       createdByEmail: createdBy.email,
       contributorsJson: JSON.stringify(contributors),
+      touchesJson: JSON.stringify(data.touches),
     };
 
     await upsert(record);

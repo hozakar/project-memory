@@ -137,4 +137,6 @@ export interface LanceRecord {
   createdByName?: string;
   createdByEmail?: string;
   contributorsJson?: string; // JSON.stringify(Identity[])
+  touchesJson?: string;      // JSON.stringify(string[]) — decision touches; supports exact WHERE filter
+  tagsJson?: string;         // JSON.stringify(string[]) — phase/discussion tags; supports exact WHERE filter
 }

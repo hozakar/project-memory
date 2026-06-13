@@ -53,12 +53,18 @@ export async function upsert(record: LanceRecord): Promise<void> {
   await table.add([record]);
 }
 
+function escapeLike(value: string): string {
+  return value.replace(/'/g, "''");
+}
+
 export async function search(
   vector: number[],
   topK: number,
   typeFilter?: string,
   excludeCommits: boolean = true,
-  createdByEmail?: string
+  createdByEmail?: string,
+  touchesFilter?: string[],
+  tagsFilter?: string[]
 ): Promise<SearchResult[]> {
   try {
     const table = await getTable();
@@ -72,6 +78,16 @@ export async function search(
     }
     if (createdByEmail) {
       whereClauses.push(`createdByEmail = '${createdByEmail}'`);
+    }
+    if (touchesFilter && touchesFilter.length > 0) {
+      for (const touch of touchesFilter) {
+        whereClauses.push(`touchesJson LIKE '%"${escapeLike(touch)}"%'`);
+      }
+    }
+    if (tagsFilter && tagsFilter.length > 0) {
+      for (const tag of tagsFilter) {
+        whereClauses.push(`tagsJson LIKE '%"${escapeLike(tag)}"%'`);
+      }
     }
 
     if (whereClauses.length > 0) {
