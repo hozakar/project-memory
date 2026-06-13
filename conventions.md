@@ -106,8 +106,8 @@ Rejected alternatives are first-class content. Future agents need to know what w
 1. Add a one-liner per rejected alternative to `project-memory.md` â†’ Rejected Decisions. The DECISION file has the full reasoning; the summary entry is a one-line pointer (using the full DECISION-YYYY-MM-DD-slug identifier).
 2. Add a row to `decisions/index.md` (see `templates.md`) â€” this is the file Claude loads at session start to surface active decisions during the Pre-Implementation Gate.
 3. If `supersedes` is set, update the superseded file: change its `status` to `superseded` and set its `superseded_by` field. Move its row in `decisions/index.md` from the **Active** section to the **Superseded** section and update the Status cell. The index has two sections; only the Active section is scanned during the Pre-Implementation Gate.
-4. Create the corresponding `adr/` file: count existing `.md` files in `adr_dir` (from `.project-memory/config.yml`, default `adr/`), assign next integer zero-padded to 4 digits, set `adr_id` in the DECISION frontmatter to that value, write `<adr_dir>/<adr_id>-<slug>.md` using the ADR file template from `templates.md`.
-5. If `supersedes` is set, also update the superseded DECISION's `adr/` counterpart: change its Status line to `Superseded by [NNNN-slug](NNNN-slug.md)`.
+4. **If `adr_enabled: true`** (or absent) in `.project-memory/config.yml`: create the corresponding `adr/` file — count existing `.md` files in `adr_dir` (from config, default `adr/`), assign next integer zero-padded to 4 digits, set `adr_id` in the DECISION frontmatter to that value, write `<adr_dir>/<adr_id>-<slug>.md` using the ADR file template from `templates.md`. **If `adr_enabled: false`**: skip this step; leave `adr_id: null` in the DECISION frontmatter.
+5. If `supersedes` is set AND `adr_enabled: true`: also update the superseded DECISION's `adr/` counterpart — change its Status line to `Superseded by [NNNN-slug](NNNN-slug.md)`. If `adr_enabled: false`, skip.
 
 **ADR Status mapping:**
 

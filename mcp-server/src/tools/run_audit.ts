@@ -538,6 +538,11 @@ function cat7OrphanCommitRefs(projectRoot: string, phases: PhaseEntry[]): Pendin
 function cat8AdrDrift(projectMemoryDir: string, ignored: Set<string>): { autoFixed: string[]; pendingFixes: PendingFix[] } {
   const configContent = readFile(path.join(projectMemoryDir, "config.yml"));
   if (!configContent) return { autoFixed: [], pendingFixes: [] };
+  // adr_enabled: false → skip Cat 8. Absent = true (backward compat).
+  const adrEnabledMatch = configContent.match(/adr_enabled:\s*(\S+)/);
+  if (adrEnabledMatch && adrEnabledMatch[1].replace(/^['"]|['"]$/g, "") === "false") {
+    return { autoFixed: [], pendingFixes: [] };
+  }
   const adrDirMatch = configContent.match(/adr_dir:\s*(\S+)/);
   if (!adrDirMatch) return { autoFixed: [], pendingFixes: [] };
 
