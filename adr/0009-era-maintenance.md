@@ -1,6 +1,6 @@
 # ADR 0009 — Era-Based Documentation & Changelog Maintenance
 
-- **Status:** Accepted
+- **Status:** Superseded by [0011-instruction-feature](0011-instruction-feature.md)
 - **Date:** 2026-06-13
 
 ## Context

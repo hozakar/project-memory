@@ -1,7 +1,7 @@
 # ADR 0008: Branch-Per-Phase Workflow
 
 Date: 2026-06-13
-Status: Accepted
+Status: Superseded by [0011-instruction-feature](0011-instruction-feature.md)
 
 ## Context and Problem Statement
 
