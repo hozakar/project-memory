@@ -31,20 +31,20 @@ Ambiguous (test additions, dep upgrades, doc updates)
 → Set `status: abandoned` in `phase.yml`, add `abandoned_reason` field
 
 **About to implement something significant?**
-→ Step 1: phase open? → Step 2: classify trivial/significant/ambiguous → Step 3: scan `decisions/index.md` and `discussions/index.md` for conflicts → batch any directional conflicts into one question → Step 4: if no candidate exists for an architectural move, offer to record one → Step 5: if `search_memory` available, call `search_memory(description, top_k=8)` and load results with similarity ≥ 0.6. For targeted lookups, add `touches_filter` (decisions) or `tags_filter` (phases/discussions) to pre-filter by exact entity before ranking.
+→ Step 1: phase open? → Step 2: classify trivial/significant/ambiguous → Step 3: scan `decisions/index.md` and `discussions/index.md` for conflicts → batch any directional conflicts into one question → Step 4: if no candidate exists for an architectural move, offer to record one → Step 5: if MCP available, run context load per `gates.md` Step 5 and `mcp-integration.md`.
 
 **About to route work to a teammate?**
 → Determine type: direct (linked to existing record) or freeform (standalone task)
 → Create `ASSIGNMENT-YYYY-MM-DD-slug.md` in `.project-memory/assignments/`
 → Add row to `assignments/index.yml` (newest first)
-→ If `index_assignment` tool available: call `index_assignment` with full frontmatter + body[:2000]
+→ If MCP available, call `index_assignment` per `mcp-integration.md`
 
 **About to close a discussion?**
 → Determine outcome type (phase / decision / issue / roadmap / none)
 → Write DISCUSSION-YYYY-MM-DD-slug.md to discussions/
 → Add row to discussions/index.md
 → If phase outcome: offer to create the phase. If decision: offer to create DECISION. If issue: offer to create ISSUE. If roadmap: add to roadmap.md.
-→ If `index_discussion` tool available: call `index_discussion({ id, title, status, outcome, tags, summary: one-line summary, bodyText: first 2000 chars of body })`.
+→ If MCP available, call `index_discussion` per `mcp-integration.md`.
 
 ---
 
@@ -66,16 +66,16 @@ Ambiguous (test additions, dep upgrades, doc updates)
 | Discussion concluded | Write `DISCUSSION-*.md` to `discussions/`; add row to `discussions/index.md`; if outcome references a phase/decision/issue/roadmap, create the referenced artifact; if `index_discussion` tool available: call `index_discussion` with id, title, status, outcome, tags, summary, bodyText (first 2000 chars), plus `created_by` + `contributors` from frontmatter |
 | Discussion resumed | Load the existing DISCUSSION file; update it at close; do not create a new file |
 | Discussion triggers a phase | Set `outcome.type: phase` and `outcome.id: <phase-id>` in the DISCUSSION file |
-| Phase opened (status: planning written) | If `index_phase` tool available: call `index_phase` with plan.md content (2000 chars max), empty implementationText, empty commitDiffs, plus `created_by` + `contributors` from phase.yml |
-| Phase closed (status: completed written) | If `index_phase` tool available: call `index_phase` with full content — plan + implementation (2000 chars each) + commit diffs (2000 chars each), plus `created_by` + `contributors` from phase.yml |
-| DECISION-* file created or status changed | If `index_decision` tool available: call `index_decision` with title, status, touches, context[:1000], decisionBody[:1000], plus `created_by` + `contributors` from frontmatter |
-| User asks about past phases/decisions/discussions (MCP available) | Call `search_memory(user_question, top_k=8)` → load top results from disk before answering. If question targets a specific entity/module, add `touches_filter` or `tags_filter` for sharper results. |
-| Drift audit runs — `run_audit` available | Call `run_audit(project_memory_dir)`; apply `pending_fixes` (Cat 7) via Edit; log `auto_fixed`; triage `escalations` per `audit.md` MCP Fast Path |
+| Phase opened (status: planning written) | If MCP available, index phase per `mcp-integration.md` and `gates.md` Phase Creation |
+| Phase closed (status: completed written) | If MCP available, index phase with full content per `mcp-integration.md` and `gates.md` End-of-Phase Maintenance |
+| DECISION-* file created or status changed | If MCP available, index decision per `mcp-integration.md` and `gates.md` Decision Creation |
+| User asks about past phases/decisions/discussions (MCP available) | Call `search_memory` per `mcp-integration.md`; combine exact and semantic filters for sharper results (see `protocol.md` Ad-hoc search rule) |
+| Drift audit runs — `run_audit` available | Call `run_audit(project_memory_dir)` per `mcp-integration.md`; apply `pending_fixes` (Cat 7); log `auto_fixed`; triage `escalations` per `audit.md` MCP Fast Path |
 | Drift audit runs — `run_audit` NOT available | Run file-based detection (13 categories); Cat 13: call `check_consistency`, auto-fix missing entries |
-| User mentions lost commits after squash/rebase | Call `find_similar_commit(description_of_lost_work, top_k=5)` → load matching phase files from disk |
-| ~10 phases accumulated since last era | Prompt maintainer to create era (developers: silent), then create `era-NNN.md` (write narrative covering the new phases), add entry to `eras/index.yml`, call `index_era` with id, title, phases, date_range from frontmatter + body as narrative |
-| Assignment created | Add row to `assignments/index.yml` (newest first); if `index_assignment` tool available: call `index_assignment` with id, title, status, type, assigned_to, assigned_by, target info, full body[:2000], plus `created_by` + `contributors` from frontmatter |
-| Assignment status changed (accepted, rejected, ongoing, completed) | Update `assignments/index.yml` row; append current git identity to ASSIGNMENT file `contributors` (dedup by email); if `index_assignment` available: re-call `index_assignment` with updated data |
+| User mentions lost commits after squash/rebase | Call `find_similar_commit` per `mcp-integration.md` → load matching phase files from disk |
+| ~10 phases accumulated since last era | Prompt maintainer to create era (developers: silent), then create `era-NNN.md`, add entry to `eras/index.yml`, call `index_era` per `mcp-integration.md` |
+| Assignment created | Add row to `assignments/index.yml` (newest first); if MCP available, call `index_assignment` per `mcp-integration.md` |
+| Assignment status changed (accepted, rejected, ongoing, completed) | Update `assignments/index.yml` row; append current git identity to ASSIGNMENT file `contributors` (dedup by email); if MCP available: re-call `index_assignment` per `mcp-integration.md` |
 | Session start — pending assignments exist for current user | Present interactively: `[Show Details] [Accept] [Reject] [Remind Me Later]`. After 3rd reminder: ask "Auto-reject?" |
 | Session start — rejected assignments created by current user | Present interactively: `[Show Details] [Assign to Another] [Do It Yourself] [Remind Me Later]` |
 | Session start — completed assignment notifications for current user | Present once: `[View Details] [Dismiss]`. Do NOT re-present on subsequent sessions |

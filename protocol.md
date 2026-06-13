@@ -91,6 +91,8 @@ without reconstructing history from source code.
 
 # MCP Companion Integration
 
+See `mcp-integration.md` for the full tool catalog, availability detection, proactive sync, and degradation rules. This section covers the session-level behavioral changes when MCP is active.
+
 **Availability check (once per session):**
 If `search_memory`, `index_phase`, `index_decision`, and `index_instruction` all appear in your available MCP tools → MCP is available. Set a session-level flag. Otherwise → MCP is unavailable; all behavior follows the standard strategy below.
 
@@ -117,9 +119,9 @@ When the question targets a specific entity (file, module, system area), combine
 
 **Squash/rebase recovery:** If the user mentions that a squash, rebase, or force-push lost commits before opening a new phase, call `find_similar_commit(description_of_lost_work, top_k=5)`. Load the returned phase files from disk and use them to pre-populate the new phase's context. Best-effort — proceed normally if no matches found.
 
-**Proactive DB sync (session start):** After checking MCP availability, if MCP is active, call `check_consistency(project_memory_dir)`. For each ID in `missing` (file exists but not in DB): call the appropriate index tool (`index_phase`, `index_decision`, `index_discussion`, `index_era`, or `index_instruction`) with the file's content.
+**Proactive DB sync (session start):** After checking MCP availability, if MCP is active, call `check_consistency(project_memory_dir)`. For each ID in `missing` (file exists but not in DB): call the appropriate index tool (`index_phase`, `index_decision`, `index_discussion`, `index_era`, or `index_instruction`) with the file's content. See `mcp-integration.md` for the full tool list.
 
-   Additionally, count phases not yet covered by any era in `eras/index.yml`. If 10 or more have accumulated:
+    Additionally, count phases not yet covered by any era in `eras/index.yml`. If 10 or more have accumulated:
    - If session role is maintainer: emit "📊 X phases accumulated since last era. Create era-NNN? I recommend running audit first." and wait for user confirmation.
    - If session role is developer: suppress. Do NOT prompt.
    When user confirms, create the next `era-NNN.md` and call `index_era`.

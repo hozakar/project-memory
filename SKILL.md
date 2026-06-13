@@ -12,39 +12,10 @@ When this skill activates:
    🧠 PROJECT MEMORY LOADED
 
 2. Check whether `.project-memory/` exists in the project root.
-   - If it **does not exist**: read `init.md` and follow its instructions.
-   - If it **exists**: read `protocol.md` for the Memory Loading Strategy and follow it. Load `.project-memory/summaries/project-memory.md`. If an active phase exists (check `phases/index.yml` for any phase with `status` not equal to `completed`), read that phase directory too.
+   - **Does not exist:** read `init.md` and follow its instructions.
+   - **Exists:** read `protocol.md` for the Memory Loading Strategy and follow it — loads summaries, active phase, instructions, assignments, and determines role (maintainer/developer).
 
-   After loading summaries and active phase, determine role:
-   - Read `.project-memory/maintainers.md` if it exists
-   - Run `git config user.email`
-   - If the email is in the maintainers list → role is `maintainer`
-   - If not (or file doesn't exist) → role is `developer`
-   - Store role for the session
-
-   If `.project-memory/instructions/` exists:
-     - If MCP is available: call `search_memory("instruction", top_k=20, created_by_email=<current git user email>, type_filter="instruction")` to load current user's active instructions. Inject each instruction's prompt into context.
-     - If MCP is unavailable: scan `.project-memory/instructions/` directory for files where frontmatter `created_by.email` matches current git user email AND `state: active`. Inject each instruction's `# Prompt` body into context.
-      - If ≥5 active instructions are loaded, emit: "⚠️ N active instructions loaded. Consider dropping unused ones with 'drop instruction X'."
-
-   If `.project-memory/assignments/` exists:
-     - If MCP is available: call `search_memory("assignment", top_k=20, assigned_to_email=<current git user email>)` for pending/accepted/ongoing assignments; also call `search_memory("rejected assignment", top_k=10, assigned_by_email=<current git user email>)` for rejected assignments.
-     - If MCP is unavailable: scan `.project-memory/assignments/` for files where frontmatter `assigned_to.email` matches current user AND `status` is `pending`/`accepted`/`ongoing`; also scan for files where `assigned_by.email` matches AND `status` is `rejected`/`completed`.
-     - Present pending assignments interactively: `[Show Details] [Accept] [Reject] [Remind Me Later]`.
-     - Present rejected assignments interactively: `[Show Details] [Assign to Another] [Do It Yourself] [Remind Me Later]`.
-     - Present completed assignments once (non-persistent): `[View Details] [Dismiss]`.
-     - After 3 reminders on any assignment, ask "Auto-reject?".
-
-   - If the session role is `maintainer` and 10+ phases have accumulated since the last era: emit "📊 X phases accumulated since last era. Create era-NNN? I recommend running audit first."
-   - If the session role is `developer`: suppress the era prompt.
-
-3. Run Drift Audit (read `audit.md` for the full procedure).
-   - Auto-fix all findings silently (all 12 non-Cat-4 categories auto-fix per the simplified severity model — Cat 4 heuristic auto-resolves same-user commits, escalating only on author mismatch or ambiguous matching).
-   - Cat 1 informational notices (fresh orphan commits, ≤ 3 days, current user): present as a single informational notice — "ℹ️ N orphan commit(s) (last 3 days). Run `audit` to review." Do NOT enter interactive mode for these.
-   - Interactive triage is rare: only Cat 4 edge cases (author mismatch or ambiguous file matching that heuristic can't resolve) enter interactive mode. Present in the format specified by `audit.md`.
-   - If no findings at all (no interactive, no info, no auto-fix): replace the Step 1 line with 🧠 PROJECT MEMORY LOADED → drift audit clean.
-   - If auto-fix or info findings exist but no interactive-triage findings: keep the Step 1 line as-is, emit the drift report block, and continue to step 4 (do NOT enter interactive mode).
-   - If any interactive-triage findings exist after auto-fix, immediately enter Interactive Audit Mode (per `audit.md` Interactive Mode section) without waiting for the user to invoke `audit` manually. Apply user decisions, re-detect, loop until clean.
+3. Run Drift Audit — read `audit.md` for the dispatcher (routes to `audit-mcp.md` or `audit-fs.md` based on MCP availability). Auto-fix findings silently. Interactive triage only on Cat 4 edge cases.
 
 4. Continue with the session. Do not ask the user for anything at this step.
 
@@ -54,66 +25,36 @@ When this skill activates:
 
 ## audit
 
-When invoked as `Skill project-memory audit`, enter **Interactive Audit Mode**:
-
-1. Read `audit.md` and follow its `# Interactive Mode` procedure.
-2. For each escalated finding, prompt the user via `AskUserQuestion` and apply their decision.
-3. Re-run detection after all decisions are applied; loop until clean.
-4. Do NOT re-run the on-load summary loading sequence.
+When invoked as `Skill project-memory audit`, enter **Interactive Audit Mode**: read `audit.md` → Interactive Mode. Prompt user per finding; re-run detection; loop until clean.
 
 ## discuss
 
-When invoked as `Skill project-memory discuss`, or when the user uses implicit discussion triggers (e.g. "tartışalım", "planlayalım", "let's discuss", "let's plan", "lets work on that"), enter **Discussion Mode**:
+When invoked as `Skill project-memory discuss`, or on implicit triggers (e.g. "tartışalım", "let's discuss"), enter **Discussion Mode**: read `conventions-discussions.md` for the full lifecycle. Load `discussions/index.md` for prior context. At close, apply relevancy scoring gate (25-55-10-10). If saving: write DISCUSSION file, update index.
 
-1. Read `conventions.md` Discussion Lifecycle section for the full procedure.
-2. Load `discussions/index.md` to surface prior discussions relevant to the current topic.
-3. Engage in structured discussion with the user → explore ideas, tradeoffs, alternatives, plans.
-4. At discussion close, apply the Relevancy Scoring Gate (see `conventions.md` → Discussion Lifecycle): compute weighted score (25-55-10-10), apply thresholds (<60 silent drop / 60-80 ask user / ≥80 auto-save), check safety rule (long-term impact >75% of max → always escalate). If saving: determine the outcome (Phase / Decision / Issue / Roadmap / None) and write a `DISCUSSION-YYYY-MM-DD-slug.md` file to `.project-memory/discussions/`.
-5. Update `discussions/index.md` with the new row.
-6. If outcome is `phase`, offer to create the phase immediately. If `decision`, offer to create the DECISION file. If `issue`, offer to create the ISSUE file. If `roadmap`, add the entry to `roadmap.md`.
+**Implicit triggers:** Turkish and English planning/brainstorming phrases. Lenient detection.
 
-**Implicit triggers:** Discussion mode activates automatically when the user uses phrases indicating collaborative planning or brainstorming. Detection is lenient → if the conversation's character is exploratory/planning, capture it. Both English and Turkish phrases are detected.
-
-**Resume:** If the user says "continue this discussion" or references a specific topic, load the existing `DISCUSSION-*.md` file in full context and continue. Update the SAME file; do not create a new one.
+**Resume:** "continue this discussion" → load existing DISCUSSION file, UPDATE it at close.
 
 ---
 
 # MCP Companion
 
-The `mcp-server/` subdirectory contains an optional MCP server that accelerates project-memory with semantic search.
-
-**Availability detection:** At session start, check if `search_memory`, `index_phase`, `index_decision`, and `index_instruction` are in your available MCP tools. If yes → MCP is active for this session. If no → all behavior is identical to standard file-based operation.
-
-**Tools provided:**
-- `search_memory(query, top_k?, type_filter?, created_by_email?, assigned_to_email?, assigned_by_email?, touches_filter?, tags_filter?)` — hybrid search: vector similarity + optional exact pre-filters. `touches_filter: string[]` narrows to decisions whose `touches` contains ALL listed entities; `tags_filter: string[]` narrows to phases/discussions whose `tags` contains ALL listed tags; `assigned_to_email` and `assigned_by_email` filter assignments by recipient/assigner. Used at Pre-Implementation Gate, session-start assignment loading, and for ad-hoc user questions.
-- `index_phase(data)` — upsert a phase into the vector index; called on phase open and close
-- `index_decision(data)` — upsert a decision; called on creation and status change
-- `index_instruction(data)` — upsert an instruction; called on creation and state change (active ↔ dropped)
-- `check_consistency(project_memory_dir)` — returns {missing, orphaned} for DB/filesystem sync; used in drift audit Cat 13 and proactive sync at session start
-- `rebuild_index(entries[])` — full atomic rebuild of the index; called when DB is empty or on user request
-- `index_era(data)` — upsert an era summary; called when a new era-NNN.md is written
-- `index_assignment(data)` — upsert an assignment; called on creation and status change
-
-**Graceful degradation:** File system is always source of truth. DB is a derived index. Write direction is files → DB only, never DB → files. MCP failure at any point does not affect skill functionality.
-
-**Detailed integration rules:** See `protocol.md` → MCP Companion Integration section (includes proactive DB sync at session start and squash/rebase recovery via `find_similar_commit`); `gates.md` → Phase Creation and End-of-Phase Maintenance MCP steps; `audit-fs.md` → Category 13.
+The optional `mcp-server/` subdirectory provides semantic search and deterministic audits. Read `mcp-integration.md` for availability detection, tool catalog, proactive sync, and degradation rules. MCP is an accelerator, never a requirement.
 
 ---
 
-# CRITICAL GATES (READ FIRST)
+# CRITICAL GATES
 
-`
+```
 BEFORE IMPLEMENTATION → phase must exist → create it first
 BEFORE MERGE/CLOSE    → Pre-Close Gate must pass (3 files complete)
 BEFORE SESSION END    → if significant commits landed, phase must be updated
 PIPELINE SUBMISSION   → counts as implementation → phase must exist before submit
-`
+```
 
-**For detailed gate procedures, commit significance rules, topic shift criteria, and end-of-phase maintenance → read `gates.md`.**
-
-**For agent thinking protocol and memory loading strategy → read `protocol.md`.**
-
-**For the quick reference cheatsheet and event-based triggers → read `cheatsheet.md`.**
+For detailed gate procedures, commit significance, topic shift → read `gates.md`.
+For agent thinking protocol and memory loading → read `protocol.md`.
+For quick reference cheatsheet → read `cheatsheet.md`.
 
 ---
 
@@ -123,143 +64,95 @@ Git answers: what changed, where, when, what is the diff.
 
 Project Memory answers: why it was changed, what alternatives were considered and rejected, what constraints existed, what tensions are unresolved, what approaches have proven harmful, what should happen next.
 
-Git is the source of truth for code changes. `.project-memory/` is the source of truth for engineering reasoning. Never duplicate information already available in git unless summarization provides additional value.
+Git is the source of truth for code changes. `.project-memory/` is the source of truth for engineering reasoning.
 
-Phase / decision / discussion / issue records carry author attribution via `created_by` and `contributors` frontmatter fields, populated from `git config user.name` + `user.email` at every status-changing write. Missing git identity falls back silently to `unknown`. Full rules: `conventions.md` → Author Attribution.
+Records carry author attribution via `created_by` and `contributors` frontmatter fields. Full rules: `conventions-maintainer.md` → Author Attribution.
 
 ---
 
 # Project Structure
 
 ## `.project-memory/` (per-project data)
-`	ext
+
+```
 .project-memory/
+├── phases/           phase-YYYYMMDD-slug/{phase.yml, plan.md, implementation.md, review-and-fixes.md, followup.md}
+├── decisions/        DECISION-YYYY-MM-DD-slug.md + index.md
+├── discussions/      DISCUSSION-YYYY-MM-DD-slug.md + index.md
+├── issues/           open/ + closed/
+├── instructions/     INSTRUCTION-YYYY-MM-DD-slug.md
+├── assignments/      ASSIGNMENT-YYYY-MM-DD-slug.md + index.yml
+├── eras/             era-NNN.md + index.yml
+└── summaries/        project-memory, current-state, architecture, active-issues, roadmap
 ```
-├── phases/
-│   ├── index.yml
-│   └── phase-YYYYMMDD-short-title/
-│       ├── phase.yml
-│       ├── plan.md
-│       ├── implementation.md
-│       ├── review-and-fixes.md
-│       └── followup.md
-├── decisions/
-│   ├── index.md
-│   └── DECISION-YYYY-MM-DD-slug.md
-├── discussions/
-│   ├── index.md
-│   └── DISCUSSION-YYYY-MM-DD-slug.md
-├── issues/
-│   ├── open/
-│   └── closed/
-├── instructions/
-│   └── INSTRUCTION-YYYY-MM-DD-slug.md
-├── assignments/
-│   ├── index.yml
-│   └── ASSIGNMENT-YYYY-MM-DD-slug.md
-└── summaries/
-    ├── project-memory.md
-    ├── current-state.md
-    ├── architecture.md
-    ├── active-issues.md
-    └── roadmap.md
-```
-`
 
 ## Skill Files (read-only reference)
-`	ext
+
+```
 .claude/skills/project-memory/
-├── SKILL.md          ← Entry point, arguments, core concepts (this file)
-├── gates.md          ← Implementation gates, commit rules, phase lifecycle
-├── protocol.md       ← Agent thinking protocol, memory loading, knowledge preservation
-├── cheatsheet.md     ← Quick reference, event-based triggers
-├── audit.md          ← Drift audit dispatcher — routes to audit-mcp.md or audit-fs.md
-├── audit-mcp.md      ← MCP-driven drift detection (run_audit fast path)
-├── audit-fs.md       ← File-system drift detection (14 categories)
-├── init.md           ← First-run initialization
-├── templates.md           ← Template dispatcher — routes to sub-files by record type
-├── templates-phase.md     ← Phase and era templates
-├── templates-records.md   ← Decision, discussion, instruction, assignment templates + author attribution
-├── templates-config.md    ← Config and summary templates
-├── conventions.md              ← Conventions dispatcher — routes to sub-files by topic
-├── conventions-decisions.md    ← Decision lifecycle, ADR, touches, resolution rules
-├── conventions-discussions.md  ← Discussion lifecycle, relevancy scoring, expiry
-├── conventions-records.md      ← Issues, Instructions, Assignments lifecycles
-├── conventions-maintainer.md   ← Language, Author Attribution, Maintainer Role
-└── README.md         ← Human-readable overview
-`
+├── SKILL.md                   ← Entry point (this file)
+├── gates.md                   ← Implementation gates, commit rules, phase lifecycle
+├── protocol.md                ← Agent thinking protocol, memory loading, knowledge preservation
+├── cheatsheet.md              ← Quick reference, event-based triggers
+├── audit.md                   ← Drift audit dispatcher → audit-mcp.md or audit-fs.md
+├── audit-mcp.md               ← MCP-driven drift detection (run_audit fast path)
+├── audit-fs.md                ← File-system drift detection (14 categories)
+├── mcp-integration.md         ← MCP tool catalog, proactive sync, degradation rules
+├── init.md                    ← First-run initialization
+├── templates.md               ← Template dispatcher → templates-phase / -records / -config
+├── templates-phase.md         ← Phase and era templates
+├── templates-records.md       ← Decision, discussion, instruction, assignment templates
+├── templates-config.md        ← Config and summary templates
+├── conventions.md             ← Conventions dispatcher → -decisions / -discussions / -records / -maintainer
+├── conventions-decisions.md   ← Decision lifecycle, ADR, touches, resolution rules
+├── conventions-discussions.md ← Discussion lifecycle, relevancy scoring, expiry
+├── conventions-records.md     ← Issues, Instructions, Assignments lifecycles
+├── conventions-maintainer.md  ← Language, Author Attribution, Maintainer Role
+└── README.md                  ← Human-readable overview
+```
 
 ---
 
 # Phase Lifecycle
 
-A phase represents a **logical unit of work**, not a branch. Branches are optional reinforcement → not the trigger.
-
-`
+```
 Significant work begins → Phase created (status: planning)
           ↓
 Commits accumulate → phase.yml updated with commit hashes
           ↓
 Work unit complete → Phase closes (status: completed)
                      followup.md → roadmap.md transfer (mandatory)
-          ↓
-Next significant work begins → New phase created
-`
+```
 
 **Key rules:**
-- Phase is created BEFORE the first significant commit → read `gates.md` for commit significance and topic shift criteria.
-- Required files: `phase.yml`, `plan.md`, `implementation.md`, `review-and-fixes.md`, `followup.md`. Templates in `templates.md`.
-- Phase status transitions and close criteria are in `gates.md`.
-- Phases are sorted newest first in `index.yml`. Prepend on creation.
-- Tags are the primary navigation mechanism for finding prior work in a specific area.
+- Phase created BEFORE first significant commit → see `gates.md` for commit significance.
+- Required files: `phase.yml`, `plan.md`, `implementation.md`, `review-and-fixes.md`, `followup.md`. Templates in `templates-phase.md`.
+- Phase status transitions and close criteria in `gates.md`.
+- Phases sorted newest first in `index.yml`. Prepend on creation.
 
 ---
 
-# Phase Index
+# Records & Conventions
 
-`yaml
-phases:
-  - id: phase-20260807-auth-refactor
-    title: Auth Refactor
-    status: completed
-    branch: feature/auth-refactor
-    merge_commit: ff3a891
-    commits:
-      - abc1234
-    issues:
-      - ISSUE-2026-08-07-auth-session-leak
-    decisions:
-      - DECISION-2026-08-07-no-session-storage
-    discussions: []
-    tags:
-      - auth
-      - session
-`
+For naming conventions, file templates, lifecycle rules, and the Decision Resolution Rules → read `conventions.md` (dispatcher — routes to topic-specific sub-files).
 
----
-
-# Decisions, Issues, Discussions, and Assignments
-
-For naming conventions, file templates, lifecycle rules, and the Decision Resolution Rules → read `conventions.md`.
-
-For discussion lifecycle, implicit triggers, resume, and outcome types → read `conventions.md` Discussion Lifecycle section.
-
-For assignment lifecycle, state machine, session-start UX, and completion rules → read `conventions.md` Assignments section.
-
-For index maintenance (adding/updating rows in `decisions/index.md` and `discussions/index.md`) → read `conventions.md` and `templates.md`.
+For decision lifecycle, ADR steps, touches guidance → `conventions-decisions.md`.
+For discussion lifecycle, relevancy scoring, expiry → `conventions-discussions.md`.
+For issue, instruction, assignment lifecycles → `conventions-records.md`.
+For language policy, author attribution, maintainer role → `conventions-maintainer.md`.
 
 ---
 
 # Quick Reference
 
-`
+```
 About to commit?          → Classify significance, check phase exists
 About to open a phase?    → phase.yml + plan.md stub + index.yml entry
 About to close a phase?   → Verify 3 files: implementation + review + followup
 About to close discussion?→ Determine outcome, write file, update index
-About to assign work?    → Create ASSIGNMENT-YYYY-MM-DD-slug.md + index entry
-About to implement?       → Pre-Implementation Gate (gates.md): phase open → classify → decision check → batch conflicts
+About to assign work?     → Create ASSIGNMENT-YYYY-MM-DD-slug.md + index entry
+About to implement?       → Pre-Implementation Gate (gates.md)
 About to receive assignment?→ Accept / Reject / Remind at session start
-`
+```
 
-For the full quick reference cheatsheet and event-based triggers → read `cheatsheet.md`.
+For the full quick reference → read `cheatsheet.md`.
