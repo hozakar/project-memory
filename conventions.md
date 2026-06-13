@@ -229,3 +229,51 @@ When the gate scans `decisions/index.md` for `touches` overlap, also scan `discu
 
 **Discussion index maintenance:**
 Same rules as `decisions/index.md`: add row on creation, update on conclusion, rows sorted newest first.
+
+---
+
+## Instructions
+
+Instruction records capture user workflow preferences as short prompts. They are user-scoped, stored in `.project-memory/instructions/`, and loaded at session start for the current user only.
+
+**Naming:** `INSTRUCTION-YYYY-MM-DD-<short-slug>.md`
+- Date first — chronological sort order
+- Slug describes the instruction topic, not the state
+- Use kebab-case
+- Example: `INSTRUCTION-2026-06-13-branch-per-phase.md`
+
+**Frontmatter (required):**
+```yaml
+---
+id: INSTRUCTION-YYYY-MM-DD-short-slug
+state: active | dropped
+created_by:               # required — see Author Attribution
+  name: "Hakan Ozakar"
+  email: "hozakar@gmail.com"
+mode: prompt              # always prompt
+trigger: null             # always null for prompt mode
+origin: null              # INSTRUCTION-ID if forked
+origin_updated: false     # true when origin modified since fork
+---
+```
+
+**On creation:** set `created_by` from current git identity (see Author Attribution section). No `contributors` field — instructions are single-owner.
+
+**On state change (`active` → `dropped`):** update frontmatter. Instruction is retained but not loaded at session start.
+
+**Session loading:**
+- At session start, current user's active instructions are loaded via MCP `search_memory` with `created_by_email` filter (fallback: directory scan filtered by `created_by.email`)
+- ≥5 active instructions triggers a warning
+- Other users' instructions are never loaded without explicit request
+
+**Cross-user sharing (fork model):**
+- User requests "I want to use instruction X" → LLM creates new INSTRUCTION with `created_by` set to current user, `origin: X`
+- If origin instruction is modified → `origin_updated: true` set on fork; user is prompted to review at session start
+- Instructions from other users can be listed via explicit search ("show me X's instructions")
+
+**What instructions are NOT:**
+- NOT architectural decisions — no ADR counterpart, no Pre-Implementation Gate scanning
+- NOT a deterministic rule engine — `mode` is always `prompt`
+- NOT in decisions/index.md or discussions/index.md
+
+**Vector DB:** Instructions are indexed via `index_instruction` MCP tool. File system is source of truth; DB is derived read-optimized index.

@@ -392,3 +392,51 @@ date_range: "YYYY-MM-DD to YYYY-MM-DD"
 Narrative summary (~500 words) of the era's arc: what motivated the work, the key decisions made, how the project evolved, and what the era left behind for the next cohort.
 ```
 
+---
+
+## INSTRUCTION-YYYY-MM-DD-slug.md
+
+Instruction records capture user workflow preferences as short prompts injected into LLM context at session start. User-scoped via `created_by`, stored in `.project-memory/instructions/`.
+
+**Frontmatter (required):**
+```yaml
+---
+id: INSTRUCTION-YYYY-MM-DD-short-slug
+state: active              # active | dropped
+created_by:                # required — see Author Attribution
+  name: "Hakan Ozakar"
+  email: "hozakar@gmail.com"
+mode: prompt               # always prompt (reserved for future rule mode)
+trigger: null              # always null for prompt mode
+origin: null               # INSTRUCTION-ID if forked from another user
+origin_updated: false      # true when origin instruction has been modified since fork
+---
+```
+
+**Body:**
+```md
+# Prompt
+<Short, direct instruction injected into LLM context at session start>
+```
+
+**Naming:** `INSTRUCTION-YYYY-MM-DD-<short-slug>.md`
+- Date first — chronological sort order
+- Slug describes the instruction topic
+- Use kebab-case
+- Example: `INSTRUCTION-2026-06-13-branch-per-phase.md`
+
+**Lifecycle:**
+- `active` → loaded at session start for the matching user
+- `dropped` → retained but not loaded
+- No auto-expiry; user explicitly drops via "drop instruction X"
+
+**Cross-user sharing (fork model):**
+- User adopts another's instruction → new INSTRUCTION created with `created_by` set to current user, `origin` set to source ID
+- If original is updated → `origin_updated: true` set on fork; user prompted at session start
+
+**Scope limits:**
+- NOT architectural decisions — no ADR counterpart
+- NOT scanned during Pre-Implementation Gate
+- NOT a deterministic rule engine — mode is always `prompt`
+- Filesystem is source of truth; vector DB is derived read-optimized index
+

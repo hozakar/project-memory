@@ -44,12 +44,13 @@ At session start and after any context compaction:
 5. .project-memory/summaries/roadmap.md
 6. .project-memory/phases/index.yml
 7. Active phase directory (if open)
-8. .project-memory/decisions/index.md — Active section only (primary input to Pre-Implementation Gate); Superseded section is available on demand for historical lookups but is NOT scanned during Pre-Implementation Gate
-9. Individual DECISION-YYYY-MM-DD-* files (only when planning in a scope the index flags as relevant)
-10. Open issues (as needed)
-11. .project-memory/discussions/index.md (load fully — active entries only; archived discussions in discussions/archive/ are excluded)
-12. Individual DISCUSSION-YYYY-MM-DD-* files (when resuming a discussion or when planning in a scope the index flags as relevant; archived files loaded on explicit request only)
-13. Recent git commits (as needed)
+8. Current user's active instructions (via `search_memory` with `created_by_email` filter and `type_filter: "instruction"` if MCP available; directory scan fallback otherwise)
+9. .project-memory/decisions/index.md — Active section only (primary input to Pre-Implementation Gate); Superseded section is available on demand for historical lookups but is NOT scanned during Pre-Implementation Gate
+10. Individual DECISION-YYYY-MM-DD-* files (only when planning in a scope the index flags as relevant)
+11. Open issues (as needed)
+12. .project-memory/discussions/index.md (load fully — active entries only; archived discussions in discussions/archive/ are excluded)
+13. Individual DISCUSSION-YYYY-MM-DD-* files (when resuming a discussion or when planning in a scope the index flags as relevant; archived files loaded on explicit request only)
+14. Recent git commits (as needed)
 ```
 
 Do not load all historical phases unless necessary. Prefer summarized memory before raw history. Tags are the primary navigation mechanism — tag-aware filtering applies at initial load, not only when diving deeper.
@@ -87,7 +88,7 @@ without reconstructing history from source code.
 # MCP Companion Integration
 
 **Availability check (once per session):**
-If `search_memory`, `index_phase`, and `index_decision` all appear in your available MCP tools → MCP is available. Set a session-level flag. Otherwise → MCP is unavailable; all behavior follows the standard strategy below.
+If `search_memory`, `index_phase`, `index_decision`, and `index_instruction` all appear in your available MCP tools → MCP is available. Set a session-level flag. Otherwise → MCP is unavailable; all behavior follows the standard strategy below.
 
 **Version tracking:** At session start, after the availability check, compare `mcp-server/package.json` `version` against `.project-memory/config.yml` `mcp_install_offered_for_version`. If the installed version is newer than the offered version (or offered is null), the audit procedure will handle the offer — see `audit.md` MCP Fast Path section.
 
@@ -105,7 +106,7 @@ If MCP is available and the user asks a question about past decisions, phases, o
 
 **Squash/rebase recovery:** If the user mentions that a squash, rebase, or force-push lost commits before opening a new phase, call `find_similar_commit(description_of_lost_work, top_k=5)`. Load the returned phase files from disk and use them to pre-populate the new phase's context. Best-effort — proceed normally if no matches found.
 
-**Proactive DB sync (session start):** After checking MCP availability, if MCP is active, call `check_consistency(project_memory_dir)`. For each ID in `missing` (file exists but not in DB): call the appropriate index tool (`index_phase`, `index_decision`, `index_discussion`, or `index_era`) with the file's content. Additionally, count phases not yet covered by any era in `eras/index.yml`; if 10 or more have accumulated, create the next `era-NNN.md` and call `index_era`. Silently auto-fix. Do NOT prompt the user. This supersedes Cat 13 for missing-entry detection when MCP is available at load time; Cat 13 remains a fallback for sessions where MCP was unavailable.
+**Proactive DB sync (session start):** After checking MCP availability, if MCP is active, call `check_consistency(project_memory_dir)`. For each ID in `missing` (file exists but not in DB): call the appropriate index tool (`index_phase`, `index_decision`, `index_discussion`, `index_era`, or `index_instruction`) with the file's content. Additionally, count phases not yet covered by any era in `eras/index.yml`; if 10 or more have accumulated, create the next `era-NNN.md` and call `index_era`. Silently auto-fix. Do NOT prompt the user. This supersedes Cat 13 for missing-entry detection when MCP is available at load time; Cat 13 remains a fallback for sessions where MCP was unavailable.
 
 **Drift audit via MCP (session start):** If `run_audit` is in available MCP tools, call `run_audit(project_memory_dir)` instead of running file-based detection. Process the returned `{ auto_fixed, pending_fixes, escalations }` as described in `audit.md` → MCP Fast Path section.
 

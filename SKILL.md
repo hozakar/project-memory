@@ -15,6 +15,11 @@ When this skill activates:
    - If it **does not exist**: read `init.md` and follow its instructions.
    - If it **exists**: read `protocol.md` for the Memory Loading Strategy and follow it. Load `.project-memory/summaries/project-memory.md`. If an active phase exists (check `phases/index.yml` for any phase with `status` not equal to `completed`), read that phase directory too.
 
+   If `.project-memory/instructions/` exists:
+     - If MCP is available: call `search_memory("instruction", top_k=20, created_by_email=<current git user email>, type_filter="instruction")` to load current user's active instructions. Inject each instruction's prompt into context.
+     - If MCP is unavailable: scan `.project-memory/instructions/` directory for files where frontmatter `created_by.email` matches current git user email AND `state: active`. Inject each instruction's `# Prompt` body into context.
+     - If ≥5 active instructions are loaded, emit: "⚠️ N active instructions loaded. Consider dropping unused ones with 'drop instruction X'."
+
 3. Run Drift Audit (read `audit.md` for the full procedure).
    - Auto-fix all findings in the auto-fix category silently (includes all low-severity and aged-medium findings).
    - Present interactive-triage findings (high severity, or medium with age ≤ 3 days) in a single block, in the format specified by `audit.md`.
@@ -58,12 +63,13 @@ When invoked as `Skill project-memory discuss`, or when the user uses implicit d
 
 The `mcp-server/` subdirectory contains an optional MCP server that accelerates project-memory with semantic search.
 
-**Availability detection:** At session start, check if `search_memory`, `index_phase`, and `index_decision` are in your available MCP tools. If yes → MCP is active for this session. If no → all behavior is identical to standard file-based operation.
+**Availability detection:** At session start, check if `search_memory`, `index_phase`, `index_decision`, and `index_instruction` are in your available MCP tools. If yes → MCP is active for this session. If no → all behavior is identical to standard file-based operation.
 
 **Tools provided:**
 - `search_memory(query, top_k?)` — semantic search over indexed phases and decisions; used at Pre-Implementation Gate and for ad-hoc user questions
 - `index_phase(data)` — upsert a phase into the vector index; called on phase open and close
 - `index_decision(data)` — upsert a decision; called on creation and status change
+- `index_instruction(data)` — upsert an instruction; called on creation and state change (active ↔ dropped)
 - `check_consistency(project_memory_dir)` — returns {missing, orphaned} for DB/filesystem sync; used in drift audit Cat 13 and proactive sync at session start
 - `rebuild_index(entries[])` — full atomic rebuild of the index; called when DB is empty or on user request
 - `index_era(data)` — upsert an era summary; called when a new era-NNN.md is written
@@ -126,6 +132,8 @@ Phase / decision / discussion / issue records carry author attribution via `crea
 ├── issues/
 │   ├── open/
 │   └── closed/
+├── instructions/
+│   └── INSTRUCTION-YYYY-MM-DD-slug.md
 └── summaries/
     ├── project-memory.md
     ├── current-state.md

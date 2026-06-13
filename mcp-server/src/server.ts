@@ -8,6 +8,7 @@ import { checkConsistency } from "./tools/check_consistency";
 import { rebuildIndex } from "./tools/rebuild_index";
 import { findSimilarCommit } from "./tools/find_similar_commit";
 import { indexEra } from "./tools/index_era";
+import { indexInstruction } from "./tools/index_instruction";
 import { runAudit } from "./tools/run_audit";
 import type { IndexEntry } from "./types";
 
@@ -21,15 +22,17 @@ const srv = server as any;
 
 srv.tool(
   "search_memory",
-  "Semantic search over indexed project memory (phases, decisions, discussions). Returns top-K results sorted by similarity. Use at Pre-Implementation Gate and when user asks about past work.",
+  "Semantic search over indexed project memory (phases, decisions, discussions, eras, instructions). Returns top-K results sorted by similarity. Use at Pre-Implementation Gate and when user asks about past work.",
   {
     query: z.string().describe("Natural language search query"),
     top_k: z.number().int().min(1).max(20).optional().default(8).describe("Number of results"),
     include_commits: z.boolean().optional().default(false).describe("Include per-commit vector records in results (default: false)"),
+    created_by_email: z.string().optional().describe("Filter results to a specific creator email. Default: no filter. Use to scope instruction searches to current user."),
+    type_filter: z.string().optional().describe("Filter results to a specific type (phase, decision, discussion, era, instruction). Default: no filter."),
   },
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async (args: any) => {
-    const results = await searchMemory(args.query, args.top_k, args.include_commits);
+    const results = await searchMemory(args.query, args.top_k, args.include_commits, args.created_by_email, args.type_filter);
     return { content: [{ type: "text" as const, text: JSON.stringify(results) }] };
   }
 );
@@ -96,8 +99,23 @@ srv.tool(
 );
 
 srv.tool(
+  "index_instruction",
+  "Index or update an instruction in the vector DB. Call when an INSTRUCTION file is created or its state changes (active ↔ dropped). Upsert by ID.",
+  {
+    id: z.string().regex(/^[a-zA-Z0-9-]+$/).describe("Instruction ID, e.g. INSTRUCTION-2026-06-13-branch-per-phase"),
+    prompt: z.string(),
+    state: z.string(),
+  },
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  async (args: any) => {
+    const result = await indexInstruction(args);
+    return { content: [{ type: "text" as const, text: JSON.stringify(result) }] };
+  }
+);
+
+srv.tool(
   "check_consistency",
-  "Compare vector DB index against .project-memory/ filesystem. Returns missing IDs (file exists, not in DB) and orphaned IDs (in DB, file gone). Covers phases, decisions, and discussions.",
+  "Compare vector DB index against .project-memory/ filesystem. Returns missing IDs (file exists, not in DB) and orphaned IDs (in DB, file gone). Covers phases, decisions, discussions, eras, and instructions.",
   {
     project_memory_dir: z.string().describe("Absolute path to the .project-memory/ directory"),
   },
@@ -113,7 +131,7 @@ srv.tool(
   "Atomically replace the entire vector DB index. The skill assembles all IndexEntry objects and passes them here. Drops existing index, embeds all entries (including per-commit records for phases), creates fresh index.",
   {
     entries: z.array(z.object({
-      type: z.enum(["phase", "decision", "discussion", "era"]),
+      type: z.enum(["phase", "decision", "discussion", "era", "instruction"]),
       data: z.record(z.unknown()),
     })).describe("All entries to index"),
   },

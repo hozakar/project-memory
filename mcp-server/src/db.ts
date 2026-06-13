@@ -57,15 +57,28 @@ export async function search(
   vector: number[],
   topK: number,
   typeFilter?: string,
-  excludeCommits: boolean = true
+  excludeCommits: boolean = true,
+  createdByEmail?: string
 ): Promise<SearchResult[]> {
   try {
     const table = await getTable();
-    const fetchLimit = (typeFilter || excludeCommits) ? topK * 20 : topK;
-    const rows = await table
-      .vectorSearch(vector)
-      .limit(fetchLimit)
-      .toArray();
+    const fetchLimit = topK;
+    let query = table.vectorSearch(vector);
+
+    // Build WHERE clauses for pre-filtering
+    const whereClauses: string[] = [];
+    if (typeFilter) {
+      whereClauses.push(`type = '${typeFilter}'`);
+    }
+    if (createdByEmail) {
+      whereClauses.push(`createdByEmail = '${createdByEmail}'`);
+    }
+
+    if (whereClauses.length > 0) {
+      query = query.where(whereClauses.join(" AND "));
+    }
+
+    const rows = await query.limit(fetchLimit).toArray();
 
     let results = rows
       .map((row: Record<string, unknown>) => {
@@ -91,10 +104,6 @@ export async function search(
 
     if (excludeCommits && !typeFilter) {
       results = results.filter((r: SearchResult) => r.type !== "commit");
-    }
-
-    if (typeFilter) {
-      results = results.filter((r: SearchResult) => r.type === typeFilter);
     }
 
     return results.slice(0, topK);

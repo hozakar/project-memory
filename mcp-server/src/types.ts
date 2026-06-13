@@ -53,9 +53,18 @@ export interface EraIndexData {
   narrative: string;       // full body text, up to 3000 chars
 }
 
+export interface InstructionIndexData {
+  id: string;              // e.g. "INSTRUCTION-2026-06-13-branch-per-phase"
+  prompt: string;          // the instruction prompt text
+  state: string;           // "active" | "dropped"
+  createdBy?: Identity;
+  origin?: string;         // INSTRUCTION-ID if forked from another user
+  originUpdated?: boolean; // true when origin instruction has been modified since fork
+}
+
 export interface SearchResult {
   id: string;
-  type: "phase" | "decision" | "discussion" | "commit" | "era";
+  type: "phase" | "decision" | "discussion" | "commit" | "era" | "instruction";
   similarity: number;      // 0 to 1, higher = more similar
   title: string;
   createdBy?: Identity;
@@ -74,8 +83,8 @@ export interface ConsistencyReport {
 }
 
 export interface IndexEntry {
-  type: "phase" | "decision" | "discussion" | "era";
-  data: PhaseIndexData | DecisionIndexData | DiscussionIndexData | EraIndexData;
+  type: "phase" | "decision" | "discussion" | "era" | "instruction";
+  data: PhaseIndexData | DecisionIndexData | DiscussionIndexData | EraIndexData | InstructionIndexData;
 }
 
 export interface AuditFinding {

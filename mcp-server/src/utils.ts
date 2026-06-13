@@ -1,4 +1,4 @@
-import type { PhaseIndexData, DecisionIndexData, DiscussionIndexData, CommitDiff, EraIndexData } from "./types";
+import type { PhaseIndexData, DecisionIndexData, DiscussionIndexData, CommitDiff, EraIndexData, InstructionIndexData } from "./types";
 
 export function buildPhaseText(data: PhaseIndexData): string {
   const parts: string[] = [
@@ -58,4 +58,15 @@ export function buildEraText(data: EraIndexData): string {
   ]
     .join("\n")
     .slice(0, 4000);
+}
+
+export function buildInstructionText(data: InstructionIndexData): string {
+  return [
+    data.id,
+    data.state,
+    data.prompt,
+    data.origin ?? "",
+  ]
+    .join("\n")
+    .slice(0, 2000);
 }

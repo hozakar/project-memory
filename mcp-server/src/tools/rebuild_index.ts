@@ -1,7 +1,7 @@
 import { embed } from "../embedder";
 import { atomicRebuild } from "../db";
-import { buildPhaseText, buildDecisionText, buildDiscussionText, buildCommitText, buildEraText } from "../utils";
-import type { IndexEntry, LanceRecord, PhaseIndexData, DecisionIndexData, DiscussionIndexData, EraIndexData, Identity } from "../types";
+import { buildPhaseText, buildDecisionText, buildDiscussionText, buildCommitText, buildEraText, buildInstructionText } from "../utils";
+import type { IndexEntry, LanceRecord, PhaseIndexData, DecisionIndexData, DiscussionIndexData, EraIndexData, InstructionIndexData, Identity } from "../types";
 
 const UNKNOWN_IDENTITY: Identity = { name: "unknown", email: "unknown" };
 
@@ -27,6 +27,11 @@ export async function rebuildIndex(entries: IndexEntry[]): Promise<{ indexed: nu
       } else if (entry.type === "era") {
         text = buildEraText(entry.data as EraIndexData);
         // Eras are out of scope for author attribution
+      } else if (entry.type === "instruction") {
+        const d = entry.data as InstructionIndexData;
+        text = buildInstructionText(d);
+        createdBy = d.createdBy ?? UNKNOWN_IDENTITY;
+        contributors = [];
       } else {
         const d = entry.data as DiscussionIndexData;
         text = buildDiscussionText(d);
@@ -39,10 +44,11 @@ export async function rebuildIndex(entries: IndexEntry[]): Promise<{ indexed: nu
       }
 
       const vector = await embed(text);
+      const title = entry.type === "instruction" ? entry.data.id : (entry.data as PhaseIndexData | DecisionIndexData | DiscussionIndexData | EraIndexData).title;
       const record: LanceRecord = {
         id: entry.data.id,
         type: entry.type,
-        title: entry.data.title,
+        title,
         text,
         vector,
       };
