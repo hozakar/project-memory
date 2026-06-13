@@ -31,7 +31,7 @@ Ambiguous (test additions, dep upgrades, doc updates)
 → Set `status: abandoned` in `phase.yml`, add `abandoned_reason` field
 
 **About to implement something significant?**
-→ Step 1: phase open? → Step 2: classify trivial/significant/ambiguous → Step 3: scan `decisions/index.md` and `discussions/index.md` for conflicts → batch any directional conflicts into one question → Step 4: if no candidate exists for an architectural move, offer to record one → Step 5: if `search_memory` available, call `search_memory(description, top_k=8)` and load results with similarity ≥ 0.6.
+→ Step 1: phase open? → Step 2: classify trivial/significant/ambiguous → Step 3: scan `decisions/index.md` and `discussions/index.md` for conflicts → batch any directional conflicts into one question → Step 4: if no candidate exists for an architectural move, offer to record one → Step 5: if `search_memory` available, call `search_memory(description, top_k=8)` and load results with similarity ≥ 0.6. For targeted lookups, add `touches_filter` (decisions) or `tags_filter` (phases/discussions) to pre-filter by exact entity before ranking.
 
 **About to close a discussion?**
 → Determine outcome type (phase / decision / issue / roadmap / none)
@@ -63,7 +63,7 @@ Ambiguous (test additions, dep upgrades, doc updates)
 | Phase opened (status: planning written) | If `index_phase` tool available: call `index_phase` with plan.md content (2000 chars max), empty implementationText, empty commitDiffs, plus `created_by` + `contributors` from phase.yml |
 | Phase closed (status: completed written) | If `index_phase` tool available: call `index_phase` with full content — plan + implementation (2000 chars each) + commit diffs (2000 chars each), plus `created_by` + `contributors` from phase.yml |
 | DECISION-* file created or status changed | If `index_decision` tool available: call `index_decision` with title, status, touches, context[:1000], decisionBody[:1000], plus `created_by` + `contributors` from frontmatter |
-| User asks about past phases/decisions/discussions (MCP available) | Call `search_memory(user_question, top_k=8)` → load top results from disk before answering |
+| User asks about past phases/decisions/discussions (MCP available) | Call `search_memory(user_question, top_k=8)` → load top results from disk before answering. If question targets a specific entity/module, add `touches_filter` or `tags_filter` for sharper results. |
 | Drift audit runs — `run_audit` available | Call `run_audit(project_memory_dir)`; apply `pending_fixes` (Cat 7) via Edit; log `auto_fixed`; triage `escalations` per `audit.md` MCP Fast Path |
 | Drift audit runs — `run_audit` NOT available | Run file-based detection (13 categories); Cat 13: call `check_consistency`, auto-fix missing entries |
 | User mentions lost commits after squash/rebase | Call `find_similar_commit(description_of_lost_work, top_k=5)` → load matching phase files from disk |

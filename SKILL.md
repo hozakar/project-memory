@@ -76,7 +76,7 @@ The `mcp-server/` subdirectory contains an optional MCP server that accelerates 
 **Availability detection:** At session start, check if `search_memory`, `index_phase`, `index_decision`, and `index_instruction` are in your available MCP tools. If yes → MCP is active for this session. If no → all behavior is identical to standard file-based operation.
 
 **Tools provided:**
-- `search_memory(query, top_k?)` — semantic search over indexed phases and decisions; used at Pre-Implementation Gate and for ad-hoc user questions
+- `search_memory(query, top_k?, type_filter?, created_by_email?, touches_filter?, tags_filter?)` — hybrid search: vector similarity + optional exact pre-filters. `touches_filter: string[]` narrows to decisions whose `touches` contains ALL listed entities; `tags_filter: string[]` narrows to phases/discussions whose `tags` contains ALL listed tags. Used at Pre-Implementation Gate and for ad-hoc user questions.
 - `index_phase(data)` — upsert a phase into the vector index; called on phase open and close
 - `index_decision(data)` — upsert a decision; called on creation and status change
 - `index_instruction(data)` — upsert an instruction; called on creation and state change (active ↔ dropped)
