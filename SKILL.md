@@ -30,9 +30,9 @@ When this skill activates:
    - If the session role is `developer`: suppress the era prompt.
 
 3. Run Drift Audit (read `audit.md` for the full procedure).
-   - Auto-fix all findings in the auto-fix category silently (includes all low-severity and aged-medium findings).
-   - Cat 1 findings with `interactive: false` (fresh orphan commits, ≤ 3 days, current user): present as a single informational notice — "ℹ️ N orphan commit(s) (last 3 days). Run `audit` to review." Do NOT enter interactive mode for these.
-   - Present interactive-triage findings (high severity, or medium with age ≤ 3 days) in a single block, in the format specified by `audit.md`.
+   - Auto-fix all findings silently (all 12 non-Cat-4 categories auto-fix per the simplified severity model — Cat 4 heuristic auto-resolves same-user commits, escalating only on author mismatch or ambiguous matching).
+   - Cat 1 informational notices (fresh orphan commits, ≤ 3 days, current user): present as a single informational notice — "ℹ️ N orphan commit(s) (last 3 days). Run `audit` to review." Do NOT enter interactive mode for these.
+   - Interactive triage is rare: only Cat 4 edge cases (author mismatch or ambiguous file matching that heuristic can't resolve) enter interactive mode. Present in the format specified by `audit.md`.
    - If no findings at all (no interactive, no info, no auto-fix): replace the Step 1 line with 🧠 PROJECT MEMORY LOADED → drift audit clean.
    - If auto-fix or info findings exist but no interactive-triage findings: keep the Step 1 line as-is, emit the drift report block, and continue to step 4 (do NOT enter interactive mode).
    - If any interactive-triage findings exist after auto-fix, immediately enter Interactive Audit Mode (per `audit.md` Interactive Mode section) without waiting for the user to invoke `audit` manually. Apply user decisions, re-detect, loop until clean.
@@ -160,7 +160,7 @@ Phase / decision / discussion / issue records carry author attribution via `crea
 ├── gates.md          ← Implementation gates, commit rules, phase lifecycle
 ├── protocol.md       ← Agent thinking protocol, memory loading, knowledge preservation
 ├── cheatsheet.md     ← Quick reference, event-based triggers
-├── audit.md          ← Drift detection and repair (13 categories)
+├── audit.md          ← Drift detection and repair (13 categories): single escalation gate (Cat 4 — same-user heuristic with auto-assignment, escalates only on author mismatch or ambiguous matching). All other 12 categories auto-fix silently.
 ├── init.md           ← First-run initialization
 ├── templates.md      ← All document schemas (phases, decisions, issues, discussions)
 ├── conventions.md    ← Naming and lifecycle rules, decision resolution

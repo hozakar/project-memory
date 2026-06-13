@@ -115,12 +115,6 @@ function levenshtein(a: string, b: string): number {
   return dp[m][n];
 }
 
-function isInteractive(severity: "high" | "medium" | "low", ageDays: number): boolean {
-  if (severity === "high") return true;
-  if (severity === "medium") return ageDays <= 3;
-  return false;
-}
-
 const TRIVIAL_RE = /^(docs|chore\(lint|chore\(format|chore\(deps|chore\(memory|chore\(audit|fix\(lint|phase:)/;
 
 // ---------------------------------------------------------------------------
@@ -131,24 +125,20 @@ function cat1CommitOrphans(
   projectRoot: string,
   phases: PhaseEntry[],
   ignored: Set<string>
-): { autoFixed: string[]; escalations: AuditFinding[] } {
-  // Get current user email for author filtering
+): { autoFixed: string[]; pendingFixes: PendingFix[]; escalations: AuditFinding[] } {
   const currentUserEmail = git("git config user.email", projectRoot) || "";
 
-  // Use --format to get author email (%ae) and ISO date (%aI) alongside hash and subject
   const logOutput = git("git log --format='%h %ae %aI %s' -30", projectRoot);
-  if (!logOutput) return { autoFixed: [], escalations: [] };
+  if (!logOutput) return { autoFixed: [], pendingFixes: [], escalations: [] };
 
   const allTracked = new Set<string>();
   for (const p of phases) for (const h of p.commits) allTracked.add(h);
-  // Also index abbreviated form (git log --oneline returns 7-char hashes)
   for (const p of phases) for (const h of p.commits) allTracked.add(h.slice(0, 7));
 
   const agedOrphans: string[] = [];
-  const freshOrphans: string[] = [];
+  const freshOrphanEntries: { hash: string; files: string[] }[] = [];
 
   for (const line of logOutput.split("\n")) {
-    // Parse: hash author_email iso_date subject
     const lm = line.match(/^([0-9a-f]{7,40})\s+(\S+)\s+(\S+)\s+(.+)$/);
     if (!lm) continue;
     const [, hash, authorEmail, isoDate, subject] = lm;
@@ -156,15 +146,14 @@ function cat1CommitOrphans(
     if (TRIVIAL_RE.test(subject)) continue;
     if (ignored.has(`commit:${hash}`)) continue;
 
-    // User scope: skip commits by other users on-load
     if (currentUserEmail && authorEmail !== currentUserEmail) continue;
 
-    // Age boundary: > 3 days → auto-trivial
     const ageDays = daysDiff(isoDate.split("T")[0]);
     if (ageDays > 3) {
       agedOrphans.push(hash);
     } else {
-      freshOrphans.push(hash);
+      const filesOutput = git(`git diff-tree --no-commit-id --name-only -r ${hash}`, projectRoot);
+      freshOrphanEntries.push({ hash, files: filesOutput ? filesOutput.split("\n").filter(Boolean) : [] });
     }
   }
 
@@ -173,52 +162,64 @@ function cat1CommitOrphans(
     autoFixed.push(`Auto-trivially classified ${agedOrphans.length} aged orphan commit(s): ${agedOrphans.join(" ")} (age > 3 days)`);
   }
 
+  const pendingFixes: PendingFix[] = [];
   const escalations: AuditFinding[] = [];
-  if (freshOrphans.length > 0) {
-    escalations.push({
-      category: 1, severity: "low", interactive: false,
-      description: `${freshOrphans.length} orphan commit(s) (last 3 days). Run audit to review.`,
-      data: { hashes: freshOrphans },
-    });
+
+  for (const entry of freshOrphanEntries) {
+    // Try to match commit files to phase directories
+    const matchedPhases: string[] = [];
+    for (const file of entry.files) {
+      for (const p of phases) {
+        const phaseDir = path.join(projectRoot, ".project-memory", "phases", p.phaseId).replace(/\\/g, "/");
+        if (file.startsWith("phases/" + p.phaseId + "/") || file.includes(phaseDir)) {
+          if (!matchedPhases.includes(p.phaseId)) matchedPhases.push(p.phaseId);
+        }
+      }
+    }
+
+    if (matchedPhases.length === 1) {
+      pendingFixes.push({
+        type: "assign_commit",
+        phaseId: matchedPhases[0],
+        commitHash: entry.hash,
+        files: entry.files,
+      });
+      autoFixed.push(`Auto-assigned orphan commit ${entry.hash} to phase ${matchedPhases[0]}`);
+    } else if (matchedPhases.length > 1) {
+      autoFixed.push(`Orphan commit ${entry.hash} matches ${matchedPhases.length} phases (${matchedPhases.join(", ")}). Skipping auto-assign.`);
+    } else {
+      autoFixed.push(`Orphan commit ${entry.hash} matched no phase directory. Skipping auto-assign.`);
+    }
   }
 
-  return { autoFixed, escalations };
+  return { autoFixed, pendingFixes, escalations };
 }
 
 function cat2SummaryStaleness(
   projectRoot: string,
   projectMemoryDir: string,
   ignored: Set<string>
-): AuditFinding[] {
+): string[] {
   const latestDate = git("git log -1 --format=%cs", projectRoot);
   if (!latestDate) return [];
-  const ageDays = daysDiff(latestDate);
   const summariesDir = path.join(projectMemoryDir, "summaries");
   if (!fs.existsSync(summariesDir)) return [];
 
-  const findings: AuditFinding[] = [];
+  const autoFixed: string[] = [];
   for (const filename of fs.readdirSync(summariesDir)) {
     if (!filename.endsWith(".md")) continue;
     if (ignored.has(`summary:${filename}`)) continue;
     const content = readFile(path.join(summariesDir, filename));
     const luMatch = content.match(/Last Updated:\s*(\d{4}-\d{2}-\d{2})/);
     if (!luMatch) {
-      findings.push({
-        category: 2, severity: "medium", interactive: true,
-        description: `${filename} has no 'Last Updated:' field`,
-        data: { filename, issue: "missing_last_updated" },
-      });
+      autoFixed.push(`Summary ${filename} has no 'Last Updated:' field. Add one with today's date.`);
       continue;
     }
     if (luMatch[1] < latestDate) {
-      findings.push({
-        category: 2, severity: "medium", interactive: isInteractive("medium", ageDays),
-        description: `${filename} stale (Last Updated ${luMatch[1]}, latest commit ${latestDate})`,
-        data: { filename, last_updated: luMatch[1], project_commit_date: latestDate, age_days: ageDays },
-      });
+      autoFixed.push(`Summary ${filename} is stale (Last Updated ${luMatch[1]}, project commit ${latestDate}). Bump date to today.`);
     }
   }
-  return findings;
+  return autoFixed;
 }
 
 function cat3StubPlaceholders(projectMemoryDir: string, ignored: Set<string>): AuditFinding[] {
@@ -254,12 +255,39 @@ function offsetDate(dateStr: string, days: number): string {
   return d.toISOString().slice(0, 10);
 }
 
+function getPhaseFiles(projectRoot: string, phase: PhaseEntry): string[] {
+  const allFiles = new Set<string>();
+  for (const h of phase.commits) {
+    const filesOutput = git(`git diff-tree --no-commit-id --name-only -r ${h}`, projectRoot);
+    if (filesOutput) {
+      for (const f of filesOutput.split("\n").filter(Boolean)) allFiles.add(f);
+    }
+  }
+  return [...allFiles];
+}
+
 function cat4OpenPhaseGap(
   projectRoot: string,
   phases: PhaseEntry[],
   ignored: Set<string>
-): AuditFinding[] {
-  const findings: AuditFinding[] = [];
+): { autoFixed: string[]; pendingFixes: PendingFix[]; escalations: AuditFinding[] } {
+  const currentUserEmail = git("git config user.email", projectRoot) || "";
+  const autoFixed: string[] = [];
+  const pendingFixes: PendingFix[] = [];
+  const escalations: AuditFinding[] = [];
+
+  // Sort phases by started_at for chronological lookup
+  const sortedPhases = [...phases]
+    .filter(p => p.startedAt)
+    .sort((a, b) => (a.startedAt! < b.startedAt! ? -1 : a.startedAt! > b.startedAt! ? 1 : 0));
+
+  // Pre-compute phase files for open phases only (used for file-matching heuristic)
+  const phaseFilesCache = new Map<string, string[]>();
+  for (const p of phases) {
+    if (p.status === "open" || p.status === "planning" || p.status === "implementation" || p.status === "review") {
+      phaseFilesCache.set(p.phaseId, getPhaseFiles(projectRoot, p));
+    }
+  }
 
   for (const phase of phases) {
     if (!phase.status || phase.status === "completed" || phase.status === "abandoned") continue;
@@ -281,21 +309,102 @@ function cat4OpenPhaseGap(
     if (!logOutput) continue;
 
     const missing: string[] = [];
+    const missingDates = new Map<string, string>(); // hash → iso date
     for (const line of logOutput.split("\n")) {
       const lm = line.match(/^([0-9a-f]{7,40})\s+(.+)$/);
       if (!lm) continue;
-      if (!phase.commits.has(lm[1]) && !TRIVIAL_RE.test(lm[2])) missing.push(lm[1]);
+      if (!phase.commits.has(lm[1]) && !TRIVIAL_RE.test(lm[2])) {
+        missing.push(lm[1]);
+      }
     }
 
-    if (missing.length > 0) {
-      findings.push({
-        category: 4, severity: "high", interactive: true,
-        description: `Open phase ${phase.phaseId} missing ${missing.length} commit(s) on ${branch}`,
-        data: { phase_id: phase.phaseId, branch, missing_hashes: missing },
-      });
+    if (missing.length === 0) continue;
+
+    // Get commit dates for missing commits
+    for (const hash of missing) {
+      const dateStr = git(`git log -1 --format=%cs ${hash}`, projectRoot);
+      if (dateStr) missingDates.set(hash, dateStr);
+    }
+
+    for (const hash of missing) {
+      // 1. Get commit author
+      const authorEmail = git(`git log -1 --format='%ae' ${hash}`, projectRoot);
+      
+      // 2. Different user → escalate
+      if (currentUserEmail && authorEmail !== currentUserEmail) {
+        escalations.push({
+          category: 4, severity: "high", interactive: true,
+          description: `Open phase ${phase.phaseId} missing commit ${hash} (author: ${authorEmail}). Different user's commit, needs review.`,
+          data: { phase_id: phase.phaseId, missing_hash: hash, author: authorEmail },
+        });
+        continue;
+      }
+
+      // 3. Same user → file-matching heuristic
+      const commitFilesOutput = git(`git diff-tree --no-commit-id --name-only -r ${hash}`, projectRoot);
+      const commitFiles = commitFilesOutput ? commitFilesOutput.split("\n").filter(Boolean) : [];
+
+      const commitDate = missingDates.get(hash) || "";
+
+      // Find next phase chronologically after commit date
+      let nextPhase: PhaseEntry | null = null;
+      if (commitDate) {
+        for (const sp of sortedPhases) {
+          if (sp.startedAt && sp.startedAt > commitDate) {
+            nextPhase = sp;
+            break;
+          }
+        }
+      }
+
+      const currentPhaseId = phase.phaseId;
+      const currentFiles = phaseFilesCache.get(currentPhaseId) || [];
+      const nextPhaseId = nextPhase?.phaseId;
+      const nextFiles = nextPhaseId ? (phaseFilesCache.get(nextPhaseId) || []) : [];
+
+      if (!nextPhase) {
+        // No next phase → auto-assign to current phase
+        pendingFixes.push({
+          type: "assign_commit",
+          phaseId: currentPhaseId,
+          commitHash: hash,
+          files: commitFiles,
+        });
+        autoFixed.push(`Auto-assigned missing commit ${hash} to open phase ${currentPhaseId} (no subsequent phase exists).`);
+        continue;
+      }
+
+      // Score commit files against each phase
+      const currentScore = commitFiles.filter(f => currentFiles.includes(f)).length;
+      const nextScore = commitFiles.filter(f => nextFiles.includes(f)).length;
+
+      if (currentScore > nextScore) {
+        pendingFixes.push({
+          type: "assign_commit",
+          phaseId: currentPhaseId,
+          commitHash: hash,
+          files: commitFiles,
+        });
+        autoFixed.push(`Auto-assigned missing commit ${hash} to open phase ${currentPhaseId} (file overlap: current=${currentScore}, next=${nextScore}).`);
+      } else if (nextScore > currentScore) {
+        pendingFixes.push({
+          type: "assign_commit",
+          phaseId: nextPhaseId,
+          commitHash: hash,
+          files: commitFiles,
+        });
+        autoFixed.push(`Auto-assigned missing commit ${hash} to subsequent phase ${nextPhaseId} (file overlap: current=${currentScore}, next=${nextScore}).`);
+      } else {
+        // Equal scores or no overlap → escalate
+        escalations.push({
+          category: 4, severity: "high", interactive: true,
+          description: `Open phase ${phase.phaseId} missing commit ${hash}. Ambiguous assignment (current=${currentScore}, next=${nextScore}). Needs manual review.`,
+          data: { phase_id: phase.phaseId, missing_hash: hash, commit_files: commitFiles, current_phase_id: currentPhaseId, next_phase_id: nextPhaseId, current_score: currentScore, next_score: nextScore },
+        });
+      }
     }
   }
-  return findings;
+  return { autoFixed, pendingFixes, escalations };
 }
 
 function cat5MisplacedIssues(projectMemoryDir: string): string[] {
@@ -316,18 +425,20 @@ function cat5MisplacedIssues(projectMemoryDir: string): string[] {
   return autoFixed;
 }
 
-function cat6DecisionDrift(projectMemoryDir: string, ignored: Set<string>): AuditFinding[] {
+function cat6DecisionDrift(projectMemoryDir: string, ignored: Set<string>): { autoFixed: string[]; pendingFixes: PendingFix[] } {
   const decisionsDir = path.join(projectMemoryDir, "decisions");
-  if (!fs.existsSync(decisionsDir)) return [];
+  if (!fs.existsSync(decisionsDir)) return { autoFixed: [], pendingFixes: [] };
 
-  const indexContent = readFile(path.join(decisionsDir, "index.md"));
+  const indexPath = path.join(decisionsDir, "index.md");
+  const indexContent = readFile(indexPath);
   const indexRows = new Map<string, string>(); // id -> status
   for (const line of indexContent.split("\n")) {
-    const m = line.match(/^\|\s*[\d-]+\s*\|\s*(DECISION-[\w-]+)\s*\|\s*\S+\s*\|\s*(\w+)\s*\|/);
-    if (m) indexRows.set(m[1], m[2]);
+    const m2 = line.match(/^\|\s*[\d-]+\s*\|\s*(DECISION-[\w-]+)\s*\|\s*\S+\s*\|\s*(\w+)\s*\|/);
+    if (m2) indexRows.set(m2[1], m2[2]);
   }
 
-  const findings: AuditFinding[] = [];
+  const autoFixed: string[] = [];
+  const pendingFixes: PendingFix[] = [];
   const fileIds = new Set<string>();
 
   for (const filename of fs.readdirSync(decisionsDir)) {
@@ -336,38 +447,44 @@ function cat6DecisionDrift(projectMemoryDir: string, ignored: Set<string>): Audi
     fileIds.add(id);
     const fm = parseFrontmatter(readFile(path.join(decisionsDir, filename)));
     const fileStatus = fm["status"] || "unknown";
-    const dateStr = id.match(/DECISION-(\d{4}-\d{2}-\d{2})/)?.[1] ?? today();
-    const ageDays = daysDiff(dateStr);
+    const touchesRaw = fm["touches"] || "";
+    const touches = touchesRaw ? touchesRaw.split(/[,;\s]+/).filter(Boolean) : [];
 
     if (!indexRows.has(id)) {
       if (!ignored.has(`decision-drift:${id}:missing-row`)) {
-        findings.push({
-          category: 6, severity: "high", interactive: true,
-          description: `${id} has no row in decisions/index.md`,
-          data: { decision_id: id, issue: "missing_row", age_days: ageDays },
+        pendingFixes.push({
+          type: "add_decision_index_row",
+          decisionId: id,
+          status: fileStatus,
+          touches,
+          date: today(),
         });
       }
     } else if (indexRows.get(id) !== fileStatus) {
       if (!ignored.has(`decision-drift:${id}:status-mismatch`)) {
-        findings.push({
-          category: 6, severity: "high", interactive: true,
-          description: `${id} status mismatch: file="${fileStatus}", index="${indexRows.get(id)}"`,
-          data: { decision_id: id, issue: "status_mismatch", file_status: fileStatus, index_status: indexRows.get(id), age_days: ageDays },
+        pendingFixes.push({
+          type: "fix_decision_index_status",
+          decisionId: id,
+          correctStatus: fileStatus,
         });
       }
     }
   }
 
+  // Orphan rows: in index but file missing → auto-remove
   for (const [id] of indexRows) {
     if (!fileIds.has(id) && !ignored.has(`decision-drift:${id}:orphan-row`)) {
-      findings.push({
-        category: 6, severity: "high", interactive: true,
-        description: `${id} in index.md but file does not exist`,
-        data: { decision_id: id, issue: "orphan_row" },
-      });
+      // Auto-remove the row from index.md
+      const lines = indexContent.split("\n");
+      const filtered = lines.filter(l => !l.includes(id));
+      if (filtered.length !== lines.length) {
+        fs.writeFileSync(indexPath, filtered.join("\n"), "utf-8");
+        autoFixed.push(`Removed orphan decision index row for ${id} (file does not exist).`);
+      }
     }
   }
-  return findings;
+
+  return { autoFixed, pendingFixes };
 }
 
 function cat7OrphanCommitRefs(projectRoot: string, phases: PhaseEntry[]): PendingFix[] {
@@ -418,32 +535,44 @@ function cat7OrphanCommitRefs(projectRoot: string, phases: PhaseEntry[]): Pendin
   return fixes;
 }
 
-function cat8AdrDrift(projectMemoryDir: string, ignored: Set<string>): AuditFinding[] {
+function cat8AdrDrift(projectMemoryDir: string, ignored: Set<string>): { autoFixed: string[]; pendingFixes: PendingFix[] } {
   const configContent = readFile(path.join(projectMemoryDir, "config.yml"));
-  if (!configContent) return [];
+  if (!configContent) return { autoFixed: [], pendingFixes: [] };
   const adrDirMatch = configContent.match(/adr_dir:\s*(\S+)/);
-  if (!adrDirMatch) return [];
+  if (!adrDirMatch) return { autoFixed: [], pendingFixes: [] };
 
   const projectRoot = path.dirname(projectMemoryDir);
   const adrDir = path.join(projectRoot, adrDirMatch[1]);
   const decisionsDir = path.join(projectMemoryDir, "decisions");
-  if (!fs.existsSync(decisionsDir)) return [];
+  if (!fs.existsSync(decisionsDir)) return { autoFixed: [], pendingFixes: [] };
 
-  const findings: AuditFinding[] = [];
+  const autoFixed: string[] = [];
+  const pendingFixes: PendingFix[] = [];
+
+  // Count existing ADR files to determine next ADR number
+  let maxAdrNum = 0;
+  if (fs.existsSync(adrDir)) {
+    for (const f of fs.readdirSync(adrDir)) {
+      const m3 = f.match(/^(\d+)-/);
+      if (m3) maxAdrNum = Math.max(maxAdrNum, parseInt(m3[1], 10));
+    }
+  }
+
   for (const filename of fs.readdirSync(decisionsDir)) {
     if (!filename.startsWith("DECISION-") || !filename.endsWith(".md")) continue;
     const id = filename.slice(0, -3);
-    const fm = parseFrontmatter(readFile(path.join(decisionsDir, filename)));
-    const dateStr = id.match(/DECISION-(\d{4}-\d{2}-\d{2})/)?.[1] ?? today();
-    const ageDays = daysDiff(dateStr);
+    const fullContent = readFile(path.join(decisionsDir, filename));
+    const fm = parseFrontmatter(fullContent);
 
     const adrId = fm["adr_id"];
     if (!adrId || adrId === "null") {
       if (!ignored.has(`adr-drift:${id}:missing-adr_id`)) {
-        findings.push({
-          category: 8, severity: "medium", interactive: isInteractive("medium", ageDays),
-          description: `${id} has no adr_id field`,
-          data: { decision_id: id, issue: "missing_adr_id", age_days: ageDays },
+        const nextNum = maxAdrNum + 1;
+        maxAdrNum = nextNum;
+        pendingFixes.push({
+          type: "assign_adr_id",
+          decisionId: id,
+          adrId: String(nextNum),
         });
       }
       continue;
@@ -452,10 +581,11 @@ function cat8AdrDrift(projectMemoryDir: string, ignored: Set<string>): AuditFind
     const paddedId = adrId.padStart(4, "0");
     if (!fs.existsSync(adrDir)) {
       if (!ignored.has(`adr-drift:${id}:missing-file`)) {
-        findings.push({
-          category: 8, severity: "medium", interactive: isInteractive("medium", ageDays),
-          description: `adr/ directory missing for ${id}`,
-          data: { decision_id: id, issue: "missing_file", adr_id: paddedId, age_days: ageDays },
+        pendingFixes.push({
+          type: "create_adr_file",
+          decisionId: id,
+          adrId: paddedId,
+          decisionContent: fullContent,
         });
       }
       continue;
@@ -464,10 +594,11 @@ function cat8AdrDrift(projectMemoryDir: string, ignored: Set<string>): AuditFind
     const adrFiles = fs.readdirSync(adrDir).filter(f => f.startsWith(paddedId + "-") && f.endsWith(".md"));
     if (adrFiles.length === 0) {
       if (!ignored.has(`adr-drift:${id}:missing-file`)) {
-        findings.push({
-          category: 8, severity: "medium", interactive: isInteractive("medium", ageDays),
-          description: `adr/${paddedId}-*.md missing for ${id}`,
-          data: { decision_id: id, issue: "missing_file", adr_id: paddedId, age_days: ageDays },
+        pendingFixes.push({
+          type: "create_adr_file",
+          decisionId: id,
+          adrId: paddedId,
+          decisionContent: fullContent,
         });
       }
       continue;
@@ -478,16 +609,18 @@ function cat8AdrDrift(projectMemoryDir: string, ignored: Set<string>): AuditFind
       const statusMatch = adrContent.match(/^Status:\s*(.+)$/m);
       if (statusMatch && !statusMatch[1].startsWith("Accepted")) {
         if (!ignored.has(`adr-drift:${id}:status-mismatch`)) {
-          findings.push({
-            category: 8, severity: "medium", interactive: isInteractive("medium", ageDays),
-            description: `${id} is active but adr/${adrFiles[0]} Status="${statusMatch[1]}"`,
-            data: { decision_id: id, issue: "status_mismatch", decision_status: "active", adr_status: statusMatch[1], age_days: ageDays },
+          pendingFixes.push({
+            type: "fix_adr_status",
+            decisionId: id,
+            adrId: paddedId,
+            decisionStatus: fm["status"] || "active",
+            adrStatus: statusMatch[1],
           });
         }
       }
     }
   }
-  return findings;
+  return { autoFixed, pendingFixes };
 }
 
 function cat9DiscussionDrift(projectMemoryDir: string, ignored: Set<string>): AuditFinding[] {
@@ -544,30 +677,28 @@ function cat9DiscussionDrift(projectMemoryDir: string, ignored: Set<string>): Au
   return findings;
 }
 
-function cat10PhaseCompleteness(projectMemoryDir: string, phases: PhaseEntry[], ignored: Set<string>): AuditFinding[] {
+function cat10PhaseCompleteness(projectMemoryDir: string, phases: PhaseEntry[], ignored: Set<string>): PendingFix[] {
   const required = ["phase.yml", "plan.md", "implementation.md", "review-and-fixes.md", "followup.md"];
-  const findings: AuditFinding[] = [];
+  const pendingFixes: PendingFix[] = [];
 
   for (const phase of phases) {
     const p = phase;
     if (p.status !== "completed") continue;
-    const closedAtMatch = p.block.match(/closed_at:\s+(\d{4}-\d{2}-\d{2})/);
-    const ageDays = closedAtMatch ? daysDiff(closedAtMatch[1]) : 999;
     const phaseDir = path.join(projectMemoryDir, "phases", p.phaseId);
 
     for (const file of required) {
       if (!fs.existsSync(path.join(phaseDir, file))) {
         if (!ignored.has(`phase-completeness:${p.phaseId}:${file}`)) {
-          findings.push({
-            category: 10, severity: "medium", interactive: isInteractive("medium", ageDays),
-            description: `${p.phaseId} missing ${file}`,
-            data: { phase_id: p.phaseId, missing_file: file, age_days: ageDays },
+          pendingFixes.push({
+            type: "create_phase_stub",
+            phaseId: p.phaseId,
+            missingFile: file,
           });
         }
       }
     }
   }
-  return findings;
+  return pendingFixes;
 }
 
 function cat11DiscussionExpiry(projectMemoryDir: string): string[] {
@@ -667,20 +798,40 @@ export async function runAudit(projectMemoryDir: string): Promise<AuditReport> {
   autoFixed.push(...cat5MisplacedIssues(projectMemoryDir));
   autoFixed.push(...cat11DiscussionExpiry(projectMemoryDir));
 
-  // Pending fixes (YAML mutations — LLM applies these)
+  // Cat 2: always auto-fix (returns string[])
+  autoFixed.push(...cat2SummaryStaleness(projectRoot, projectMemoryDir, ignored));
+
+  // Cat 6: auto-fix + pending fixes
+  const cat6Result = cat6DecisionDrift(projectMemoryDir, ignored);
+  autoFixed.push(...cat6Result.autoFixed);
+  pendingFixes.push(...cat6Result.pendingFixes);
+
+  // Cat 8: auto-fix + pending fixes
+  const cat8Result = cat8AdrDrift(projectMemoryDir, ignored);
+  autoFixed.push(...cat8Result.autoFixed);
+  pendingFixes.push(...cat8Result.pendingFixes);
+
+  // Cat 10: pending fixes only
+  pendingFixes.push(...cat10PhaseCompleteness(projectMemoryDir, phases, ignored));
+
+  // Cat 7: pending fixes (YAML annotations — LLM applies these)
   pendingFixes.push(...cat7OrphanCommitRefs(projectRoot, phases));
 
-  // Escalation categories
+  // Cat 1: auto-fix + pending fixes + escalations
   const cat1Result = cat1CommitOrphans(projectRoot, phases, ignored);
   autoFixed.push(...cat1Result.autoFixed);
+  pendingFixes.push(...cat1Result.pendingFixes);
   escalations.push(...cat1Result.escalations);
-  escalations.push(...cat2SummaryStaleness(projectRoot, projectMemoryDir, ignored));
+
+  // Cat 4: auto-fix + pending fixes + escalations
+  const cat4Result = cat4OpenPhaseGap(projectRoot, phases, ignored);
+  autoFixed.push(...cat4Result.autoFixed);
+  pendingFixes.push(...cat4Result.pendingFixes);
+  escalations.push(...cat4Result.escalations);
+
+  // Cat 3, 9, 12: still report-only escalations
   escalations.push(...cat3StubPlaceholders(projectMemoryDir, ignored));
-  escalations.push(...cat4OpenPhaseGap(projectRoot, phases, ignored));
-  escalations.push(...cat6DecisionDrift(projectMemoryDir, ignored));
-  escalations.push(...cat8AdrDrift(projectMemoryDir, ignored));
   escalations.push(...cat9DiscussionDrift(projectMemoryDir, ignored));
-  escalations.push(...cat10PhaseCompleteness(projectMemoryDir, phases, ignored));
   escalations.push(...cat12TagInconsistency(phases, ignored));
   // Cat 13: handled separately by check_consistency
 
