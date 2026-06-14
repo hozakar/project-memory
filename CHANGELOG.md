@@ -2,6 +2,22 @@
 
 All notable changes to the project-memory skill and MCP companion server.
 
+## [0.0.2] — 2026-06-14
+
+### Era 4 — Feature Completeness & Quality Gates (phases 33–43)
+
+- **Maintainer role**: two-tier maintainer/developer system — era creation gated to maintainers only. DECISION-2026-06-13-maintainer-role.
+- **Audit scalability**: wildcard `*` pattern support in `audit_ignore`; era-based auto-clean removes stale ignore entries on era creation. Skill auto-load fixed in init.md CLAUDE.md directive.
+- **Discussion relevancy scoring**: 25-55-10-10 weighted gate (conclusion / long-term impact / discussion fill / decision fill). Score < 60 → silent drop; 60–80 → escalate; ≥ 80 → auto-save. Safety rule: impact subscore > 41/55 always escalates. DECISION-2026-06-13-discussion-relevancy-scoring.
+- **Provenance field**: `provenance: directive | collaborative` added to DECISION and DISCUSSION frontmatter. DECISION-2026-06-13-provenance-field.
+- **Security fix**: `@xenova/transformers` → `@huggingface/transformers` — resolved 4 transitive vulnerabilities (1 critical, 3 high).
+- **Hybrid search**: `touches_filter` and `tags_filter` parameters in `search_memory` — SQL LIKE pre-filter on JSON columns before vector ranking.
+- **ADR optional**: `adr_enabled` flag in config.yml (default: false on new projects). Cat 8 and run_audit skip when disabled. Re-enable triggers catch-up auto-fix.
+- **ASSIGNMENT record type**: sixth record type — cross-user task delegation with persistent session-start notifications. State machine: pending → accepted → ongoing → completed / rejected → assigner loop. Audit Category 14. `index_assignment` MCP tool. `assigned_to_email` / `assigned_by_email` search filters.
+- **MCP index fixes**: null-safe `.join()` in utils.ts; LanceDB dummy record schema completed; rebuild_index tagsJson/touchesJson populated. 78/78 records now index cleanly on fresh install.
+- **Skill file split**: dispatcher architecture applied to 4 largest skill files (audit.md, templates.md, conventions.md + new mcp-integration.md). Session load: ~1700 → ~650 lines (−62%). 22 total skill files.
+- **MCP server quality gates**: pre-commit hook (Husky + lint-staged), ESLint + TypeScript-ESLint, Vitest unit tests (3 files, 25 tests), `--noEmit` typecheck, coverage via @vitest/coverage-v8.
+
 ## [0.0.1] — 2026-06-08 (continuously updated)
 
 ### 2026-06-13
