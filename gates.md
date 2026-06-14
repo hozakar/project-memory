@@ -43,6 +43,8 @@ A shift is substantial when ANY of the following is true:
 
 When uncertain whether a shift is substantial, ask the user before opening a new phase.
 
+**On topic shift:** Reload active instructions (same as Pre-Implementation Gate Step 0) before opening the new phase.
+
 ---
 
 # Phase Lifecycle
@@ -111,6 +113,9 @@ Before dispatching ANY significant implementation work — including:
 
 Run these steps in order. None may be skipped.
 
+**Step 0 — Load active instructions:**
+Load active instructions for the current user: call `search_memory` with `created_by_email` filter matching current git identity (see `mcp-integration.md`). If MCP is unavailable, scan `.project-memory/instructions/` and filter by `created_by.email`. Prepend each active instruction's `# Prompt` body to gate context before proceeding.
+
 **Step 1 — Phase open?**
 A phase **MUST** be open. If no phase is open, **CREATE IT FIRST**. Implementation work is BLOCKED until the phase exists. Minimum: `phase.yml` (status: planning) + `plan.md` stub + `phases/index.yml` entry.
 
@@ -178,6 +183,9 @@ Re-call on any update (status open → concluded, or body changed). The tool ups
 # Pre-Close Gate — MANDATORY
 
 **Before closing any phase** (merge, logical completion, or explicit user declaration), verify and complete the following. Phase may not close until all four are done:
+
+**Step 0 — Load active instructions:**
+Same as Pre-Implementation Gate Step 0 — load and prepend active instructions before proceeding.
 
 1. `implementation.md` — written and reflects the actual implementation (not a stub)
 2. `review-and-fixes.md` — all review rounds closed; findings and actions recorded

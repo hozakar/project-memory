@@ -24,6 +24,7 @@ See `templates.md` for the full schema. Key fields:
 ```
 Trigger (explicit or implicit)
   -> Discussion Mode engages
+      -> Load active instructions (same as Pre-Implementation Gate Step 0 in gates.md)
       -> LLM loads discussions/index.md for prior context
       -> Conversation proceeds
   -> Close discussion
