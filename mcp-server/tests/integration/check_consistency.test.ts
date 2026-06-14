@@ -13,7 +13,7 @@ beforeAll(() => {
   process.env.PROJECT_MEMORY_DIR = tmp.dir;
 });
 
-afterAll(() => tmp.cleanup());
+afterAll(() => { try { tmp.cleanup(); } catch { /* LanceDB holds file handles open on Windows */ } });
 
 describe("checkConsistency — missing", () => {
   it("reports a phase in index.yml that is not in the DB", async () => {
