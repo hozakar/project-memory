@@ -34,10 +34,11 @@ srv.tool(
     type_filter: z.string().optional().describe("Filter results to a specific type (phase, decision, discussion, era, instruction). Default: no filter."),
     touches_filter: z.array(z.string()).optional().describe("Exact AND-filter on decision touches field. E.g. [\"conventions_md\"] returns only decisions that touch conventions_md. Multiple values narrow further (AND semantics). Only effective on type=decision records."),
     tags_filter: z.array(z.string()).optional().describe("Exact AND-filter on phase/discussion tags field. E.g. [\"mcp\", \"schema\"] returns records tagged with both. Only effective on type=phase and type=discussion records."),
+    scope_filter: z.array(z.string()).optional().describe("Exact OR-filter on decision primary_scope field. E.g. [\"constraint\"] returns only decisions with primary_scope=constraint. Multiple values broaden (OR semantics). Only effective on type=decision records."),
   },
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async (args: any) => {
-    const results = await searchMemory(args.query, args.top_k, args.include_commits, args.created_by_email, args.type_filter, args.touches_filter, args.tags_filter, args.assigned_to_email, args.assigned_by_email);
+    const results = await searchMemory(args.query, args.top_k, args.include_commits, args.created_by_email, args.type_filter, args.touches_filter, args.tags_filter, args.assigned_to_email, args.assigned_by_email, args.scope_filter);
     return { content: [{ type: "text" as const, text: JSON.stringify(results) }] };
   }
 );
@@ -78,6 +79,7 @@ srv.tool(
     title: z.string(),
     status: z.string(),
     provenance: z.enum(["directive", "collaborative"]).optional().describe("How the decision originated: directive (user-imposed) or collaborative (joint design)"),
+    primary_scope: z.string().optional().describe("Categorical scope of the decision, e.g. constraint, workflow, schema, conventions. Enables scope_filter in search_memory."),
     context: z.string(),
     decisionBody: z.string(),
     touches: z.array(z.string()).optional(),
@@ -88,7 +90,7 @@ srv.tool(
     if (!args.touches && args.touchesJson) {
       try { args.touches = JSON.parse(args.touchesJson); } catch {}
     }
-    const result = await indexDecision(args);
+    const result = await indexDecision({ ...args, primaryScope: args.primary_scope });
     return { content: [{ type: "text" as const, text: JSON.stringify(result) }] };
   }
 );

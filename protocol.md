@@ -115,6 +115,9 @@ When the question targets a specific entity (file, module, system area), combine
 - "phases tagged `mcp` about schema changes" → `search_memory(query, tags_filter=["mcp"], type_filter="phase")`
 - Multiple filter values use AND semantics — each additional value narrows further. Use a single value when in doubt.
 
+**Constraint search rule:**
+When a discussion about a new feature or enhancement begins — before the conversation deepens — call `search_memory("engineering constraints and principles", scope_filter=["constraint"], type_filter="decision")`. Surface any returned decisions to the conversation so they can shape the design direction early. This fires at discussion start, not just at the Pre-Implementation Gate.
+
 **Assignment search:** At session start, when assignments exist, call `search_memory` with both `assigned_to_email` (pending/ongoing) and `assigned_by_email` (rejected/completed) filters and `type_filter: "assignment"`. For targeted lookups (e.g., "what did I assign to Mehmet?"), combine with the user's question text for semantic ranking.
 
 **Squash/rebase recovery:** If the user mentions that a squash, rebase, or force-push lost commits before opening a new phase, call `find_similar_commit(description_of_lost_work, top_k=5)`. Load the returned phase files from disk and use them to pre-populate the new phase's context. Best-effort — proceed normally if no matches found.

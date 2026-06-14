@@ -18,6 +18,7 @@ export function buildDecisionText(data: DecisionIndexData): string {
     data.title,
     data.status,
     data.provenance ?? "",
+    data.primaryScope ?? "",
     (data.touches ?? []).join(" "),
     data.context,
     data.decisionBody,

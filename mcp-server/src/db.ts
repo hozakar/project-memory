@@ -73,7 +73,8 @@ export async function search(
   touchesFilter?: string[],
   tagsFilter?: string[],
   assignedToEmail?: string,
-  assignedByEmail?: string
+  assignedByEmail?: string,
+  scopeFilter?: string[]
 ): Promise<SearchResult[]> {
   try {
     const table = await getTable();
@@ -103,6 +104,10 @@ export async function search(
       for (const tag of tagsFilter) {
         whereClauses.push(`tagsJson LIKE '%"${escapeLike(tag)}"%'`);
       }
+    }
+    if (scopeFilter && scopeFilter.length > 0) {
+      const scopeClauses = scopeFilter.map(s => `primaryScope = '${escapeLike(s)}'`);
+      whereClauses.push(`(${scopeClauses.join(" OR ")})`);
     }
 
     if (whereClauses.length > 0) {

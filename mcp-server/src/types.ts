@@ -27,6 +27,7 @@ export interface DecisionIndexData {
   title: string;
   status: string;          // "active" | "superseded"
   provenance?: string;     // "directive" | "collaborative" — how the decision originated
+  primaryScope?: string;   // e.g. "constraint", "workflow", "schema", "conventions"
   context: string;         // first 1000 chars of # Context section body
   decisionBody: string;    // first 1000 chars of # Decision + # Chosen Solution bodies
   touches: string[];       // from frontmatter touches field
@@ -164,4 +165,5 @@ export interface LanceRecord {
   tagsJson?: string;         // JSON.stringify(string[]) — phase/discussion tags; supports exact WHERE filter
   assignedToEmail?: string;
   assignedByEmail?: string;
+  primaryScope?: string;     // decision primary_scope — supports exact WHERE filter via scope_filter
 }

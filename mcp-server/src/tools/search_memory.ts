@@ -11,11 +11,12 @@ export async function searchMemory(
   touchesFilter?: string[],
   tagsFilter?: string[],
   assignedToEmail?: string,
-  assignedByEmail?: string
+  assignedByEmail?: string,
+  scopeFilter?: string[]
 ): Promise<SearchResult[]> {
   try {
     const vector = await embed(query);
-    const results = await search(vector, topK, typeFilter, !include_commits, createdByEmail, touchesFilter, tagsFilter, assignedToEmail, assignedByEmail);
+    const results = await search(vector, topK, typeFilter, !include_commits, createdByEmail, touchesFilter, tagsFilter, assignedToEmail, assignedByEmail, scopeFilter);
     return results;
   } catch {
     return [];
