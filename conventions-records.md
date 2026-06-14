@@ -89,7 +89,9 @@ origin_updated: false     # true when origin modified since fork
 
 # Assignments
 
-Assignment records capture cross-user task delegation. They are independent records stored in `.project-memory/assignments/` with their own `index.yml` summary table.
+**Purpose:** ASSIGNMENT is a **continuity and handoff mechanism** — not a task management system. Primary use case: a developer departs or becomes unavailable with unfinished work; their context is transferred to a named teammate so nothing is lost between sessions. Secondary use case: intentional, rare domain handoffs ("this area is yours"). Assignments are created rarely. project-memory is not Jira.
+
+Assignment records are independent records stored in `.project-memory/assignments/` with their own `index.yml` summary table.
 
 **Naming:** `ASSIGNMENT-YYYY-MM-DD-<short-slug>.md`
 - Date first — chronological sort order
@@ -104,7 +106,7 @@ See `templates.md` for the full schema. Key fields:
 - `type`: `direct` (linked to existing record) or `freeform` (standalone task)
 - `assigned_to` / `assigned_by`: `{ name, email }` objects
 - `target_type` / `target_id`: link to existing record (null for freeform)
-- `remind_count`: incremented on each `remind me later` action (≥3 triggers auto-reject question)
+- `remind_count`: incremented on each `remind me later` action
 
 **State machine:**
 ```
@@ -119,20 +121,18 @@ After rejection — assigner options:
 ```
 
 **Session-start UX (assignee — pending assignments):**
-Every session, pending assignments for the current user are loaded via `assigned_to.email` filter. Interactive options presented:
-- `[Show Details]` — opens target file (direct) or full body (freeform), re-presents options
-- `[Accept]` — transitions to `accepted`, then `ongoing`
-- `[Reject]` — prompts for reason, transitions to `rejected`, notification queued for assigner
-- `[Remind Me Later]` — increments `remind_count`, re-presents next session
-
-After 3 reminders: "You've been reminded 3 times. Auto-reject?" (yes/no).
+Every session, pending/ongoing assignments for the current user are loaded via `assigned_to.email` filter. A single passive line is shown — no interaction expected:
+```
+📋 2 pending assignments — "bana atanan görevler" dersen listelerim
+```
+When the user asks to see their assignments, full details are shown and actions (accept / reject / remind me later) become available at that point.
 
 **Session-start UX (assigner — rejected assignments):**
-Every session, rejected assignments made by the current user are loaded via `assigned_by.email` filter. Interactive options:
-- `[Show Details]` — opens rejection reason and target context
-- `[Assign to Another]` — creates new ASSIGNMENT
-- `[Do It Yourself]` — marks as completed
-- `[Remind Me Later]` — re-presents next session
+Every session, rejected assignments made by the current user are shown as a passive line:
+```
+📋 1 rejected assignment — "reddettiğim assignment'lar" dersen listelerim
+```
+When the user asks, full details and actions (assign to another / do it yourself / remind me later) are shown.
 
 **Session-start UX (assigner — completed notifications):**
 Completed assignments are shown ONCE (not persistent). Options:
@@ -147,7 +147,7 @@ Completed assignments are shown ONCE (not persistent). Options:
 Open — anyone can assign to anyone. Maintainer role is not extended (scope remains era creation gating). Rejection mechanism is the safety net against misuse.
 
 **Expiry:**
-No automatic expiry. Assignments persist until explicitly resolved (completed or rejected + resolved by assigner). The persistent notification model ensures they are not silently dropped.
+No automatic expiry. Assignments persist until explicitly resolved (completed or rejected + resolved by assigner). Cat 14b (stale pending >30d) serves as the backstop for abandoned assignments.
 
 **Author attribution:**
 On creation: `created_by` is set to `assigned_by` identity (run `git config user.name` + `git config user.email`; missing → `unknown`). `contributors` is seeded with the same identity.

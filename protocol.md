@@ -45,8 +45,8 @@ At session start and after any context compaction:
 6. .project-memory/phases/index.yml
 7. Active phase directory (if open)
 8. Current user's active instructions (via `search_memory` with `created_by_email` filter and `type_filter: "instruction"` if MCP available; directory scan fallback otherwise)
-8a. Current user's pending assignments (via `search_memory` with `assigned_to_email` filter and `type_filter: "assignment"` if MCP available; directory scan fallback otherwise). Present interactively with accept/reject/remind options.
-8b. Current user's rejected assignments they created (via `search_memory` with `assigned_by_email` filter and `type_filter: "assignment"` if MCP available). Present interactively with assign-to-another/do-it-yourself/remind options.
+8a. Current user's pending/ongoing assignments (via `search_memory` with `assigned_to_email` filter and `type_filter: "assignment"` if MCP available; directory scan fallback otherwise). Show passive single line only: `📋 N pending assignments — ask me to list them`. No interaction expected. Full details and actions (accept/reject/remind) available on demand.
+8b. Current user's rejected assignments they created (via `search_memory` with `assigned_by_email` filter and `type_filter: "assignment"` if MCP available). Show passive single line only: `📋 N rejected assignments — ask me to list them`. Full details and actions (assign-to-another/do-it-yourself/remind) available on demand.
 8c. Current user's completed assignment notifications (via same filter as 8b, shown once, non-persistent).
 9. .project-memory/decisions/index.md — Active section only (primary input to Pre-Implementation Gate); Superseded section is available on demand for historical lookups but is NOT scanned during Pre-Implementation Gate
 10. Individual DECISION-YYYY-MM-DD-* files (only when planning in a scope the index flags as relevant)
