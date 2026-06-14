@@ -12,10 +12,11 @@ import { indexInstruction } from "./tools/index_instruction";
 import { indexAssignment } from "./tools/index_assignment";
 import { runAudit } from "./tools/run_audit";
 import type { IndexEntry } from "./types";
+import { version } from "../package.json";
 
 export const server = new McpServer({
   name: "project-memory",
-  version: "0.0.1"
+  version
 });
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
