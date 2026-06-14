@@ -53,8 +53,8 @@ All notable changes to the project-memory skill and MCP companion server.
 - English-only convention for skill files
 - Roadmap & follow-up cleanup
 
-### MCP Server
-- **v0.4.0** — `run_audit` tool (deterministic audit delegation, all 13 categories); Cat 5/11 file-move auto-fixes executed in MCP; Cat 7 returned as pending_fixes; Cat 12 Levenshtein pre-filter; `AuditFinding.interactive` pre-computed
-- **v0.3.0** — `index_era` tool (8th tool); `search_memory` excludes type=commit by default; proactive `check_consistency` + auto-index at session start; era summary system (eras/ dir, era-NNN.md, eras/index.yml)
-- **v0.2.0** — `index_discussion` and `find_similar_commit` tools (7 total); per-commit vector records; hex validation on commit hashes
-- **MVP (v0.1.0)** — LanceDB + all-MiniLM-L6-v2 local embeddings; 5 tools: search_memory, index_phase, index_decision, check_consistency, rebuild_index; graceful degradation without MCP
+### MCP Server (all under v0.0.1)
+- **Phase 4** — `run_audit` tool (deterministic audit delegation, all 13 categories); Cat 5/11 file-move auto-fixes executed in MCP; Cat 7 returned as pending_fixes; Cat 12 Levenshtein pre-filter; `AuditFinding.interactive` pre-computed
+- **Phase 3** — `index_era` tool (8th tool); `search_memory` excludes type=commit by default; proactive `check_consistency` + auto-index at session start; era summary system (eras/ dir, era-NNN.md, eras/index.yml)
+- **Phase 2** — `index_discussion` and `find_similar_commit` tools (7 total); per-commit vector records; hex validation on commit hashes
+- **Phase 1 (MVP)** — LanceDB + all-MiniLM-L6-v2 local embeddings; 5 tools: search_memory, index_phase, index_decision, check_consistency, rebuild_index; graceful degradation without MCP

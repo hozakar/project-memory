@@ -24,7 +24,7 @@ At session start, check if `search_memory`, `index_phase`, `index_decision`, and
 | `index_era(data)` | Upsert an era summary; called when a new era-NNN.md is written. |
 | `check_consistency(project_memory_dir)` | Returns `{missing, orphaned}` for DB/filesystem sync; used in drift audit Cat 13 and proactive sync at session start. |
 | `rebuild_index(entries[])` | Full atomic rebuild of the index; called when DB is empty or on user request. |
-| `run_audit(project_memory_dir)` | Executes all 14 audit categories in a single MCP call. Returns `{auto_fixed, pending_fixes, escalations}`. Server v0.4.0+. See `audit-mcp.md`. |
+| `run_audit(project_memory_dir)` | Executes all 14 audit categories in a single MCP call. Returns `{auto_fixed, pending_fixes, escalations}`. See `audit-mcp.md`. |
 | `find_similar_commit(diff_snippet, top_k?)` | Search for past commits with similar code changes; used for squash/rebase recovery. |
 
 ## Proactive DB Sync

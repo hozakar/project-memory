@@ -5,7 +5,7 @@ description: MCP-driven drift audit fast path. Called by audit.md dispatcher whe
 
 # MCP Fast Path
 
-**When `run_audit` is in available MCP tools (server v0.4.0+):**
+**When `run_audit` is in available MCP tools:**
 
 1. Call `run_audit(project_memory_dir)` where `project_memory_dir` is the absolute path to `.project-memory/`.
 2. Receive `{ auto_fixed, pending_fixes, escalations }`:

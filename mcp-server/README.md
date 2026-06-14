@@ -15,13 +15,13 @@ Optional MCP companion server for the [project-memory](../) skill. Provides sema
 - `index_instruction(data)` — upsert a user instruction (active or dropped)
 - `run_audit(project_memory_dir)` — execute all 13 audit categories; returns {auto_fixed, pending_fixes, escalations} with pre-computed interactive flags
 
-**Version:** 0.0.1 (skill), MCP server internal v0.4.0
+**Version:** 0.0.1
 
 **Record types indexed:** phases, decisions, discussions, eras, and instructions (all six project-memory record types).
 
 **Write direction:** files → DB only. MCP may write `.project-memory/` files for file-move auto-fixes (Cat 5/11). YAML mutations (Cat 7) remain LLM-only. Zero data loss on MCP absence.
 
-As of v0.4.x+, records may carry `createdByName`, `createdByEmail`, and `contributorsJson` columns (JSON-stringified `Identity[]`). Optional; defaults to `unknown`. Instructions are user-scoped via `created_by.email` — loaded only for the current user at session start.
+Records may carry `createdByName`, `createdByEmail`, and `contributorsJson` columns (JSON-stringified `Identity[]`). Optional; defaults to `unknown`. Instructions are user-scoped via `created_by.email` — loaded only for the current user at session start.
 
 ## Prerequisites
 
