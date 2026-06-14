@@ -66,15 +66,27 @@ export async function upsert(record: LanceRecord): Promise<void> {
     // Schema evolution: new field added to LanceRecord since table was created.
     // Migrate: read all existing rows, drop table, recreate with full schema.
     const conn = await getConnection();
-    const existing: LanceRecord[] = await table.query().toArray();
+    const rows = await table.query().toArray();
+    // Arrow rows have special metadata — extract plain JS values explicitly
+    const existing: LanceRecord[] = rows.map((r: any) => ({
+      id: String(r.id ?? ""),
+      type: String(r.type ?? ""),
+      title: String(r.title ?? ""),
+      text: String(r.text ?? ""),
+      vector: Array.from(r.vector as Float32Array),
+      createdByName: String(r.createdByName ?? ""),
+      createdByEmail: String(r.createdByEmail ?? ""),
+      contributorsJson: String(r.contributorsJson ?? ""),
+      tagsJson: String(r.tagsJson ?? ""),
+      touchesJson: String(r.touchesJson ?? ""),
+      assignedToEmail: String(r.assignedToEmail ?? ""),
+      assignedByEmail: String(r.assignedByEmail ?? ""),
+      primaryScope: String(r.primaryScope ?? ""),
+    }));
     await (conn as any).dropTable("memory");
     _conn = null; // reset singleton so getConnection() reconnects
     _conn = await lancedb.connect(dbPath());
-    const allRecords: LanceRecord[] = [
-      record,
-      ...existing.map((r: any) => ({ primaryScope: "", ...r })),
-    ];
-    await (_conn as any).createTable("memory", allRecords);
+    await (_conn as any).createTable("memory", [record, ...existing]);
   }
 }
 
