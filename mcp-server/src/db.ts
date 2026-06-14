@@ -60,7 +60,7 @@ export async function upsert(record: LanceRecord): Promise<void> {
   await table.add([record]);
 }
 
-function escapeLike(value: string): string {
+export function escapeLike(value: string): string {
   return value.replace(/'/g, "''");
 }
 

@@ -30,7 +30,7 @@ function readFile(filePath: string): string {
   try { return fs.readFileSync(filePath, "utf-8"); } catch { return ""; }
 }
 
-function parseFrontmatter(content: string): Record<string, string> {
+export function parseFrontmatter(content: string): Record<string, string> {
   const result: Record<string, string> = {};
   // Normalize CRLF → LF and strip BOM before parsing
   const normalized = content.replace(/\r\n/g, "\n").replace(/\r/g, "\n").replace(/^\uFEFF/, "");
