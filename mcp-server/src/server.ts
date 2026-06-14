@@ -156,6 +156,7 @@ srv.tool(
   },
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async (args: any) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const data: any = {
       id: args.id,
       title: args.title,
