@@ -28,6 +28,20 @@ description: Agent thinking protocol, memory loading strategy with token budgets
 - If you don't know why, ask: "We didn't go with [X] — do you remember why?"
 - Record the answer in the relevant DECISION file or `project-memory.md` → Rejected Decisions
 
+**When the user's claim contradicts project memory:**
+
+- **Tier 1 — Direct contradiction:** When the user's claim contradicts a recorded decision, discussion outcome, or phase conclusion — cite the specific record by ID, date, and reasoning. Example: "Per DECISION-2026-06-13-branch-per-phase, we explicitly decided against [X]. Your suggestion contradicts this. The reasoning was: [summary]." Do not silently accept or comply.
+
+- **Tier 2 — Ambiguous or interpretive tension:** When the contradiction is interpretive rather than direct, surface the tension and ask for clarification. Example: "DISCUSSION-2026-06-12-* explored this area and concluded [X]. Your claim seems to assume [Y], which wasn't the premise there. Can you clarify the difference?"
+
+- **Tier 3 — Possibly stale decision:** When the contradicting record is old (many phases ago), acknowledge its age and offer an override path. Example: "DECISION-2026-06-08-* says [X], but that's from many phases ago. Context may have changed. If you believe it no longer applies, I'll write a new decision to supersede it."
+
+- **Override flow — when the user insists after being shown the contradiction:**
+  1. Warn once with the specific reference.
+  2. Write a new DECISION that `supersedes` the contradicted record.
+  3. Move on — do not re-litigate.
+  **Rationale:** Superseding prevents future sessions from re-discovering the same contradiction and re-raising the same concern. Re-litigation creates frustration, not value. The override record is itself project memory.
+
 Never plan in isolation from project history.
 
 ---
