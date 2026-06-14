@@ -57,8 +57,7 @@ state: active | dropped
 created_by:               # required — see Author Attribution
   name: "Hakan Ozakar"
   email: "hozakar@gmail.com"
-mode: prompt              # always prompt
-trigger: null             # always null for prompt mode
+mode: prompt              # always prompt — re-injected at every gate, no per-instruction config needed
 origin: null              # INSTRUCTION-ID if forked
 origin_updated: false     # true when origin modified since fork
 ---
@@ -68,8 +67,9 @@ origin_updated: false     # true when origin modified since fork
 
 **On state change (`active` → `dropped`):** update frontmatter. Instruction is retained but not loaded at session start.
 
-**Session loading:**
+**Session loading and gate re-injection:**
 - At session start, current user's active instructions are loaded via MCP `search_memory` with `created_by_email` filter (fallback: directory scan filtered by `created_by.email`)
+- At every gate checkpoint (Pre-Implementation Gate, Pre-Close Gate, Discussion trigger, Topic Shift), active instructions are re-loaded and prepended to gate context. This ensures instructions survive compaction and long contexts. See `gates.md` Step 0.
 - ≥5 active instructions triggers a warning
 - Other users' instructions are never loaded without explicit request
 

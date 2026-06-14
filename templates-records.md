@@ -175,7 +175,7 @@ Maintenance rules:
 
 ## INSTRUCTION-YYYY-MM-DD-slug.md
 
-Instruction records capture user workflow preferences as short prompts injected into LLM context at session start. User-scoped via `created_by`, stored in `.project-memory/instructions/`.
+Instruction records capture user workflow preferences as short prompts injected into LLM context at session start and re-injected at every gate checkpoint (Pre-Implementation Gate, Pre-Close Gate, Discussion trigger, Topic Shift). User-scoped via `created_by`, stored in `.project-memory/instructions/`.
 
 **Frontmatter (required):**
 ```yaml
@@ -185,8 +185,7 @@ state: active              # active | dropped
 created_by:                # required — see Author Attribution below
   name: "Hakan Ozakar"
   email: "hozakar@gmail.com"
-mode: prompt               # always prompt (reserved for future rule mode)
-trigger: null              # always null for prompt mode
+mode: prompt               # always prompt — re-injected at every gate, no per-instruction trigger needed
 origin: null               # INSTRUCTION-ID if forked from another user
 origin_updated: false      # true when origin instruction has been modified since fork
 ---
