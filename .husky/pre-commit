@@ -1,0 +1,6 @@
+#!/bin/sh
+root=$(git rev-parse --show-toplevel)
+cd "$root/mcp-server"
+npx lint-staged --config package.json
+npm run typecheck
+npm run test:unit
