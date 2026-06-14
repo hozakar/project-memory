@@ -39,6 +39,7 @@ async function getTable(): Promise<any> {
       touchesJson: "",
       assignedToEmail: "",
       assignedByEmail: "",
+      primaryScope: "",
     };
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const table = await (conn as any).createTable("memory", [dummy]);
@@ -57,7 +58,24 @@ async function getTable(): Promise<any> {
 export async function upsert(record: LanceRecord): Promise<void> {
   const table = await getTable();
   await table.delete(`id = '${record.id}'`);
-  await table.add([record]);
+  try {
+    await table.add([record]);
+  } catch (err) {
+    const msg = (err as Error).message ?? "";
+    if (!msg.includes("Found field not in schema")) throw err;
+    // Schema evolution: new field added to LanceRecord since table was created.
+    // Migrate: read all existing rows, drop table, recreate with full schema.
+    const conn = await getConnection();
+    const existing: LanceRecord[] = await table.query().toArray();
+    await (conn as any).dropTable("memory");
+    _conn = null; // reset singleton so getConnection() reconnects
+    _conn = await lancedb.connect(dbPath());
+    const allRecords: LanceRecord[] = [
+      record,
+      ...existing.map((r: any) => ({ primaryScope: "", ...r })),
+    ];
+    await (_conn as any).createTable("memory", allRecords);
+  }
 }
 
 export function escapeLike(value: string): string {
