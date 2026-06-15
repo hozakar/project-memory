@@ -133,19 +133,29 @@ Classify the work using the commit significance table above.
 **Step 3 — Decision check (when required by Step 2):**
 
 1. List the concrete entities the work touches (e.g. `user_id`, `auth_token`, `deployment_target`). Be concrete — see `conventions.md` → Touches Field Guidance.
-2. Scan `decisions/index.md` for active rows where any `Touches` entry overlaps your list OR `Scope` matches your primary scope.
-3. Scan `discussions/index.md` for discussions with relevant outcome types. If a past discussion explicitly concluded against the current direction, surface it as a directional conflict alongside decision conflicts.
-4. For each candidate, apply the Decision Resolution Rules (`conventions.md`) and classify:
+
+2. **Find candidate decisions and discussions** — branch on MCP availability:
+
+   **If MCP available (see `mcp-integration.md`):**
+   - Decisions: `search_memory(query, touches_filter=entities, scope_filter=[primary_scope], type_filter="decision")` — exact `touches` / `primary_scope` filter combined with semantic ranking. The Pre-Implementation Gate ignores `status: superseded` records returned; only active decisions count as candidates.
+   - Discussions: `search_memory(task_description, top_k=8, type_filter="discussion")` — semantic catch for discussions whose conclusions might affect the proposed direction.
+
+   **If MCP unavailable:**
+   - Decisions: scan `decisions/index.md` Active section for rows where any `Touches` entry overlaps your list OR `Scope` matches your primary scope.
+   - Discussions: scan `discussions/index.md` for discussions with relevant outcome types.
+
+3. For each candidate, apply the Decision Resolution Rules (`conventions.md`) and classify:
    - **Directional conflict** — candidate claim contradicts the proposed work in a way that would change its direction → add to batch question.
    - **Refinement / overlap without conflict** — candidate touches the same area but does not contradict → emit a one-line silent note, continue.
    - **Unrelated** — overlap is incidental → ignore.
-5. If the batch has at least one entry, surface ALL candidates in a single `AskUserQuestion` call. Do NOT issue sequential questions per candidate. Wait for the user's response before implementing.
+
+4. If the batch has at least one entry, surface ALL candidates in a single `AskUserQuestion` call. Do NOT issue sequential questions per candidate. Wait for the user's response before implementing.
 
 **Step 4 — Capture missing decisions:**
-If the proposed work is a significant architectural move (deployment, auth, persistence, schema, public API) and `decisions/index.md` has no candidate at all for it, ask once: "No prior decision covers this. Want to record one now?" — then proceed.
+If the proposed work is a significant architectural move (deployment, auth, persistence, schema, public API) and the Step 3 candidate set is empty (no decisions returned by `search_memory` or no matching index rows), ask once: "No prior decision covers this. Want to record one now?" — then proceed.
 
-**Step 5 — MCP context load (if available):**
-If `search_memory` is in available tools (see `mcp-integration.md`): call `search_memory(natural language description of what you are about to implement, top_k=8)`. For each result with similarity ≥ 0.6 not already loaded, load the corresponding `.project-memory/` file. Append any newly found directional conflicts to the Step 3 batch question (do not issue a separate question).
+**Step 5 — Broader semantic context (MCP-only, awareness load):**
+If `search_memory` is in available tools, call `search_memory(task_description, top_k=8)` without `type_filter` to catch related phases or discussions Step 3 didn't filter for. For each result with similarity ≥ 0.6 not already loaded, load the corresponding `.project-memory/` file for awareness. This is **context-loading only** — does NOT add to the Step 3 batch question. Conflicts are gated by Step 3; Step 5 broadens the picture.
 
 **Session override:**
 If the user says "skip decision questions for now" (or similar phrasing — "skip", "skip for now", "speed mode"), suspend Step 3 questions for the rest of the session. Decisions are still **written** when made — only the pre-implementation question is bypassed. Override resets on the next session.
