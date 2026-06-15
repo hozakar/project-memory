@@ -1,6 +1,8 @@
 # MCP Server Installation
 
-Installs the project-memory MCP companion server for semantic search over phases and decisions.
+The MCP companion server adds semantic search, deterministic audits, and vector
+indexing to project-memory. Strongly recommended for any project beyond the
+first few phases.
 
 ## Prerequisites
 
@@ -10,92 +12,179 @@ Installs the project-memory MCP companion server for semantic search over phases
 
 ---
 
-## For the User (Manual Installation)
-
-### 1. Navigate to the MCP server directory
+## Step 1 — Build
 
 ```bash
-cd .claude/skills/project-memory/mcp-server
-```
-
-### 2. Install dependencies
-
-```bash
+cd <skill-dir>/mcp-server
 npm install
-```
-
-### 3. Build the TypeScript
-
-```bash
 npm run build
 ```
-
-### 4. Register the MCP server
-
-Register the MCP server in your platform's configuration file. The exact format depends on whether you use OpenCode, Claude Desktop, or another MCP-compatible client.
-
-**For OpenCode:** Add a `"local"` type MCP server entry in your `opencode.json`. Run `node dist/index.js` as the command.
-
-**For Claude Code / Claude Desktop:** Add a stdio MCP server entry in `~/.claude.json` (global), `.mcp.json` (project-level), or use `claude mcp add`.
-
-**For the most up-to-date configuration format**, consult your platform's documentation:
-- OpenCode: https://opencode.ai/docs/mcp-servers
-- Claude Code: https://docs.anthropic.com/en/docs/claude-code/mcp
-
-### 5. Restart
-
-Restart your application for the MCP server to load.
-
-### 6. Verify
-
-On next session start, the project-memory skill will detect MCP availability. You should see `search_memory`, `index_phase`, `index_decision`, `index_discussion`, `find_similar_commit`, `check_consistency`, `rebuild_index`, `index_era`, and `run_audit` in the available MCP tools.
 
 ---
 
-## For the LLM (Automated Installation)
+## Step 2 — Register
 
-When the user accepts the automatic install offer, execute these steps:
+Register the built server with your platform. Find your platform below.
 
-### 1. Detect the platform
+---
 
-Check which configuration files exist:
-- `~/.config/opencode/opencode.json` or project-root `opencode.json` → OpenCode
-- `~/.claude.json` or project-root `.mcp.json` → Claude Code
-- If neither is found, or both are found → ask the user: "I can't determine your platform. Are you using OpenCode or Claude Code?"
+### Claude Code
 
-### 2. Look up the current MCP config format
-
-**Do NOT hardcode the configuration format.** Instead, query Context7 for the latest documentation:
-
-For OpenCode: call `context7_resolve-library-id` with library name "OpenCode", then `context7_query-docs` with query "local MCP server configuration opencode.json command array format".
-
-For Claude Code: call `context7_resolve-library-id` with library name "Claude Code", then `context7_query-docs` with query "MCP server configuration registration claude mcp add local stdio server".
-
-Use the returned format to construct the registration.
-
-### 3. Install dependencies
+**Global** (all projects):
 
 ```bash
-cd <skill_dir>/mcp-server
-npm install
+claude mcp add project-memory node /absolute/path/to/mcp-server/dist/index.js
 ```
 
-### 4. Build
+**Project-level** (add to `.mcp.json` in project root):
+
+```json
+{
+  "project-memory": {
+    "command": "node",
+    "args": ["/absolute/path/to/mcp-server/dist/index.js"]
+  }
+}
+```
+
+---
+
+### Gemini CLI
+
+Add to `~/.gemini/settings.json` (global) or `.gemini/settings.json`
+(project-level):
+
+```json
+{
+  "mcpServers": {
+    "project-memory": {
+      "command": "node",
+      "args": ["dist/index.js"],
+      "cwd": "/absolute/path/to/mcp-server"
+    }
+  }
+}
+```
+
+---
+
+### Cursor
+
+Add to `~/.cursor/mcp.json` (global) or `.cursor/mcp.json` (project-level):
+
+```json
+{
+  "mcpServers": {
+    "project-memory": {
+      "command": "node",
+      "args": ["/absolute/path/to/mcp-server/dist/index.js"]
+    }
+  }
+}
+```
+
+---
+
+### Windsurf
+
+Open the **Cascade** panel → **Customizations** icon → **MCP Servers** →
+**+ Add Server**, then fill in:
+
+- **Name:** `project-memory`
+- **Command:** `node`
+- **Args:** `/absolute/path/to/mcp-server/dist/index.js`
+
+Or add directly to `~/.codeium/windsurf/mcp_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "project-memory": {
+      "command": "node",
+      "args": ["/absolute/path/to/mcp-server/dist/index.js"]
+    }
+  }
+}
+```
+
+---
+
+### OpenCode
+
+Add to `~/.config/opencode/opencode.json` (global) or `opencode.json`
+(project-level):
+
+```json
+{
+  "mcp": {
+    "project-memory": {
+      "type": "local",
+      "command": ["node", "/absolute/path/to/mcp-server/dist/index.js"],
+      "enabled": true
+    }
+  }
+}
+```
+
+---
+
+### Cline
+
+Open VS Code → Cline extension panel → **MCP Servers** tab →
+**Add MCP Server**, then enter:
+
+- **Name:** `project-memory`
+- **Command:** `node`
+- **Args:** `/absolute/path/to/mcp-server/dist/index.js`
+
+---
+
+## Step 3 — Restart
+
+Restart your application. On next session start, project-memory will detect
+the MCP server automatically.
+
+## Verify
+
+You should see these tools available: `search_memory`, `index_phase`,
+`index_decision`, `index_discussion`, `index_era`, `index_instruction`,
+`index_assignment`, `find_similar_commit`, `check_consistency`,
+`rebuild_index`, `run_audit`.
+
+---
+
+## For the LLM — Automated Installation
+
+When the user asks you to install the MCP server:
+
+### 1. Ask which platform
+
+```
+Which platform are you using?
+Claude Code / Gemini CLI / Cursor / Windsurf / OpenCode / Cline / other
+```
+
+### 2. Build
 
 ```bash
-npm run build
+cd <skill-dir>/mcp-server && npm install && npm run build
 ```
 
-### 5. Register the server
+### 3. Register
 
-Apply the configuration format from step 2 to the detected config file. The server entry name should be `"project-memory"`. The command should run `node dist/index.js` from the mcp-server directory.
+Use the configuration format for the user's platform from the sections
+above. Substitute the absolute path to `mcp-server/dist/index.js`.
 
-Use the server's absolute path (e.g., `C:\Users\...\.claude\skills\project-memory\mcp-server\dist\index.js` or `~/.claude/skills/project-memory/mcp-server/dist/index.js`).
+For global vs. project-level: default to global (applies across all
+projects). If the user prefers project-level, use the project-root path
+instead.
 
-### 6. Update version tracking
+### 4. Update version tracking
 
-Set `mcp_install_offered_for_version` in `.project-memory/config.yml` to the current version from `mcp-server/package.json`.
+Set `mcp_install_offered_for_version` in `.project-memory/config.yml`
+to the version from `mcp-server/package.json`.
 
-### 7. Report
+### 5. Report
 
-Tell the user to restart the application. Verify by checking MCP tools on next session start.
+Tell the user to restart their application and confirm the tools appear
+on next session start.
