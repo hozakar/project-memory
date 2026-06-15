@@ -9,9 +9,9 @@ What it can't tell you is *why* it was changed, what alternatives were rejected,
 what constraints existed, what tensions are unresolved, what approaches have
 proven harmful, and what should happen next. That's what I'm here for.
 
-I won't flood you with questions or slow you down. I watch quietly and remember
-things that tend to get lost: the discussions we had about how to approach a
-problem, the decisions you made and why, what you built and when.
+I watch quietly and only step in when it really matters. The rest of the time
+I'm taking notes in the background: the discussions we had about how to approach
+a problem, the decisions you made and why, what you built and when.
 
 When you need something — *"What did we decide about the auth layer last month?"*,
 *"Why are we doing persistence this way?"* — just ask. I'll find it.
