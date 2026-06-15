@@ -126,10 +126,13 @@ are never loaded into your session.
 
 ## Assignments
 
-Cross-user task delegation lives in `.project-memory/assignments/`. Two variants:
-direct (linked to existing records) and freeform (standalone tasks). State machine:
+A lightweight safety net for open work — not a task tracker. The typical use case:
+a team member leaves the project with open phases or decisions in flight. Assignments
+let you hand off those loose ends so nothing gets orphaned. Two variants: direct
+(linked to an existing record) and freeform (standalone). State machine:
 `pending → accepted → ongoing → completed / rejected`. Session-start notifications
-are passive — one line per direction, details on demand.
+are passive — one line per direction, details on demand. This is a once-in-a-blue-moon
+feature; for day-to-day task management, use your existing tools.
 
 ---
 
