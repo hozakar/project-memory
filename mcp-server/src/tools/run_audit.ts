@@ -606,23 +606,6 @@ function cat8AdrDrift(projectMemoryDir: string, ignored: Set<string>): { autoFix
           decisionContent: fullContent,
         });
       }
-      continue;
-    }
-
-    if ((fm["status"] || "active") === "active") {
-      const adrContent = readFile(path.join(adrDir, adrFiles[0]));
-      const statusMatch = adrContent.match(/^Status:\s*(.+)$/m);
-      if (statusMatch && !statusMatch[1].startsWith("Accepted")) {
-        if (!ignored.has(`adr-drift:${id}:status-mismatch`)) {
-          pendingFixes.push({
-            type: "fix_adr_status",
-            decisionId: id,
-            adrId: paddedId,
-            decisionStatus: fm["status"] || "active",
-            adrStatus: statusMatch[1],
-          });
-        }
-      }
     }
   }
   return { autoFixed, pendingFixes };

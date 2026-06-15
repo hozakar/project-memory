@@ -81,8 +81,13 @@ No commands to learn. Just ask naturally:
 ## ADR support (optional)
 
 Want a structured, human-readable record of architectural decisions — in standard
-MADR format, compatible with ADR tooling? I can set that up. No rush, you don't
-have to decide upfront. Just ask whenever you're ready:
+MADR format, compatible with ADR tooling? I can set that up.
+
+Each time we make an architectural decision, I'll create an ADR file for you.
+After that, it's yours — edit it, annotate it, share it with your team. I won't
+touch it again.
+
+No rush, you don't have to decide upfront. Just ask whenever you're ready:
 
 > *"Enable ADR support for this project."*
 

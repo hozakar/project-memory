@@ -122,7 +122,7 @@ export interface AuditFinding {
 }
 
 export interface PendingFix {
-  type: "annotate_orphan" | "assign_commit" | "add_decision_index_row" | "fix_decision_index_status" | "assign_adr_id" | "create_adr_file" | "fix_adr_status" | "create_phase_stub";
+  type: "annotate_orphan" | "assign_commit" | "add_decision_index_row" | "fix_decision_index_status" | "assign_adr_id" | "create_adr_file" | "create_phase_stub";
   // annotate_orphan fields
   phase_id?: string;
   hash?: string;
