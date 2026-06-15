@@ -1,6 +1,7 @@
 CLAUDE.md
 AGENTS.md
 .claude/
+.husky/
 mcp-server/node_modules/
 mcp-server/dist/
 .project-memory/vector-index/
