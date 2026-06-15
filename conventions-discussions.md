@@ -32,7 +32,7 @@ Trigger (explicit or implicit)
           explicit user save   -> always write
           concrete loss answer -> auto-save
           vague / no loss      -> silent drop; proceed to phase/decision if applicable
-          borderline           -> ask user: "Worth saving? (yes/no)"
+          razor-thin           -> ask user: "Worth saving? (yes/no)"
       -> If saving: determine outcome type:
           phase -> offer to create phase
           decision -> offer to create DECISION file
@@ -54,8 +54,8 @@ Evaluate the answer:
 | Answer type | Action |
 |-------------|--------|
 | Concrete scenario (see examples below) | Auto-save |
-| Vague or no consequence | Silent drop |
-| Borderline — hard to tell | Ask user: "Worth saving? (yes/no)" |
+| Vague, uncertain, or borderline | Silent drop (default when in doubt) |
+| Razor-thin — nearly concrete but genuinely unresolvable | Ask user: "Worth saving? (yes/no)" |
 
 **Explicit user save request → always write, skip gate.**
 
@@ -69,6 +69,9 @@ Evaluate the answer:
 - "It was a good discussion" — without a concrete consequence of losing it
 - The outcome is fully captured in a DECISION file or phase plan.md — the discussion adds no new reasoning
 - The topic is trivial or cosmetic; re-discovering it costs nothing
+- Uncertain which tier applies — default to drop, not escalate
+
+**Calibration rule:** If you find yourself reaching "ask user" more than once every 10 discussions, your razor-thin threshold is too loose — recalibrate toward drop. Uncertainty alone is not a reason to escalate; the loss heuristic should resolve almost all cases on its own.
 
 **Outcome chain** (when a discussion is saved, it must link to its downstream artifact):
 
