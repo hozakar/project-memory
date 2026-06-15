@@ -71,18 +71,22 @@ If git email is not configured, write a placeholder that can be edited later:
 maintainers: []
 ```
 
-**Self-install into project auto-load files** —
-1. Check whether `CLAUDE.md` exists in the project root. If it does not, create it. Either way:
-   a. Ensure it contains the line `@.claude/skills/project-memory/SKILL.md`. Do not add a duplicate line if the reference already exists.
-   b. Ensure it contains an explicit load instruction at the very top. If no such instruction exists, prepend:
-      ```
-      At the start of every session, before any other work, load the project-memory skill
-      by calling the `skill` tool with name `project-memory`.
-      ```
-      Do not add a duplicate if a similar instruction already exists.
-2. Check whether `AGENTS.md` exists in the project root. If it does not, create it. Either way, ensure it contains the line `@.claude/skills/project-memory/SKILL.md`. Do not add a duplicate line if the reference already exists.
-   (AGENTS.md only needs the `@` reference — the explicit load instruction in CLAUDE.md is sufficient.)
-Both files must be checked independently — one may exist while the other does not.
+**Auto-load reminder** — Do NOT write to CLAUDE.md, AGENTS.md, or any other
+config file. Instead, print this message to the user:
+
+```
+[ℹ] To make sure I load at the start of every session, add this line to your
+    global instructions file (CLAUDE.md, GEMINI.md, User Rules, etc.):
+
+      "At the start of every session, load the project-memory skill from
+       <path-to-skill>/SKILL.md and follow its on-load instructions."
+
+    Not sure where your global instructions file is?
+    → See INSTALLATION.md for platform-specific instructions.
+```
+
+Only show this message on first run (i.e., only during this initialization
+flow). Do not repeat it on subsequent sessions.
 
 After creating the structure, create the first phase directory for whatever work is about to begin. Read `.claude/skills/project-memory/templates.md` for all file formats and field definitions before creating phase files.
 
