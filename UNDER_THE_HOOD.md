@@ -16,6 +16,10 @@ assistants loading this skill.
 
 ## Directory structure
 
+> **These files are mine.** I create them, I maintain them, I read them. If you
+> edit them manually, I may get confused — I trust what's in there. If something
+> looks wrong, just tell me; I can fix it.
+
 ```
 .project-memory/
 ├── phases/
