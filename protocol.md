@@ -13,8 +13,7 @@ description: Agent thinking protocol, memory loading strategy with token budgets
 
 **Before writing any plan:**
 - List the concrete entities (`touches` candidates) this plan affects.
-- Scan `decisions/index.md` for active decisions touching any of those entities or sharing the same `primary_scope`.
-- Scan `discussions/index.md` for discussions with relevant outcomes.
+- Find prior decisions and discussions touching those entities or sharing the same `primary_scope` — see `gates.md` Pre-Implementation Gate Step 3, which uses `search_memory` with `touches_filter` / `scope_filter` when MCP is available and falls back to a direct `decisions/index.md` + `discussions/index.md` scan otherwise.
 - Apply the Decision Resolution Rules from `conventions.md` to candidates.
 - Has something similar been attempted and abandoned before?
 - Do any active tensions constrain this approach?
