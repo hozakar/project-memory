@@ -14,8 +14,7 @@ description: MCP-driven drift audit fast path. Called by audit.md dispatcher whe
    - `escalations`: all other findings, each with `category`, `severity`, `description`, `interactive` (bool), and `data`.
 3. For each escalation where `interactive: true` → enter interactive triage using the question shapes in `audit.md` → Interactive Mode.
 4. For each escalation where `interactive: false` → these are pre-classified for auto-fix by MCP's severity/time-boundary logic. Report them in the auto-fixed log (not interactive triage).
-5. Cat 12 findings (`category: 12`) always require LLM confirmation before prompting the user — review the `data.tag` / `data.similar_tag` pair and decide if it is genuinely a typo. Only escalate if confident.
-6. Skip the file-based Detection Procedure in `audit-fs.md` entirely — `run_audit` has already covered all 14 categories.
+5. Skip the file-based Detection Procedure in `audit-fs.md` entirely — `run_audit` has already covered all 14 categories.
 
 **When `run_audit` is NOT available — MCP installation check:**
 
