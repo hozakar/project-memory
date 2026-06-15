@@ -45,7 +45,7 @@ Trigger (explicit or implicit)
 
 **Loss Heuristic Gate:**
 
-At discussion close, ask one question:
+At discussion close, answer this question internally:
 
 > "If this discussion is never saved, what specifically goes wrong in a future session?"
 
