@@ -108,6 +108,18 @@ Do not load all historical phases unless necessary. Prefer summarized memory bef
 - `discussions/index.md` is loaded at session start alongside `decisions/index.md`. Individual DISCUSSION files are loaded on demand.
 - `assignments/index.yml` is loaded at session start. Individual ASSIGNMENT files matching the current user are loaded in full — they are time-sensitive workflow items.
 
+## Staleness — three distinct criteria
+
+The word "stale" appears in three places in this skill, measuring three different things. They are not interchangeable.
+
+| Criterion | Threshold | Question it answers |
+|---|---|---|
+| Tier 3 contradiction detection (Agent Thinking Protocol above) | ≥ 30 days since closure OR ≥ 2 eras back | Is the decision context still current, or should I offer an override path? |
+| Token Budget Guidelines (this section) | ≥ 20 phases in `phases/index.yml` | Is the index large enough that I need tag-aware filtering at load time? |
+| Discussion expiry (`conventions-discussions.md`) | ≥ 30 days AND `outcome: none` | Did this open discussion go nowhere? Archive it. |
+
+Picking the wrong threshold for the wrong purpose will produce the wrong behaviour — e.g., archiving discussions on a 2-era boundary loses recent context; loading every phase on a 30-day window misses load-time scalability.
+
 ---
 
 # Knowledge Preservation Rule
@@ -121,7 +133,7 @@ Every phase must leave enough context to answer:
 - What tensions does this create or resolve?
 - What should happen next?
 
-without reconstructing history from source code.
+without reconstructing history from source code. Memory Loading Strategy step 14 ("Recent git commits — as needed") is an escape valve for cases where the memory record is incomplete — not the primary reasoning source. If you find yourself relying on `git log` to answer one of the questions above, the missing context belongs in a phase or DECISION file, not in the commit history.
 
 ---
 
