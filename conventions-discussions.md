@@ -1,6 +1,6 @@
 ---
 name: project-memory-conventions-discussions
-description: Discussion lifecycle, relevancy scoring (25-55-10-10), expiry rules, and Pre-Implementation Gate integration.
+description: Discussion lifecycle, loss-heuristic gate, expiry rules, and Pre-Implementation Gate integration.
 ---
 
 # Discussions
@@ -28,12 +28,11 @@ Trigger (explicit or implicit)
       -> LLM loads discussions/index.md for prior context
       -> Conversation proceeds
   -> Close discussion
-      -> Apply Relevancy Scoring Gate (see below)
-          explicit user save -> skip scoring, always write
-          score < 60        -> silent drop; proceed to phase/decision if applicable
-          score 60–80       -> ask user: "Do you think we should save this discussion?" (yes/no)
-          score >= 80       -> auto-save
-          safety rule hit   -> escalate to user (overrides silent drop)
+      -> Apply Loss Heuristic Gate (see below)
+          explicit user save   -> always write
+          concrete loss answer -> auto-save
+          vague / no loss      -> silent drop; proceed to phase/decision if applicable
+          borderline           -> ask user: "Worth saving? (yes/no)"
       -> If saving: determine outcome type:
           phase -> offer to create phase
           decision -> offer to create DECISION file
@@ -44,35 +43,32 @@ Trigger (explicit or implicit)
       -> Add row to discussions/index.md
 ```
 
-**Relevancy Scoring Gate:**
+**Loss Heuristic Gate:**
 
-Score is computed at discussion close using four weighted criteria (100-point total):
+At discussion close, ask one question:
 
-| # | Criterion | Weight |
-|---|-----------|--------|
-| 1 | Conclusion reached (explicit rejection with reasoning counts) | 25 |
-| 2 | Long-term impact on future decisions | 55 |
-| 3 | Enough material to fill a discussion file | 10 |
-| 4 | Enough material to fill a decision file | 10 |
+> "If this discussion is never saved, what specifically goes wrong in a future session?"
 
-**Thresholds:**
+Evaluate the answer:
 
-| Score | Action |
-|-------|--------|
-| < 60 | Silent drop — no file written |
-| 60–80 | Escalate to user: "Do you think we should save this discussion?" (yes/no) |
-| ≥ 80 | Auto-save — write file immediately |
+| Answer type | Action |
+|-------------|--------|
+| Concrete scenario (see examples below) | Auto-save |
+| Vague or no consequence | Silent drop |
+| Borderline — hard to tell | Ask user: "Worth saving? (yes/no)" |
 
-**Safety rule:** If the long-term impact subscore (criterion 2) exceeds 75% of its maximum (i.e., > ~41/55), the discussion is always escalated to the user regardless of total score. This prevents silently dropping systemically important conversations that lack a formal conclusion.
+**Explicit user save request → always write, skip gate.**
 
-**Long-term impact rubric** (for LLM scoring consistency):
+**Concrete scenarios (auto-save):**
+- A future session would re-ask the same question and re-litigate the same ground
+- A rejected alternative would look attractive again without the reasoning that ruled it out
+- The reasoning behind a choice is invisible in the code — someone would wonder "why not X?"
+- A constraint, trade-off, or external factor shaped the outcome and isn't recorded elsewhere
 
-| Score | Level | Examples |
-|-------|-------|---------|
-| 0–10 | Trivial/cosmetic | Separator line color, minor naming tweak |
-| 10–25 | Local | Approach choice within a single module |
-| 25–40 | Significant | Architectural decision affecting one domain |
-| 40–55 | Systemic | Shapes how future decisions are made; cross-cutting concerns |
+**Vague / drop scenarios:**
+- "It was a good discussion" — without a concrete consequence of losing it
+- The outcome is fully captured in a DECISION file or phase plan.md — the discussion adds no new reasoning
+- The topic is trivial or cosmetic; re-discovering it costs nothing
 
 **Outcome chain** (when a discussion is saved, it must link to its downstream artifact):
 
