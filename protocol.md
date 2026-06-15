@@ -20,13 +20,14 @@ description: Agent thinking protocol, memory loading strategy with token budgets
 - Do any active tensions constrain this approach?
 - Are there open issues this plan must account for?
 
-**When you notice a repeated failure or fix:**
-- High confidence it's a pattern → write to `project-memory.md` under Anti-Patterns (no user escalation)
-- Uncertain → wait for more evidence
+**When the same failure or fix recurs 3+ times across different sessions or phases in the same scope:**
+- Write to `project-memory.md` under Anti-Patterns (no user escalation). The 3+ count is the high-confidence threshold; below that, wait for more evidence.
 
-**When an alternative path was not taken:**
-- If you don't know why, ask: "We didn't go with [X] — do you remember why?"
-- Record the answer in the relevant DECISION file or `project-memory.md` → Rejected Decisions
+**When an alternative path was not taken — fires on either trigger:**
+- (a) A plan considered an alternative but did not record why it was rejected, OR
+- (b) The user explicitly asks "why didn't we go with [X]?"
+
+Action: ask "We didn't go with [X] — do you remember why?" and record the answer in the relevant DECISION file or `project-memory.md` → Rejected Decisions.
 
 **When the user's claim contradicts project memory:**
 
@@ -34,7 +35,7 @@ description: Agent thinking protocol, memory loading strategy with token budgets
 
 - **Tier 2 — Ambiguous or interpretive tension:** When the contradiction is interpretive rather than direct, surface the tension and ask for clarification. Example: "DISCUSSION-2026-06-12-* explored this area and concluded [X]. Your claim seems to assume [Y], which wasn't the premise there. Can you clarify the difference?"
 
-- **Tier 3 — Possibly stale decision:** When the contradicting record is old (many phases ago), acknowledge its age and offer an override path. Example: "DECISION-2026-06-08-* says [X], but that's from many phases ago. Context may have changed. If you believe it no longer applies, I'll write a new decision to supersede it."
+- **Tier 3 — Possibly stale decision:** When the contradicting record is old (≥ 30 days since closure OR ≥ 2 eras back), acknowledge its age and offer an override path. Example: "DECISION-2026-06-08-* says [X], but that's from ~40 days / 3 eras ago. Context may have changed. If you believe it no longer applies, I'll write a new decision to supersede it."
 
 - **Override flow — when the user insists after being shown the contradiction:**
   1. Warn once with the specific reference.
@@ -43,6 +44,22 @@ description: Agent thinking protocol, memory loading strategy with token budgets
   **Rationale:** Superseding prevents future sessions from re-discovering the same contradiction and re-raising the same concern. Re-litigation creates frustration, not value. The override record is itself project memory.
 
 Never plan in isolation from project history.
+
+---
+
+# Session-start Ordering
+
+The session-start work happens in this order. Each step may be a no-op depending on MCP availability and session state — but the order is fixed so that later steps see the results of earlier ones.
+
+1. **MCP availability check** — set the session-level flag (see MCP Companion Integration → Availability check).
+2. **Proactive DB sync** — `check_consistency` + index any missing entries. MCP-only; skipped when unavailable.
+3. **Drift audit** — `run_audit` MCP fast path if available; otherwise file-based detection from `audit.md`. Apply auto-fixes silently.
+4. **Memory Loading Strategy** — execute steps 1–14 below. Summary files first, then phase/decision/discussion indexes.
+5. **Instruction re-injection** — load active instructions for the current user (idempotent if already loaded in step 4 step 8; the same content is re-asserted before each gate per `gates.md` Step 0).
+6. **Assignment notifications** — emit passive single-line summary per `conventions-records.md` (Assignment lifecycle).
+7. **Era prompt** — if ≥ 10 phases have accumulated since the last era AND session role = maintainer, ask whether to create the next era file.
+
+Items 2, 3, and 7 are MCP-conditional but always sit at the same position when they fire.
 
 ---
 
@@ -73,7 +90,7 @@ At session start and after any context compaction:
 14. Recent git commits (as needed)
 ```
 
-Do not load all historical phases unless necessary. Prefer summarized memory before raw history. Tags are the primary navigation mechanism — tag-aware filtering applies at initial load, not only when diving deeper.
+Do not load all historical phases unless necessary. Prefer summarized memory before raw history. Tags are the primary navigation mechanism on the MCP-unavailable path — tag-aware filtering applies at initial load, not only when diving deeper. When MCP is active, semantic search via `search_memory` is the primary navigation mechanism, with `tags_filter` available as an optional exact-match refinement.
 
 ## Token Budget Guidelines
 
@@ -133,7 +150,7 @@ When the question targets a specific entity (file, module, system area), combine
 - Multiple filter values use AND semantics — each additional value narrows further. Use a single value when in doubt.
 
 **Constraint search rule:**
-When a discussion about a new feature or enhancement begins — before the conversation deepens — call `search_memory("engineering constraints and principles", scope_filter=["constraint"], type_filter="decision")`. Surface any returned decisions to the conversation so they can shape the design direction early. This fires at discussion start, not just at the Pre-Implementation Gate.
+When Discussion Mode is engaged (explicit `Skill project-memory discuss` or implicit trigger detection per `conventions-discussions.md`) for a new feature or enhancement — before the conversation deepens — call `search_memory("engineering constraints and principles", scope_filter=["constraint"], type_filter="decision")`. Surface any returned decisions to the conversation so they can shape the design direction early. This fires at Discussion Mode engagement, not on every brainstorm-flavored exchange, and not just at the Pre-Implementation Gate.
 
 **Assignment search:** At session start, when assignments exist, call `search_memory` with both `assigned_to_email` (pending/ongoing) and `assigned_by_email` (rejected/completed) filters and `type_filter: "assignment"`. For targeted lookups (e.g., "what did I assign to Mehmet?"), combine with the user's question text for semantic ranking.
 
@@ -141,12 +158,14 @@ When a discussion about a new feature or enhancement begins — before the conve
 
 **Proactive DB sync (session start):** After checking MCP availability, if MCP is active, call `check_consistency(project_memory_dir)`. For each ID in `missing` (file exists but not in DB): call the appropriate index tool (`index_phase`, `index_decision`, `index_discussion`, `index_era`, or `index_instruction`) with the file's content. See `mcp-integration.md` for the full tool list.
 
-    Additionally, count phases not yet covered by any era in `eras/index.yml`. If 10 or more have accumulated:
-   - If session role is maintainer: emit "📊 X phases accumulated since last era. Create era-NNN? I recommend running audit first." and wait for user confirmation.
-   - If session role is developer: suppress. Do NOT prompt.
-   When user confirms, create the next `era-NNN.md` and call `index_era`.
+This step supersedes the file-based missing-entry check in `audit.md` (Cat 13) when MCP is available at load time; Cat 13 remains the fallback when MCP is unavailable.
 
-   This supersedes Cat 13 for missing-entry detection when MCP is available at load time; Cat 13 remains a fallback for sessions where MCP was unavailable.
+**Era creation prompt (session start):**
+After proactive sync completes, count phases not yet covered by any era in `eras/index.yml`. If 10 or more have accumulated:
+- If session role is maintainer: emit "📊 X phases accumulated since last era. Create era-NNN? I recommend running audit first." and wait for user confirmation.
+- If session role is developer: suppress. Do NOT prompt.
+
+When user confirms, create the next `era-NNN.md` and call `index_era`.
 
 **Drift audit via MCP (session start):** If `run_audit` is in available MCP tools, call `run_audit(project_memory_dir)` instead of running file-based detection. Process the returned `{ auto_fixed, pending_fixes, escalations }` as described in `audit.md` → MCP Fast Path section.
 
