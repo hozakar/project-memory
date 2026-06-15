@@ -58,10 +58,13 @@ At session start and after any context compaction:
 5. .project-memory/summaries/roadmap.md
 6. .project-memory/phases/index.yml
 7. Active phase directory (if open)
-8. Current user's active instructions (via `search_memory` with `created_by_email` filter and `type_filter: "instruction"` if MCP available; directory scan fallback otherwise)
-8a. Current user's pending/ongoing assignments (via `search_memory` with `assigned_to_email` filter and `type_filter: "assignment"` if MCP available; directory scan fallback otherwise). Show passive single line only: `📋 N pending assignments — ask me to list them`. No interaction expected. Full details and actions (accept/reject/remind) available on demand.
-8b. Current user's rejected assignments they created (via `search_memory` with `assigned_by_email` filter and `type_filter: "assignment"` if MCP available). Show passive single line only: `📋 N rejected assignments — ask me to list them`. Full details and actions (assign-to-another/do-it-yourself/remind) available on demand.
-8c. Current user's completed assignment notifications (via same filter as 8b, shown once, non-persistent).
+8. User-scoped session items (current user — derived from git identity):
+   - Active instructions — `search_memory` with `created_by_email` filter and `type_filter: "instruction"` (directory scan fallback when MCP unavailable)
+   - Pending/ongoing assignments — `search_memory` with `assigned_to_email` filter and `type_filter: "assignment"` (directory scan fallback when MCP unavailable)
+   - Rejected assignments created by the user — `search_memory` with `assigned_by_email` filter and `type_filter: "assignment"`
+   - Completed assignment notifications — same filter as rejected; shown once, non-persistent
+
+   Notification format, "passive single line" rule, and interaction model are defined in `conventions-records.md` (Assignment lifecycle — Session-start UX). Do not duplicate those rules here.
 9. .project-memory/decisions/index.md — Active section only (primary input to Pre-Implementation Gate); Superseded section is available on demand for historical lookups but is NOT scanned during Pre-Implementation Gate
 10. Individual DECISION-YYYY-MM-DD-* files (only when planning in a scope the index flags as relevant)
 11. Open issues (as needed)
@@ -152,15 +155,4 @@ All behavior is identical to the standard Memory Loading Strategy. MCP is an opt
 
 ---
 
-# Skill Sub-Files Reference
-
-| File | Purpose | When Loaded |
-|------|---------|-------------|
-| `SKILL.md` | Entry point, on-load flow, argument dispatch, core concepts, project structure | Every session start |
-| `gates.md` | Pre-Implementation Gate, Pre-Close Gate, commit significance, topic shift, end-of-phase maintenance | Before implementation, merge, and phase close |
-| `protocol.md` | This file — thinking protocol, memory loading, knowledge preservation | At session start (after SKILL.md) |
-| `cheatsheet.md` | Quick reference cheatsheet, event-based triggers | On-demand for quick lookups |
-| `audit.md` | Drift detection and repair (13 categories) | Every session start (auto) + on `audit` argument |
-| `init.md` | First-run initialization | Only when `.project-memory/` does not exist |
-| `templates.md` | File templates for all `.project-memory/` document types | When creating phases, decisions, issues, discussions |
-| `conventions.md` | Naming conventions, lifecycle rules, decision resolution rules, discussion lifecycle | When creating/closing decisions, issues, or discussions |
+For the canonical inventory of skill sub-files, see `SKILL.md` → Project Structure → Skill Files.
