@@ -71,6 +71,11 @@ If git email is not configured, write a placeholder that can be edited later:
 maintainers: []
 ```
 
+**`.gitignore`** — Add `.project-memory/vector-index` to the project's `.gitignore`.
+Check if `.gitignore` already contains this entry before appending. If `.gitignore`
+does not exist, create it. The vector index is a binary LanceDB artifact generated
+by the MCP companion server — it is always regenerable and must not be tracked in git.
+
 **Auto-load reminder** — Do NOT write to CLAUDE.md, AGENTS.md, or any other
 config file. Instead, print this message to the user:
 
