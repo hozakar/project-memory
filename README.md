@@ -4,6 +4,11 @@ If you do agentic coding — writing code with an AI assistant — I can make yo
 work a lot easier. The idea is simple: you work as you always do, I take notes
 in the background.
 
+Git already tracks what changed, where, when, and what the diff looks like.
+What it can't tell you is *why* it was changed, what alternatives were rejected,
+what constraints existed, what tensions are unresolved, what approaches have
+proven harmful, and what should happen next. That's what I'm here for.
+
 I won't flood you with questions or slow you down. I watch quietly and remember
 things that tend to get lost: the discussions you had about how to approach a
 problem, the decisions you made and why, what you built and when.
