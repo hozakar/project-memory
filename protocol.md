@@ -65,7 +65,9 @@ Items 2, 3, and 7 are MCP-conditional but always sit at the same position when t
 
 # Memory Loading Strategy
 
-At session start and after any context compaction:
+At session start (see `Session-start Ordering` above for the surrounding sequence):
+
+**On context compaction:** Memory Loading Strategy is *not* re-run on compaction. The model has no reliable in-band signal that compaction occurred, and re-inflating context immediately after compaction defeats the purpose of compaction itself. Active instructions survive compaction via gate re-injection (`gates.md` → Step 0). The rest of the loaded memory is best-effort — a future gate will pull in whatever is needed.
 
 ```
 1. .project-memory/summaries/project-memory.md
@@ -132,14 +134,12 @@ If `search_memory`, `index_phase`, `index_decision`, and `index_instruction` all
 
 **Version tracking:** At session start, after the availability check, compare `mcp-server/package.json` `version` against `.project-memory/config.yml` `mcp_install_offered_for_version`. If the installed version is newer than the offered version (or offered is null), the audit procedure will handle the offer — see `audit.md` MCP Fast Path section.
 
-**When MCP is available — modified Memory Loading Strategy:**
+**MCP overlay on Memory Loading Strategy** *(supplements the canonical steps above — never replaces them)*:
 
-After loading the 5 summary files (steps 1–5), before loading `phases/index.yml`:
-- If the session has a stated task or goal: call `search_memory(task_description, top_k=8)`
-- For each result with similarity ≥ 0.6: load the corresponding file from `.project-memory/` (phase directory or DECISION file)
-- These files supplement — do not replace — the standard steps 6–13
+The canonical strategy is the trunk. When MCP is available, two `search_memory` hooks fire at fixed positions; their results are added to the working set alongside whatever the canonical steps load.
 
-At Pre-Implementation Gate Step 3: additionally call `search_memory(natural language description of what you are implementing, top_k=8)` → load any additional relevant files not already in context.
+- **Hook A — between step 5 and step 6:** If the session has a stated task or goal, call `search_memory(task_description, top_k=8)`. For each result with similarity ≥ 0.6, load the corresponding file from `.project-memory/` (phase directory or DECISION file). These files are *in addition to* steps 6–13, not a substitute.
+- **Hook B — at Pre-Implementation Gate Step 3:** Call `search_memory(natural language description of what you are implementing, top_k=8)` and load any additional relevant files not already in context.
 
 **Ad-hoc search rule:**
 If MCP is available and the user asks a question about past decisions, phases, or discussions (e.g. "what did we decide about X?", "did we ever try Y?", "what phases touched Z?"), call `search_memory(user_question)` to retrieve relevant context before answering. This does not require a gate trigger — it is discretionary judgment.
