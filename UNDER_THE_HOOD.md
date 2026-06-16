@@ -14,22 +14,45 @@ assistants loading this skill.
 
 ---
 
+## Profiles
+
+Project-memory supports three profiles. The profile controls ceremony — how much
+overhead I introduce automatically. Choose at first run; switch at any time.
+
+| | `full` | `lite` | `minimal` |
+|---|---|---|---|
+| Phase files | 5 per phase | `phase.yml` only | none |
+| Pre-Impl Gate | Steps 0–5 | Steps 0–4 | Step 0 only |
+| Drift audit | 14 categories | 12 categories | none |
+| Summaries | 5 files | `roadmap.md` + `current-state.md` | inline in `MEMORY.md` |
+| Author attribution | `created_by` + `contributors` | `created_by` only | none |
+| Topic-shift detection | on | off | n/a |
+
+Features you trigger explicitly — discussions, issues, assignments, instructions, eras,
+ADR, MCP — are available in all profiles regardless of which you choose.
+
+---
+
 ## Directory structure
 
 > **These files are mine.** I create them, I maintain them, I read them. If you
 > edit them manually, I may get confused — I trust what's in there. If something
 > looks wrong, just tell me; I can fix it.
 
+**Full and lite profiles** use a `.project-memory/` directory (lite scaffolds a
+leaner tree at init — no `discussions/`, `issues/`, `assignments/`, `eras/`, or
+`instructions/` until you use those features for the first time):
+
 ```
 .project-memory/
 ├── phases/
 │   ├── index.yml
 │   └── phase-YYYYMMDD-short-title/
-│       ├── phase.yml
-│       ├── plan.md
-│       ├── implementation.md
-│       ├── review-and-fixes.md
-│       └── followup.md
+│       ├── phase.yml              ← required in both full and lite
+│       ├── plan.md                ← optional in lite; required in full
+│       ├── implementation.md      ← full only
+│       ├── review-and-fixes.md    ← full only
+│       └── followup.md            ← full only
 ├── decisions/
 │   ├── index.md
 │   └── DECISION-YYYY-MM-DD-slug.md
@@ -48,12 +71,22 @@ assistants loading this skill.
 │   ├── open/
 │   └── closed/
 └── summaries/
-    ├── project-memory.md
+    ├── project-memory.md          ← full only
     ├── current-state.md
-    ├── architecture.md
-    ├── active-issues.md
+    ├── architecture.md            ← full only
+    ├── active-issues.md           ← full only
     └── roadmap.md
 ```
+
+**Minimal profile** uses a single file at the project root:
+
+```
+MEMORY.md          ← three sections: ## Roadmap, ## Decisions, ## Log
+```
+
+No `.project-memory/` directory is created unless you explicitly use discussions,
+issues, assignments, or instructions — those land in `.project-memory/<feature>/`
+on first use.
 
 ---
 
@@ -63,22 +96,29 @@ A phase is a logical unit of work. It opens before significant implementation
 begins and closes when that unit is complete. I track which commits belong to
 which phase, flag gaps, and maintain the phase record.
 
-Each phase directory holds five documents: a plan written before implementation,
-an implementation log updated as commits land, a review-and-fixes record, a
-followup for deferred items, and a `phase.yml` with metadata.
+In the `full` profile, each phase directory holds five documents: a plan written
+before implementation, an implementation log updated as commits land, a
+review-and-fixes record, a followup for deferred items, and a `phase.yml` with
+metadata. In `lite`, only `phase.yml` is required (`plan.md` is optional).
+In `minimal`, there is no phase concept — work is logged as rows in `MEMORY.md`.
 
 **Pre-Implementation Gate:** I cross-reference what you're about to build
 against active decisions before any code is written. If a conflict is detected,
-I surface a single batched question — not a stream of prompts.
+I surface a single batched question — not a stream of prompts. The gate has 5
+steps in `full`, 4 in `lite`, and 1 (instruction re-injection only) in `minimal`.
 
-**Pre-Close Gate:** I verify all five phase documents are complete before a
-phase can close.
+**Pre-Close Gate:** In `full`, I verify all five phase documents are complete
+before a phase can close. In `lite`, I check that at least one commit is recorded
+and warn on unchecked plan TODOs — no file verification. `Minimal` has no gate.
 
 ---
 
 ## Summaries
 
-`summaries/` contains living documents updated automatically at every phase close:
+`summaries/` contains living documents updated automatically at every phase close.
+The set of files depends on the active profile:
+
+**Full profile** (5 files):
 
 | File | Purpose |
 |---|---|
@@ -87,6 +127,12 @@ phase can close.
 | `architecture.md` | Module inventory, updated when structure changes |
 | `active-issues.md` | Open issues index |
 | `roadmap.md` | Upcoming work, fed from `followup.md` at phase close |
+
+**Lite profile** (2 files): `current-state.md` and `roadmap.md` only. Roadmap
+entries are added incrementally during work — no transfer step at phase close.
+
+**Minimal profile**: no `summaries/` directory. The `## Roadmap` section of
+`MEMORY.md` serves the same purpose, edited directly.
 
 ---
 
@@ -147,10 +193,15 @@ scanning everything. Era creation is gated to maintainers.
 
 ## Author attribution
 
-All record types carry structured `created_by` and `contributors` frontmatter with
-`{name, email}` identity pairs. I capture git identity at write time and soft-fail
-to an `unknown` sentinel if identity cannot be determined — no escalation, no
-blocked workflow.
+Attribution depth depends on the active profile:
+
+- **Full:** all record types carry `created_by` and `contributors` frontmatter
+  with `{name, email}` identity pairs.
+- **Lite:** `created_by` only — `contributors` is omitted.
+- **Minimal:** no attribution — git already records authorship per commit.
+
+In all cases I capture git identity at write time and soft-fail to an `unknown`
+sentinel if identity cannot be determined — no escalation, no blocked workflow.
 
 ---
 
@@ -225,14 +276,42 @@ file-based operation without data loss.
 
 ## Skill files
 
+Skill files are organized into a shared root plus per-profile directories. Profile-
+specific behavior lives under `full/`, `lite/`, or `minimal/`; shared lifecycles
+that don't diverge across profiles stay at the root.
+
+**Entry point and profile routing:**
+
 | File | Purpose |
 |---|---|
-| `SKILL.md` | Entry point — on-load flow, argument dispatch (`audit`, `discuss`), core concepts |
-| `gates.md` | Pre-Implementation Gate, Pre-Close Gate, commit significance, topic shift |
+| `SKILL.md` | Profile router — on-load flow, profile detection, argument dispatch (`audit`, `discuss`, `change profile`), critical gates summary |
+| `profiles.md` | Tier matrix, init UX, migration mechanism, `profile_history` schema |
+
+**Per-profile files** (each profile has its own copy under `full/`, `lite/`, or `minimal/`):
+
+| File | Purpose |
+|---|---|
+| `gates.md` | Pre-Implementation Gate, Pre-Close Gate, commit significance, topic shift, phase lifecycle |
 | `protocol.md` | Agent thinking protocol, memory loading strategy, knowledge preservation |
 | `cheatsheet.md` | Quick reference, event-based trigger table |
-| `audit.md` | Drift audit dispatcher → `audit-mcp.md` or `audit-fs.md` |
+| `audit-fs.md` | Drift audit — filesystem detection path |
+| `audit-mcp.md` | Drift audit — MCP fast path |
+| `templates-phase.md` | Phase file templates and field definitions |
+| `templates-config.md` | `config.yml` schema and summary file templates |
 | `init.md` | First-run initialization procedure |
-| `templates.md` | File templates dispatcher |
-| `conventions.md` | Naming conventions, lifecycle rules, decision resolution |
+
+`minimal/` has a single file (`minimal/minimal.md`) that covers everything above for that profile.
+
+**Shared root files** (same behavior across all profiles):
+
+| File | Purpose |
+|---|---|
+| `audit.md` | Dispatcher — routes to `<profile>/audit-mcp.md` or `<profile>/audit-fs.md` |
+| `templates.md` | Dispatcher — routes to profile-specific template files |
+| `conventions.md` | Dispatcher — routes to shared convention sub-files |
+| `conventions-decisions.md` | Decision lifecycle, ADR steps, touches guidance |
+| `conventions-discussions.md` | Discussion lifecycle, relevancy scoring, expiry |
+| `conventions-records.md` | Issue, instruction, assignment lifecycles |
+| `conventions-maintainer.md` | Language policy, author attribution rules, maintainer role |
+| `templates-records.md` | Record templates (DECISION, DISCUSSION, ISSUE, INSTRUCTION, ASSIGNMENT) |
 | `mcp-integration.md` | MCP tool catalog, proactive sync, degradation rules |

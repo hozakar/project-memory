@@ -2,6 +2,65 @@
 
 All notable changes to the project-memory skill and MCP companion server.
 
+## [0.0.3] — 2026-06-16
+
+### Tiered profiles (full / lite / minimal)
+
+Three coherent profiles gate ceremony-bearing features so the skill scales down
+for medium and short-lived projects without losing value on long-running ones.
+
+**Profile matrix highlights:**
+
+| Feature | `full` | `lite` | `minimal` |
+|---|---|---|---|
+| Phase files | 5-file | `phase.yml` + optional `plan.md` | none |
+| Pre-Impl Gate | Steps 0–5 | Steps 0–4 | Step 0 only |
+| Drift audit | 14 categories | 12 categories (Cat 9, 11 off; Cat 10 modified) | none |
+| Summaries | 5 files | `roadmap.md` + `current-state.md` | inline `MEMORY.md` |
+| Author attribution | `created_by` + `contributors` | `created_by` only | none |
+| Topic-shift | on | off | n/a |
+
+**Architecture — hybrid file split:** divergent files live under `full/` and `lite/`
+(8 files each: `gates.md`, `protocol.md`, `audit-fs.md`, `audit-mcp.md`,
+`templates-phase.md`, `templates-config.md`, `init.md`, `cheatsheet.md`).
+`minimal/minimal.md` is a single self-contained spec. Shared lifecycle files
+(decisions, discussions, records, attribution, MCP integration, record templates)
+stay at the root. `SKILL.md` is the profile router; `profiles.md` holds the tier
+matrix, init UX, and migration rules.
+
+**Init UX:** first-run asks one question with three options and guidance criteria.
+Default cursor: `lite`. Profile is recorded in `config.yml` with a `profile_history`
+array (one entry per profile change with `effective_date` and `reason`).
+
+**Change profile:** natural language — "switch project-memory to lite". SKILL.md
+recognizes the intent, appends a `profile_history` entry, and updates the top-level
+`profile` field. No past artifacts are deleted; only future behavior changes.
+
+**Backward compatibility:** existing projects without a `profile` field in `config.yml`
+are treated as `full`. No migration required.
+
+**User-triggered features are NOT profile-bound:** discussions, issues, assignments,
+instructions, eras, ADR mirror, and the MCP companion are opt-in regardless of profile.
+
+### MCP server — `run_audit` profile parameter
+
+`run_audit` now accepts a `profile` parameter (`"full"` | `"lite"` | `"minimal"`).
+- `minimal` → returns empty findings immediately (minimal has no audit).
+- `lite` → skips Cat 9 and Cat 11; reduces Cat 10 to `phase.yml`-only shape.
+- `full` → unchanged behavior.
+
+MCP server version bumped to `0.0.3`.
+
+### English-only enforcement for skill files
+
+All skill files must be written exclusively in English. This rule now has an
+active instruction (`INSTRUCTION-2026-06-16-english-only-skill-files`) with zero
+ambiguity: no non-English text anywhere in any skill file, including user-facing
+prompts, trigger phrase examples, and inline comments. Proactive check required
+on every skill file write.
+
+---
+
 ## [0.0.2] — 2026-06-14
 
 ### Era 4 — Feature Completeness & Quality Gates (phases 33–43)
