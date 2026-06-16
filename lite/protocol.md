@@ -1,0 +1,119 @@
+---
+name: project-memory-protocol-lite
+description: Lite-profile agent thinking protocol, reduced memory loading strategy (2 summaries instead of 5), instruction re-injection scope limited to Pre-Impl Gate Step 0.
+---
+
+# Agent Thinking Protocol (lite)
+
+**At session start:**
+- Is there an open phase? (any phase in `phases/index.yml` with `status != completed`)
+- What commits have landed since the last recorded commit in the active phase?
+- Is `summaries/roadmap.md` or `summaries/current-state.md` stale relative to recent git commits?
+
+**Before writing any plan:**
+- List the concrete entities (`touches` candidates) this plan affects.
+- Find prior decisions and discussions touching those entities or sharing the same `primary_scope` — see `lite/gates.md` Pre-Implementation Gate Step 3.
+- Apply the Decision Resolution Rules from `conventions-decisions.md` to candidates.
+- Has something similar been attempted and abandoned before?
+
+**When the user's claim contradicts project memory:**
+
+- **Direct contradiction:** cite the specific record by ID, date, and reasoning. Do not silently accept or comply.
+- **Override flow:** if the user insists, write a new DECISION that `supersedes` the contradicted record, then move on. Re-litigation creates frustration, not value.
+
+Never plan in isolation from project history.
+
+Lite drops the "3+ repeated failure → Anti-Patterns" rule and the "alternative path not taken" prompts. Both require denser summary infrastructure (`project-memory.md`) that lite does not maintain. If your project has enough cross-session learning to need these, upgrade to `full`.
+
+---
+
+# Session-start Ordering (lite)
+
+The session-start work happens in this order. Each step may be a no-op depending on MCP availability and session state.
+
+1. **MCP availability check** — set the session-level flag.
+2. **Proactive DB sync** — `check_consistency` + index any missing entries. MCP-only; skipped when unavailable.
+3. **Drift audit** — `run_audit` MCP fast path if available; otherwise file-based detection from `lite/audit-fs.md`. Apply auto-fixes silently.
+4. **Memory Loading Strategy** — execute the reduced steps below.
+5. **Instruction load (one-time, session start)** — load active instructions for the current user. **Lite re-injects only at Pre-Impl Gate Step 0**, NOT at every gate. The session-start load gives you the body once; Step 0 re-asserts before significant implementation.
+6. **Assignment notifications** — same passive single-line summary as full (orthogonal feature).
+7. **Era prompt** — same as full (orthogonal, maintainer-only).
+
+---
+
+# Memory Loading Strategy (lite)
+
+```
+1. .project-memory/summaries/current-state.md
+2. .project-memory/summaries/roadmap.md
+3. .project-memory/phases/index.yml
+4. Active phase directory (if open) — phase.yml (always); plan.md (if present)
+5. User-scoped session items (current user — derived from git identity):
+   - Active instructions — search_memory with created_by_email filter, type_filter "instruction"
+     (directory scan fallback when MCP unavailable)
+   - Pending/ongoing assignments — search_memory with assigned_to_email filter, type_filter "assignment"
+   - Notification format etc. defined in conventions-records.md
+6. .project-memory/decisions/index.md — Active section (primary input to Pre-Impl Gate Step 3)
+7. .project-memory/discussions/index.md (active entries only)
+8. Recent git commits (as needed)
+```
+
+**On context compaction:** Memory Loading Strategy is NOT re-run on compaction. Active instructions survive via Pre-Impl Gate Step 0 re-injection. The rest is best-effort.
+
+**Lite-specific reductions vs full:**
+- Reads 2 summaries (`current-state.md`, `roadmap.md`) instead of 5 — `project-memory.md`, `active-issues.md`, `architecture.md` are not present in lite scaffolding.
+- No "rejected assignments" or "completed assignment notifications" loading — assignments are still loadable on demand, but the noisy session-start surface is trimmed.
+- No "individual DECISION file pre-load on scope match" — the gate handles that lazily.
+
+## Token Budget Guidelines (lite)
+
+- 2 summary files instead of 5 — token cost is already low.
+- `phases/index.yml` with 20+ phases: apply tag-aware filtering. Read up to 10 tag-matching phases. Fall back to most recent 10 when no tags can be derived.
+- Active phase directory: always load in full (phase.yml + plan.md if present).
+- Historical phase directories: load only on direct relevance.
+
+## Staleness — two criteria in lite
+
+| Criterion | Threshold | Purpose |
+|---|---|---|
+| Tier 3 contradiction detection | ≥ 30 days since closure | Offer the user an override path on old decisions |
+| Token Budget Guidelines | ≥ 20 phases in `phases/index.yml` | Switch to tag-aware filtering at load time |
+
+Lite does NOT use the era-back threshold (eras are an orthogonal maintainer feature). Discussion expiry is handled by Cat 11 audit — but Cat 11 is OFF in lite (see `lite/audit-fs.md`), so discussion expiry is on the user to manage manually when working under lite.
+
+---
+
+# Knowledge Preservation Rule (lite — relaxed)
+
+Lite phases must leave enough context to answer:
+
+- Why was this done? (one line in `phase.yml.summary`, or in `plan.md` if present)
+- Which commits implemented it? (`phase.yml.commits`)
+- What should happen next? (a row in `summaries/roadmap.md`)
+
+Full's "what alternatives were rejected, what constraints existed, what tensions does this create or resolve" can still be captured via DECISION files when significant, but lite does not require them for every phase. If you find yourself frequently writing DECISIONs in a lite project, consider upgrading — lite is optimized for projects where the "why" is mostly self-evident from the code.
+
+---
+
+# MCP Companion Integration
+
+See `mcp-integration.md` for the full tool catalog. MCP behavior in lite is mostly unchanged — MCP is an orthogonal accelerator. Key differences:
+
+- **Availability check:** same. If `search_memory`, `index_phase`, `index_decision`, `index_instruction` are all present → MCP available.
+- **Proactive DB sync:** same — call `check_consistency` and index any missing entries on session start.
+- **Memory Loading Strategy overlay:**
+  - **Hook A — between step 4 and step 5:** if the session has a stated task, call `search_memory(task_description, top_k=8)` for similarity ≥ 0.6 files. Same as full.
+  - **Hook B — at Pre-Impl Gate Step 3:** same as full.
+  - **No Hook C** — the broad awareness load (Step 5 of full's gate) does not exist in lite.
+- **Ad-hoc search rule:** same as full — call `search_memory` when the user asks about past decisions/phases/discussions.
+- **Constraint search rule** (Discussion Mode trigger): same as full — call `search_memory("engineering constraints and principles", scope_filter=["constraint"], type_filter="decision")` when discussion mode engages.
+- **Assignment search:** same as full (orthogonal feature).
+- **Squash/rebase recovery:** same as full (`find_similar_commit`).
+- **Drift audit via MCP:** same — `run_audit` if available. The lite category set is enforced by `lite/audit-mcp.md` (Cat 9, 11 dropped from the returned findings).
+- **Era creation prompt:** same as full (maintainer-only, orthogonal).
+
+When MCP is unavailable: identical lite behavior using the file-based fallbacks. MCP is an accelerator, never a requirement.
+
+---
+
+For the canonical inventory of skill sub-files (including which files are profile-specific vs shared), see `SKILL.md` → Project Structure.
