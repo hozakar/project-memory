@@ -5,6 +5,15 @@ description: Decision lifecycle, ADR creation steps, touches field guidance, and
 
 # Architectural Decision Records
 
+**Profile scope:**
+- `full` — DECISION files + `decisions/index.md` + optional ADR mirror (gated by `adr_enabled` flag in `config.yml`, orthogonal to profile).
+- `lite` — DECISION files + `decisions/index.md`. No ADR mirror (treat `adr_enabled` as effectively off).
+- `minimal` — this file does not apply. Decisions are appended as single-line rows in `MEMORY.md → ## Decisions` per `minimal/minimal.md`.
+
+The rules below describe `full` / `lite` behavior.
+
+---
+
 Create when architecture changes, major dependencies are introduced, important tradeoffs are made, or a significant alternative was rejected.
 
 **Naming:** `DECISION-YYYY-MM-DD-<short-slug>.md`

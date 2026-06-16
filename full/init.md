@@ -42,16 +42,27 @@ phases: []
 |---|---|---|---|---|---|
 ```
 
-**`.project-memory/config.yml`** — skill configuration. Ask the user:
+**`.project-memory/config.yml`** — skill configuration. Always start with the profile block at the top:
+
+```yaml
+profile: full
+
+profile_history:
+  - profile: full
+    effective_date: <today YYYY-MM-DD>
+    reason: initial
+```
+
+Then ask the user:
 
 > "Do you want ADR (Architecture Decision Record) support? (y/n)"
 
-- **If yes:** Ask "Where should ADR files be stored? (default: `adr/`)" — accept their answer or use the default. Create that directory in the project root. Write `config.yml`:
+- **If yes:** Ask "Where should ADR files be stored? (default: `adr/`)" — accept their answer or use the default. Create that directory in the project root. Append to `config.yml`:
   ```yaml
   adr_enabled: true
   adr_dir: <chosen path>
   ```
-- **If no:** Write `config.yml`:
+- **If no:** Append to `config.yml`:
   ```yaml
   adr_enabled: false
   ```

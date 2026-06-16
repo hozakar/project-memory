@@ -228,13 +228,14 @@ srv.tool(
 
 srv.tool(
   "run_audit",
-  "Run all deterministic audit checks (13 categories) on a project-memory directory. Returns structured findings: auto_fixed (Cat 5/11 file moves executed), pending_fixes (Cat 7 YAML annotations for LLM to apply), escalations (all other findings with severity and interactive flag).",
+  "Run deterministic audit checks on a project-memory directory. Returns structured findings: auto_fixed (Cat 5/11 file moves executed), pending_fixes (Cat 7 YAML annotations for LLM to apply), escalations (all other findings with severity and interactive flag). Profile-aware: profile=lite skips Cat 9 and Cat 11 and reduces Cat 10 to phase.yml-only; profile=minimal returns an empty report.",
   {
     project_memory_dir: z.string().describe("Absolute path to the .project-memory/ directory"),
+    profile: z.enum(["full", "lite", "minimal"]).optional().default("full").describe("Active project-memory profile. Default 'full'. 'lite' skips Cat 9 + Cat 11 and reduces Cat 10 to require phase.yml only. 'minimal' returns empty findings (no audit by design)."),
   },
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async (args: any) => {
-    const result = await runAudit(args.project_memory_dir);
+    const result = await runAudit(args.project_memory_dir, args.profile ?? "full");
     return { content: [{ type: "text" as const, text: JSON.stringify(result) }] };
   }
 );

@@ -1,35 +1,38 @@
 ---
 name: project-memory-templates
-description: Template dispatcher for project-memory. Each record type's templates live in a dedicated sub-file to keep per-session token load low. Read the relevant sub-file when creating new records.
+description: Template dispatcher for project-memory. Profile-aware for phase and config/summary templates (which differ across full/lite/minimal); record templates are shared. Read the relevant sub-file when creating new records.
 ---
 
 # Templates — Index
 
-This file is a dispatcher. Read the appropriate sub-file for the record type you need:
+This file is a dispatcher. Phase and config templates live under `<profile>/` because they diverge across profiles; record templates and attribution schemas are shared at the root.
 
 | Record Type | Template File | Contains |
 |-------------|--------------|----------|
-| **Phase** | `templates-phase.md` | `phase.yml`, `plan.md`, `implementation.md`, `review-and-fixes.md`, `followup.md`, era summary (`era-NNN.md`) |
+| **Phase** | `<profile>/templates-phase.md` | full: 5 files; lite: `phase.yml` + optional `plan.md`; minimal: n/a (use `MEMORY.md` log) |
 | **Decision, ADR** | `templates-records.md` | `DECISION-*.md`, `adr/NNNN-*.md`, `decisions/index.md` |
 | **Discussion** | `templates-records.md` | `DISCUSSION-*.md`, `discussions/index.md` |
 | **Instruction** | `templates-records.md` | `INSTRUCTION-*.md` |
 | **Assignment** | `templates-records.md` | `ASSIGNMENT-*.md`, `assignments/index.yml` |
-| **Author Attribution** | `templates-records.md` | `created_by` + `contributors` schema (shared across all records) |
-| **Config** | `templates-config.md` | `.project-memory/config.yml`, `maintainers.md` |
-| **Summaries** | `templates-config.md` | `project-memory.md` (including rolling summaries rule) |
+| **Author Attribution** | `templates-records.md` | `created_by` + `contributors` schema (lite omits `contributors`; minimal omits both) |
+| **Config** | `<profile>/templates-config.md` | `.project-memory/config.yml`, `maintainers.md`, summary scaffolding (count varies) |
+| **Summaries** | `<profile>/templates-config.md` | full: 5 files; lite: roadmap + current-state; minimal: inline `MEMORY.md` sections |
+| **Era** | `<profile>/templates-phase.md` | Era summary (`era-NNN.md`) — full/lite only |
+
+`<profile>` is `full` or `lite`. For `minimal`, all template needs are covered by `minimal/minimal.md`.
 
 ---
 
 # Quick Reference
 
 ```
-Creating a phase?           → read templates-phase.md
-Creating a decision?        → read templates-records.md (DECISION + adr/ + decisions/index.md)
+Creating a phase?           → read <profile>/templates-phase.md
+Creating a decision?        → read templates-records.md (DECISION + decisions/index.md; ADR if adr_enabled)
 Creating a discussion?      → read templates-records.md (DISCUSSION + discussions/index.md)
 Creating an instruction?    → read templates-records.md (INSTRUCTION)
 Creating an assignment?     → read templates-records.md (ASSIGNMENT + assignments/index.yml)
-Setting up config?          → read templates-config.md (config.yml + maintainers.md)
-Writing summaries?          → read templates-config.md (project-memory.md)
-Need attribution fields?    → read templates-records.md (Author Attribution section)
-Creating an era?            → read templates-phase.md (Era Summary section)
+Setting up config?          → read <profile>/templates-config.md (config.yml + maintainers.md)
+Writing summaries?          → read <profile>/templates-config.md
+Need attribution fields?    → read templates-records.md (Author Attribution section — note profile-specific scope)
+Creating an era?            → read <profile>/templates-phase.md (Era Summary section, full/lite only)
 ```

@@ -665,8 +665,19 @@ function cat9DiscussionDrift(projectMemoryDir: string, ignored: Set<string>): Au
   return findings;
 }
 
-function cat10PhaseCompleteness(projectMemoryDir: string, phases: PhaseEntry[], ignored: Set<string>): PendingFix[] {
-  const required = ["phase.yml", "plan.md", "implementation.md", "review-and-fixes.md", "followup.md"];
+function cat10PhaseCompleteness(
+  projectMemoryDir: string,
+  phases: PhaseEntry[],
+  ignored: Set<string>,
+  profile: "full" | "lite" | "minimal" = "full",
+): PendingFix[] {
+  // In lite, only `phase.yml` is required. `plan.md` is optional, and impl/review/followup
+  // are not part of the lite phase shape at all. Per-phase profile-history-based shape
+  // inference (mixed-profile projects) is currently handled by the LLM layer; this MCP-side
+  // check uses the uniform current profile passed in.
+  const required = profile === "lite"
+    ? ["phase.yml"]
+    : ["phase.yml", "plan.md", "implementation.md", "review-and-fixes.md", "followup.md"];
   const pendingFixes: PendingFix[] = [];
 
   for (const phase of phases) {
@@ -866,7 +877,17 @@ function cat14AssignmentIntegrity(
 // Main entry point
 // ---------------------------------------------------------------------------
 
-export async function runAudit(projectMemoryDir: string): Promise<AuditReport> {
+export type Profile = "full" | "lite" | "minimal";
+
+export async function runAudit(
+  projectMemoryDir: string,
+  profile: Profile = "full",
+): Promise<AuditReport> {
+  // Minimal profile has no audit by design — return empty report immediately.
+  if (profile === "minimal") {
+    return { auto_fixed: [], pending_fixes: [], escalations: [] };
+  }
+
   const projectRoot = path.dirname(projectMemoryDir);
   const ignored = readAuditIgnore(projectMemoryDir);
   const phases = parsePhasesFromIndex(readFile(path.join(projectMemoryDir, "phases", "index.yml")));
@@ -877,7 +898,11 @@ export async function runAudit(projectMemoryDir: string): Promise<AuditReport> {
 
   // Auto-fix categories (silent)
   autoFixed.push(...cat5MisplacedIssues(projectMemoryDir));
-  autoFixed.push(...cat11DiscussionExpiry(projectMemoryDir));
+  // Cat 11 (discussion expiry) disabled in lite — discussions feature is still
+  // available but expiry hygiene becomes the user's responsibility.
+  if (profile !== "lite") {
+    autoFixed.push(...cat11DiscussionExpiry(projectMemoryDir));
+  }
 
   // Cat 2: always auto-fix (returns string[])
   autoFixed.push(...cat2SummaryStaleness(projectRoot, projectMemoryDir, ignored));
@@ -892,8 +917,8 @@ export async function runAudit(projectMemoryDir: string): Promise<AuditReport> {
   autoFixed.push(...cat8Result.autoFixed);
   pendingFixes.push(...cat8Result.pendingFixes);
 
-  // Cat 10: pending fixes only
-  pendingFixes.push(...cat10PhaseCompleteness(projectMemoryDir, phases, ignored));
+  // Cat 10: profile-aware required file list (lite expects phase.yml only)
+  pendingFixes.push(...cat10PhaseCompleteness(projectMemoryDir, phases, ignored, profile));
 
   // Cat 7: pending fixes (YAML annotations — LLM applies these)
   pendingFixes.push(...cat7OrphanCommitRefs(projectRoot, phases));
@@ -910,10 +935,13 @@ export async function runAudit(projectMemoryDir: string): Promise<AuditReport> {
   pendingFixes.push(...cat4Result.pendingFixes);
   escalations.push(...cat4Result.escalations);
 
-  // Cat 3, 9, 12: still report-only escalations
+  // Cat 3, 12: report-only escalations active in both full and lite
   escalations.push(...cat3StubPlaceholders(projectMemoryDir, ignored));
-  escalations.push(...cat9DiscussionDrift(projectMemoryDir, ignored));
   escalations.push(...cat12TagInconsistency(phases, ignored));
+  // Cat 9 (discussion index drift) disabled in lite.
+  if (profile !== "lite") {
+    escalations.push(...cat9DiscussionDrift(projectMemoryDir, ignored));
+  }
   // Cat 13: handled separately by check_consistency
 
   // Cat 14: Assignment integrity
