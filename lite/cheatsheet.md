@@ -76,7 +76,7 @@ Lite does not split "significant" vs "ambiguous". Anything non-trivial is just "
 | ~10 phases accumulated since last era | Maintainer-only prompt. Rare in lite. |
 | Assignment created / status changed | Same as full. Update `assignments/index.yml`, re-call `index_assignment` if MCP. |
 | Session start — pending/rejected/completed assignment notifications | Same as full. |
-| User says "project-memory'yi <profile>'a geçir" | SKILL.md → change-profile flow: append `profile_history` entry, switch active `profile`, handle minimal ↔ structured shape transitions per `profiles.md` → Migration mechanism. |
+| User says "switch project-memory to &lt;profile&gt;" | SKILL.md → change-profile flow: append `profile_history` entry, switch active `profile`, handle minimal ↔ structured shape transitions per `profiles.md` → Migration mechanism. |
 
 **Stub placeholders to clear on sight:** `"None recorded yet"`, `"TBD"`, `"system just initialized"`, `"first run detected"`, or any `*(none)*` in a section that now has content.
 

@@ -76,21 +76,21 @@ Note: instruction **re-injection** IS tier-bound (Row 6). The feature itself is 
 
 # Init UX
 
-First-run init asks one question with inline guidance (in Turkish to match the maintainer's voice; localize as needed):
+First-run init asks one question with inline guidance:
 
 ```
-Bu projede project-memory'yi nasıl çalıştırmak istersin?
+How do you want to run project-memory in this project?
 
-  1) full     — tam ceremony, uzun ömürlü/çok-katkıcı projeler için
-  2) lite     — minimum ceremony, çoğu orta-çaplı iş için
-  3) minimal  — tek MEMORY.md dosyası, kısa/throwaway işler için
+  1) full     — full ceremony, for long-lived or multi-contributor projects
+  2) lite     — minimal ceremony, for most mid-sized work
+  3) minimal  — single MEMORY.md file, for short or throwaway work
 
-Yanıtını verirken göz önünde bulundurabileceklerin:
-  • Proje 3+ ay sürecek mi?
-  • Birden fazla kişi mi katkı verecek?
-  • "Neden X yaptık?" gibi mimari karar soruları çıkacak mı?
+Things to consider:
+  • Will the project last 3+ months?
+  • Will more than one person contribute?
+  • Are "why did we do X?" architectural questions likely to come up?
 
-Bu seçimi sonra değiştirmek istersen söyle, ben hallederim.
+You can change this choice later — just say so.
 ```
 
 Default cursor: `lite`. No automatic recommendation logic — user reads guidance and chooses.
@@ -120,7 +120,7 @@ profile_history:
 - **Upgrade** (e.g. `lite → full`): no backfill required. Past phases keep their 2-file shape; future phases get 5-file. Cat 10 differentiates by `started_at` against `profile_history`.
 - **Cross-shape transitions** (any ↔ `minimal`): existing artifacts are preserved. Going *to* `minimal` creates `MEMORY.md` seeded from `summaries/roadmap.md` (if any); going *from* `minimal` creates a `.project-memory/` skeleton with `MEMORY.md` content migrated to seed `roadmap.md` and `decisions/index.md`.
 
-User changes profile via natural language ("project-memory'yi full'a geçir"). SKILL.md recognizes the intent, appends a new `profile_history` entry with `effective_date: <today>` and a `reason` field captured from the user's stated motivation (or `"user request"` if not stated).
+User changes profile via natural language ("switch project-memory to full"). SKILL.md recognizes the intent, appends a new `profile_history` entry with `effective_date: <today>` and a `reason` field captured from the user's stated motivation (or `"user request"` if not stated).
 
 ---
 

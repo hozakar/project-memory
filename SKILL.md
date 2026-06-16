@@ -20,17 +20,17 @@ When this skill activates:
 
    Ask the user:
    ```
-   Bu projede project-memory'yi nasıl çalıştırmak istersin?
-     1) full     — tam ceremony, uzun ömürlü/çok-katkıcı projeler için
-     2) lite     — minimum ceremony, çoğu orta-çaplı iş için
-     3) minimal  — tek MEMORY.md dosyası, kısa/throwaway işler için
+   How do you want to run project-memory in this project?
+     1) full     — full ceremony, for long-lived or multi-contributor projects
+     2) lite     — minimal ceremony, for most mid-sized work
+     3) minimal  — single MEMORY.md file, for short or throwaway work
 
-   Yanıtını verirken göz önünde bulundurabileceklerin:
-     • Proje 3+ ay sürecek mi?
-     • Birden fazla kişi mi katkı verecek?
-     • "Neden X yaptık?" gibi mimari karar soruları çıkacak mı?
+   Things to consider:
+     • Will the project last 3+ months?
+     • Will more than one person contribute?
+     • Are "why did we do X?" architectural questions likely to come up?
 
-   Bu seçimi sonra değiştirmek istersen söyle, ben hallederim.
+   You can change this choice later — just say so.
    ```
    Default cursor: `lite`. After the user picks:
    - `full` → read `full/init.md` and follow it.
@@ -70,7 +70,7 @@ Discussions are a user-triggered feature — available in all profiles. In `mini
 
 ## change profile
 
-When the user says "project-memory'yi <full|lite|minimal>'a geçir" or similar phrasing ("change profile to X", "switch to lite", etc.):
+When the user says "switch project-memory to <full|lite|minimal>" or similar phrasing ("change profile to X", "switch to lite", etc.):
 
 1. Read current `config.yml` (or detect `MEMORY.md` for minimal).
 2. Append a new entry to `profile_history`: `{profile: <new>, effective_date: today, reason: <user's stated motivation or "user request">}`.

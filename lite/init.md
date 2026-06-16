@@ -118,5 +118,5 @@ Installation proceeds normally either way. Never block, never prompt, never esca
 Output:
 ```
 [✅] .project-memory/ initialized in lite profile — first run detected.
-    Profile can be changed later: just say "project-memory'yi full'a geçir" (or minimal).
+    Profile can be changed later: just say "switch project-memory to full" (or minimal).
 ```

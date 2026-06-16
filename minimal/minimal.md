@@ -68,7 +68,7 @@ Available if installed, but minimal does NOT auto-index `MEMORY.md` into the vec
 
 ## Upgrading from minimal
 
-User says "project-memory'yi lite'a geçir" (or full). SKILL.md → change-profile flow:
+User says "switch project-memory to lite" (or full). SKILL.md → change-profile flow:
 
 1. Create `.project-memory/` skeleton appropriate for the target profile (see `<target>/init.md`).
 2. Seed `summaries/roadmap.md` from `MEMORY.md → ## Roadmap`.
@@ -79,7 +79,7 @@ User says "project-memory'yi lite'a geçir" (or full). SKILL.md → change-profi
 
 ## Downgrading to minimal
 
-User says "project-memory'yi minimal'a geçir" from full or lite:
+User says "switch project-memory to minimal" from full or lite:
 
 1. Create `MEMORY.md` at project root with the three-section template.
 2. Seed `## Roadmap` from `summaries/roadmap.md`.
