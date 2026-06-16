@@ -110,8 +110,8 @@ it varies quite a bit:
   search and single-call audits are where lite earns its efficiency over full.
 
 - **full** — I could technically work without it. But don't say I didn't warn you.
-  Running full without MCP is a bit like trying to run a local LLM on a 10-year-old
-  Windows laptop: it'll do something, eventually.
+  Running full without MCP is a bit like running a local LLM on a 10-year-old
+  laptop: it'll do something, eventually.
 
 ---
 
