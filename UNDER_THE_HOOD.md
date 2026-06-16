@@ -78,15 +78,16 @@ leaner tree at init — no `discussions/`, `issues/`, `assignments/`, `eras/`, o
     └── roadmap.md
 ```
 
-**Minimal profile** uses a single file at the project root:
+**Minimal profile** uses the same `.project-memory/` directory but with just two files:
 
 ```
-MEMORY.md          ← three sections: ## Roadmap, ## Decisions, ## Log
+.project-memory/
+├── config.yml     ← profile: minimal + profile_history
+└── MEMORY.md      ← three sections: ## Roadmap, ## Decisions, ## Log
 ```
 
-No `.project-memory/` directory is created unless you explicitly use discussions,
-issues, assignments, or instructions — those land in `.project-memory/<feature>/`
-on first use.
+User-triggered features (discussions, issues, assignments, instructions) create their
+own subdirectories inside `.project-memory/` on first use, same as other profiles.
 
 ---
 

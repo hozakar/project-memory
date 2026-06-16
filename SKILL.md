@@ -12,11 +12,10 @@ When this skill activates:
    🧠 PROJECT MEMORY LOADED
 
 2. **Determine active profile.**
-   - If `.project-memory/config.yml` exists → read the `profile` field. If absent (legacy project), treat as `full` and remember to offer the user a one-time choice in a non-blocking way after on-load completes.
-   - If `MEMORY.md` exists at project root and `.project-memory/` does NOT exist → treat as `minimal` profile. Read `minimal/minimal.md` and follow it end-to-end. Stop the standard on-load flow.
-   - If neither exists → first-run. Read `<profile>/init.md` where `<profile>` is what the user picks via the init UX (see step 3). Until the user has chosen, do not assume a profile.
+   - If `.project-memory/config.yml` exists → read the `profile` field. Route to `full`, `lite`, or `minimal` accordingly. If the `profile` field is absent (legacy project), treat as `full` and offer the user a one-time non-blocking profile choice after on-load completes.
+   - If `.project-memory/` does NOT exist → first-run (see step 3).
 
-3. **First-run init UX (only when neither `.project-memory/` nor `MEMORY.md` exists):**
+3. **First-run init UX (only when `.project-memory/` does not exist):**
 
    Ask the user:
    ```

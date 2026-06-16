@@ -91,9 +91,9 @@ on a new project, I'll ask you to choose one:
   no topic-shift detection, 2 summary files (`roadmap.md` and `current-state.md`).
   For most mid-sized solo or small-team work.
 
-- **minimal** — a single `MEMORY.md` file at your project root. No directories,
-  no phase ceremony — just running sections for roadmap, decisions, and a work log.
-  For short or throwaway projects where git history alone is almost enough.
+- **minimal** — a `.project-memory/` directory with just `config.yml` and a single
+  `MEMORY.md` inside. No phase ceremony — just running sections for roadmap, decisions,
+  and a work log. For short or throwaway projects where git history alone is almost enough.
 
 You can switch at any time — just tell me: *"Switch project-memory to lite."*
 Past artifacts are preserved; only future behavior changes.

@@ -118,7 +118,7 @@ profile_history:
 - Audit and gates consult `profile_history` for any check whose correctness depends on the profile in force when an artifact was created. Example: Cat 10 lite-modification only applies to phases whose `started_at` falls within a lite-profile window.
 - **Downgrade** (e.g. `full → lite`): past artifacts stay as-is. No retroactive file deletion or schema simplification. Only future behavior changes.
 - **Upgrade** (e.g. `lite → full`): no backfill required. Past phases keep their 2-file shape; future phases get 5-file. Cat 10 differentiates by `started_at` against `profile_history`.
-- **Cross-shape transitions** (any ↔ `minimal`): existing artifacts are preserved. Going *to* `minimal` creates `MEMORY.md` seeded from `summaries/roadmap.md` (if any); going *from* `minimal` creates a `.project-memory/` skeleton with `MEMORY.md` content migrated to seed `roadmap.md` and `decisions/index.md`.
+- **Cross-shape transitions** (any ↔ `minimal`): existing artifacts are preserved. Going *to* `minimal` creates `.project-memory/MEMORY.md` seeded from `summaries/roadmap.md` (if any) and updates `config.yml` with `profile: minimal`; going *from* `minimal` expands the existing `.project-memory/` skeleton with the target profile's structure, seeding `roadmap.md` and `decisions/index.md` from `MEMORY.md` content.
 
 User changes profile via natural language ("switch project-memory to full"). SKILL.md recognizes the intent, appends a new `profile_history` entry with `effective_date: <today>` and a `reason` field captured from the user's stated motivation (or `"user request"` if not stated).
 
