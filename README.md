@@ -98,6 +98,21 @@ on a new project, I'll ask you to choose one:
 You can switch at any time — just tell me: *"Switch project-memory to lite."*
 Past artifacts are preserved; only future behavior changes.
 
+**MCP companion server and profiles**
+
+The MCP companion server is optional in all profiles, but how much you'll miss
+it varies quite a bit:
+
+- **minimal** — MCP gives you some uplift, but honestly you'll be fine without it.
+  A single markdown file doesn't need a vector index.
+
+- **lite** — I strongly suggest it. Without MCP, you'll feel the difference — semantic
+  search and single-call audits are where lite earns its efficiency over full.
+
+- **full** — I could technically work without it. But don't say I didn't warn you.
+  Running full without MCP is a bit like trying to run a local LLM on a 10-year-old
+  Windows laptop: it'll do something, eventually.
+
 ---
 
 ## ADR support (optional)
