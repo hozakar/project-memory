@@ -1,15 +1,17 @@
 ---
 name: project-memory-audit
-description: Drift audit dispatcher for project-memory. Routes to audit-mcp.md (MCP fast path) or audit-fs.md (file-system detection) based on run_audit availability. Contains shared sections: severity model, permanent skip, era auto-clean, output format, and interactive mode.
+description: Drift audit dispatcher for project-memory. Routes by active profile and MCP availability. Contains shared sections — severity model, permanent skip, era auto-clean, output format, and interactive mode — used by both MCP and FS paths.
 ---
 
 # When To Run
 
-**Context A — On-load (passive), via SKILL.md step 3:**
-Run automatically every session. Apply auto-fixes silently. Emit a single drift report block for all findings. If nothing found and nothing auto-fixed, emit the clean line. If any interactive-triage findings remain after auto-fix, immediately transition into Interactive Mode.
+**Context A — On-load (passive), via SKILL.md step 5:**
+Run automatically every session (full and lite only — minimal skips audit entirely). Apply auto-fixes silently. Emit a single drift report block for all findings. If nothing found and nothing auto-fixed, emit the clean line. If any interactive-triage findings remain after auto-fix, immediately transition into Interactive Mode.
 
 **Context B — On-demand (interactive), via `Skill project-memory audit`:**
-Run when the skill is explicitly invoked with the `audit` argument. Same detection logic, but prompt the user for each interactive finding via `AskUserQuestion`. Re-run detection after decisions; loop until clean.
+Run when the skill is explicitly invoked with the `audit` argument (full and lite only). Same detection logic, but prompt the user for each interactive finding via `AskUserQuestion`. Re-run detection after decisions; loop until clean.
+
+**Minimal profile:** No audit. On-load skips it; `audit` argument prints a single-line notice and exits.
 
 ---
 
@@ -17,11 +19,14 @@ Run when the skill is explicitly invoked with the `audit` argument. Same detecti
 
 **At session start or on `audit` argument:**
 
-1. Check if `run_audit` is in available MCP tools.
-2. **If yes:** read `audit-mcp.md` and follow its MCP Fast Path — MCP-driven detection in a single `run_audit` call. Skip `audit-fs.md`.
-3. **If no:** read `audit-fs.md` and follow its file-based Detection Procedure across all 14 categories.
+1. Read the active `profile` from `.project-memory/config.yml`. If `profile=minimal`, exit (no audit).
+2. Check if `run_audit` is in available MCP tools.
+3. **If yes:** read `<profile>/audit-mcp.md` and follow its MCP Fast Path. Skip `<profile>/audit-fs.md`.
+4. **If no:** read `<profile>/audit-fs.md` and follow its file-based Detection Procedure.
 
-The shared sections below (Severity, Permanent Skip, Output Format, Interactive Mode) apply to BOTH paths.
+`<profile>` is `full` or `lite`. The lite versions enumerate a reduced category set (Cat 1, 2, 3, 4, 5, 6, 7, 8 (conditional), 10 (modified), 12, 13 (conditional), 14 — Cat 9 and 11 omitted).
+
+The shared sections below (Severity, Permanent Skip, Era Auto-Clean, Output Format, Interactive Mode) apply to both paths and both profiles.
 
 ---
 
@@ -33,6 +38,8 @@ The model has 2 effective tiers:
 |----------|-----------|----------|
 | **high** | Cat 4 | Heuristic auto-resolves same-user commits. Escalates only on author mismatch or ambiguous file matching. |
 | **auto-fix** | Cat 1,2,3,5,6,7,8,9,10,11,12,13,14 | Applied silently; logged in drift report. |
+
+In lite, Cat 9 and 11 are not detected at all (not "auto-fixed silently" — simply absent).
 
 ---
 
@@ -103,6 +110,12 @@ When an era (`era-NNN.md`) is created or updated in `.project-memory/eras/`:
 
 ---
 
+# Profile-aware migration semantics
+
+For profile-sensitive checks (notably Cat 10 file-completeness), consult `config.yml → profile_history` rather than the current `profile` field. A phase whose `started_at` falls within a `lite` window is expected to have only `phase.yml` (+ optional `plan.md`), regardless of the currently active profile. This prevents upgrade-to-`full` from retroactively flagging historical lite phases as incomplete.
+
+---
+
 # Output Format (On-Load)
 
 **When findings or auto-fixes exist:**
@@ -156,9 +169,9 @@ Emit the drift report header line, then begin prompting per interactive-triage f
 
 # Interactive Mode
 
-When the skill is invoked as `Skill project-memory audit`:
+When the skill is invoked as `Skill project-memory audit` (full or lite only):
 
-1. Run the full detection procedure. Collect all findings — only Cat 4 findings that couldn't be auto-resolved enter interactive triage.
+1. Run the full detection procedure for the active profile. Collect all findings — only Cat 4 findings that couldn't be auto-resolved enter interactive triage.
 2. Present the full drift report.
 3. For each **interactive-triage** finding, use `AskUserQuestion`. Apply their decision immediately before moving to the next.
 4. All auto-fix findings are handled silently; only Cat 4 unresolved findings are prompted.
