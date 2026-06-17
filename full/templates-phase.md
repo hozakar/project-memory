@@ -23,7 +23,7 @@ issues_created: []
 issues_resolved: []
 decisions_referenced: []
 tags: []
-created_by:                  # required — see Author Attribution in templates-records.md
+created_by:                  # required — see templates-attribution.md
   name: "Hakan Ozakar"
   email: "hozakar@gmail.com"
 contributors:                # required — list grows on status-changing writes

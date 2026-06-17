@@ -178,7 +178,11 @@ Single file at project root with three fixed sections (`## Roadmap`, `## Decisio
 ├── conventions-discussions.md ← Shared
 ├── conventions-records.md     ← Shared
 ├── conventions-maintainer.md  ← Shared (with profile-specific notes for attribution)
-├── templates-records.md       ← Shared
+├── templates-decisions.md     ← Shared
+├── templates-discussions.md   ← Shared
+├── templates-instructions.md  ← Shared
+├── templates-assignments.md   ← Shared
+├── templates-attribution.md   ← Shared (created_by / contributors schema)
 ├── mcp-integration.md         ← Shared
 └── README.md                  ← Human-readable overview
 ```

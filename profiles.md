@@ -153,7 +153,11 @@ User changes profile via natural language ("switch project-memory to full"). SKI
 ├── conventions-discussions.md     ← shared
 ├── conventions-records.md         ← shared
 ├── conventions-maintainer.md      ← shared (with profile-specific attribution notes)
-├── templates-records.md           ← shared
+├── templates-decisions.md         ← shared
+├── templates-discussions.md       ← shared
+├── templates-instructions.md      ← shared
+├── templates-assignments.md       ← shared
+├── templates-attribution.md       ← shared (created_by / contributors schema)
 ├── mcp-integration.md             ← shared
 └── README.md
 ```
