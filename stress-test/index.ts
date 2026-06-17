@@ -1,20 +1,27 @@
 /**
  * Stress-test indexer for project-memory.
  *
- * Run from the mcp-server directory:
- *   cd mcp-server && npx tsx ../stress-test/index.ts ../stress-test/generated
+ * Run from the stress-test directory (or anywhere with an absolute path):
+ *   cd stress-test && npx tsx index.ts generated
+ *   npx tsx stress-test/index.ts stress-test/generated
  *
- * The script sets PROJECT_MEMORY_DIR *before* importing any db-touching modules
- * so that LanceDB opens the correct vector-index path.
+ * PROJECT_MEMORY_DIR must be set before any db-touching module loads.
+ * Static imports are hoisted by TypeScript, so db-touching modules are
+ * loaded via dynamic await import() inside main() — after the env var is set.
  */
 
-// ── 1. Set env BEFORE any other imports ────────────────────────────────────
 import * as path from "path";
 import * as fs from "fs";
+import type {
+  IndexEntry,
+  PhaseIndexData,
+  DecisionIndexData,
+  DiscussionIndexData,
+} from "../mcp-server/src/types";
 
 const generatedDir = process.argv[2];
 if (!generatedDir) {
-  console.error("Usage: npx tsx ../stress-test/index.ts <path-to-generated-dir>");
+  console.error("Usage: npx tsx stress-test/index.ts <path-to-generated-dir>");
   process.exit(1);
 }
 
@@ -24,18 +31,8 @@ if (!fs.existsSync(resolvedDir)) {
   process.exit(1);
 }
 
-// Must be set before importing db.ts or any module that calls getDb()
+// Set BEFORE dynamic imports below so LanceDB opens the correct vector-index path.
 process.env.PROJECT_MEMORY_DIR = resolvedDir;
-
-// ── 2. Now safe to import db-touching modules ───────────────────────────────
-import { rebuildIndex } from "./src/tools/rebuild_index";
-import type {
-  IndexEntry,
-  PhaseIndexData,
-  DecisionIndexData,
-  DiscussionIndexData,
-} from "./src/types";
-import { parseFrontmatter } from "./src/tools/run_audit";
 
 // ── 3. Helpers ──────────────────────────────────────────────────────────────
 
@@ -109,7 +106,10 @@ function parsePhaseYml(phaseYmlPath: string): { tags: string[]; summary: string 
 }
 
 /** Parse a DECISION-*.md file into DecisionIndexData */
-function parseDecisionFile(filePath: string): DecisionIndexData | null {
+function parseDecisionFile(
+  filePath: string,
+  parseFrontmatter: (s: string) => Record<string, string>
+): DecisionIndexData | null {
   const content = readFile(filePath);
   if (!content) return null;
 
@@ -140,7 +140,10 @@ function parseDecisionFile(filePath: string): DecisionIndexData | null {
 }
 
 /** Parse a DISCUSSION-*.md file into DiscussionIndexData */
-function parseDiscussionFile(filePath: string): DiscussionIndexData | null {
+function parseDiscussionFile(
+  filePath: string,
+  parseFrontmatter: (s: string) => Record<string, string>
+): DiscussionIndexData | null {
   const content = readFile(filePath);
   if (!content) return null;
 
@@ -178,6 +181,10 @@ function parseDiscussionFile(filePath: string): DiscussionIndexData | null {
 // ── 4. Build IndexEntry array ───────────────────────────────────────────────
 
 async function main() {
+  // Dynamic imports — env var is set at this point, LanceDB will find the right DB path.
+  const { rebuildIndex } = await import("../mcp-server/src/tools/rebuild_index");
+  const { parseFrontmatter } = await import("../mcp-server/src/tools/run_audit");
+
   const pmDir = path.join(resolvedDir, ".project-memory");
 
   const entries: IndexEntry[] = [];
@@ -225,7 +232,7 @@ async function main() {
 
   let decisionCount = 0;
   for (const filePath of decisionFiles) {
-    const data = parseDecisionFile(filePath);
+    const data = parseDecisionFile(filePath, parseFrontmatter);
     if (data) {
       entries.push({ type: "decision", data });
       decisionCount++;
@@ -249,7 +256,7 @@ async function main() {
 
   let discussionCount = 0;
   for (const filePath of discussionFiles) {
-    const data = parseDiscussionFile(filePath);
+    const data = parseDiscussionFile(filePath, parseFrontmatter);
     if (data) {
       entries.push({ type: "discussion", data });
       discussionCount++;

@@ -25,8 +25,8 @@ The `generated/` directory is gitignored. Generation takes a few seconds and pro
 
 **Step 2 — Index into LanceDB**
 ```bash
-cd ../mcp-server
-npx tsx ../stress-test/index.ts ../stress-test/generated
+cd ..
+npx tsx stress-test/index.ts stress-test/generated
 ```
 
 This imports `rebuildIndex` directly from the MCP server source and reports timing + record counts.
