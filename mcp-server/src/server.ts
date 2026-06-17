@@ -229,14 +229,15 @@ srv.tool(
 
 srv.tool(
   "run_audit",
-  "Run deterministic audit checks on a project-memory directory. Returns structured findings: auto_fixed (Cat 5/11 file moves executed), pending_fixes (Cat 7 YAML annotations for LLM to apply), escalations (all other findings with severity and interactive flag). Profile-aware: profile=lite skips Cat 9 and Cat 11 and reduces Cat 10 to phase.yml-only; profile=minimal returns an empty report.",
+  "Run deterministic audit checks on a project-memory directory. Returns structured findings: auto_fixed (Cat 5/11 file moves executed), pending_fixes (Cat 7 YAML annotations for LLM to apply), escalations (all other findings with severity and interactive flag), cat4_gap_count (present when raise_cat4=false — count of Cat 4 open-phase gaps suppressed server-side). Profile-aware: profile=lite skips Cat 9 and Cat 11 and reduces Cat 10 to phase.yml-only; profile=minimal returns an empty report.",
   {
     project_memory_dir: z.string().describe("Absolute path to the .project-memory/ directory"),
     profile: z.enum(["full", "lite", "minimal"]).optional().default("full").describe("Active project-memory profile. Default 'full'. 'lite' skips Cat 9 + Cat 11 and reduces Cat 10 to require phase.yml only. 'minimal' returns empty findings (no audit by design)."),
+    raise_cat4: z.boolean().optional().default(false).describe("When false (default, for on-load audits), Cat 4 open-phase gaps are suppressed from escalations and returned as cat4_gap_count instead — non-blocking info line. When true (for manual 'Skill project-memory audit' runs), Cat 4 findings are returned in escalations as interactive=true for user triage."),
   },
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async (args: any) => {
-    const result = await runAudit(args.project_memory_dir, args.profile ?? "full");
+    const result = await runAudit(args.project_memory_dir, args.profile ?? "full", args.raise_cat4 ?? false);
     return { content: [{ type: "text" as const, text: JSON.stringify(result) }] };
   }
 );

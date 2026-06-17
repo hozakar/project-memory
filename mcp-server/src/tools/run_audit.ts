@@ -907,6 +907,7 @@ export type Profile = "full" | "lite" | "minimal";
 export async function runAudit(
   projectMemoryDir: string,
   profile: Profile = "full",
+  raiseCat4: boolean = false,
 ): Promise<AuditReport> {
   // Minimal profile has no audit by design — return empty report immediately.
   if (profile === "minimal") {
@@ -954,11 +955,13 @@ export async function runAudit(
   pendingFixes.push(...cat1Result.pendingFixes);
   escalations.push(...cat1Result.escalations);
 
-  // Cat 4: auto-fix + pending fixes + escalations
+  // Cat 4: auto-fix + pending fixes + escalations (or suppressed as cat4_gap_count)
   const cat4Result = cat4OpenPhaseGap(projectRoot, phases, ignored);
   autoFixed.push(...cat4Result.autoFixed);
   pendingFixes.push(...cat4Result.pendingFixes);
-  escalations.push(...cat4Result.escalations);
+  if (raiseCat4) {
+    escalations.push(...cat4Result.escalations);
+  }
 
   // Cat 3, 12: report-only escalations active in both full and lite
   escalations.push(...cat3StubPlaceholders(projectMemoryDir, ignored));
@@ -974,5 +977,7 @@ export async function runAudit(
   autoFixed.push(...cat14.autoFixed);
   escalations.push(...cat14.escalations);
 
-  return { auto_fixed: autoFixed, pending_fixes: pendingFixes, escalations };
+  const report: AuditReport = { auto_fixed: autoFixed, pending_fixes: pendingFixes, escalations };
+  if (!raiseCat4) report.cat4_gap_count = cat4Result.escalations.length;
+  return report;
 }

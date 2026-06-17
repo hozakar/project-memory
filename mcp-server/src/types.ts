@@ -150,6 +150,8 @@ export interface AuditReport {
   auto_fixed: string[];
   pending_fixes: PendingFix[];
   escalations: AuditFinding[];
+  /** Present only when raise_cat4=false. Count of Cat 4 findings suppressed server-side. */
+  cat4_gap_count?: number;
 }
 
 export interface AppliedFix {
