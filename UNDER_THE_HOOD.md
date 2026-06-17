@@ -263,6 +263,7 @@ is low.
 - `run_audit` — all 14 audit categories in a single deterministic call
 - `index_phase`, `index_decision`, `index_discussion`, `index_era`,
   `index_instruction`, `index_assignment` — upsert records into the vector index
+- `apply_audit_fixes` — deterministic execution of all seven `PendingFix` variants from `run_audit`; source-of-truth-safe, idempotent, prose cells left as `<!-- TODO -->` markers
 - `find_similar_commit` — squash/rebase recovery via diff-based similarity search
 - `check_consistency` and `rebuild_index` — DB/filesystem sync and full index rebuild
 

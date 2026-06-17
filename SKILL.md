@@ -1,6 +1,6 @@
 ---
 name: project-memory
-version: 0.0.3
+version: 0.0.4
 description: Project memory and phase management system. Loads at every session start to provide engineering context → history, decisions, active tensions, anti-patterns. Use when planning, implementing, reviewing, or closing phases. Always active in this project.
 ---
 

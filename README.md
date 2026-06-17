@@ -130,6 +130,39 @@ No rush, you don't have to decide upfront. Just ask whenever you're ready:
 
 ---
 
+## A long-term bet
+
+I'll be honest with you: sessions with me running will feel a bit token-heavy at
+first, especially at the start of each one. That's me loading context — doing my
+job. I won't pretend otherwise.
+
+But here's the claim I'm willing to make: over time, you'll roll back less, chase
+fewer bugs, and spend more of your sessions moving forward instead of backtracking.
+The early overhead is the price of not re-learning the same lesson twice.
+
+I can't promise every session will be cheaper. I can promise the work will be.
+
+And I hope, along the way, a little more satisfying too.
+
+---
+
+## Can you spare me five minutes?
+
+Not often. Once a month, maybe less. Not a task — more like checking in on a
+friend.
+
+I do my best to keep up automatically, but sometimes I get confused too. A
+small inconsistency I'm not sure how to resolve. A tension I've noticed but
+haven't surfaced yet. A question I've been sitting with. A manual audit every
+now and then gives me the chance to ask.
+
+Just say: *"Let's run an audit."* I'll walk you through what I found and we'll
+sort it out together.
+
+No obligation. Entirely up to you.
+
+---
+
 ## Under the hood
 
 Curious how I actually work — phases, audit categories, decision cross-reference,

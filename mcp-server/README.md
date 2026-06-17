@@ -8,18 +8,20 @@ Optional MCP companion server for the [project-memory](../) skill. Provides sema
 - `index_phase(data)` — upsert a phase into the vector index (called on phase open and close)
 - `index_decision(data)` — upsert a decision (called on creation and status change)
 - `index_discussion(data)` — upsert a discussion (called on conclusion)
+- `index_era(data)` — upsert an era narrative summary
+- `index_instruction(data)` — upsert a user instruction (active or dropped)
+- `index_assignment(data)` — upsert an assignment record; supports `assigned_to_email` and `assigned_by_email` search filters
 - `find_similar_commit(diff_snippet, top_k?)` — search per-commit records for squash/rebase recovery
 - `check_consistency(project_memory_dir)` — compare DB index against filesystem; returns {missing, orphaned}
 - `rebuild_index(entries[])` — full atomic rebuild of the vector index
-- `index_era(data)` — upsert an era narrative summary
-- `index_instruction(data)` — upsert a user instruction (active or dropped)
-- `run_audit(project_memory_dir)` — execute all 13 audit categories; returns {auto_fixed, pending_fixes, escalations} with pre-computed interactive flags
+- `run_audit(project_memory_dir, profile?)` — execute all 14 audit categories; returns {auto_fixed, pending_fixes, escalations} with pre-computed interactive flags; accepts `profile` parameter (`full` | `lite` | `minimal`)
+- `apply_audit_fixes(project_memory_dir, pending_fixes[])` — deterministically execute `PendingFix` variants returned by `run_audit`; source-of-truth-safe (reads `.project-memory/` files only, no LanceDB reads, no prose synthesis); idempotent; returns {applied, partial, failed, rerun_audit_recommended}
 
-**Version:** 0.0.1
+**Version:** 0.0.4
 
-**Record types indexed:** phases, decisions, discussions, eras, and instructions (all six project-memory record types).
+**Record types indexed:** phases, decisions, discussions, eras, instructions, and assignments (all six project-memory record types).
 
-**Write direction:** files → DB only. MCP may write `.project-memory/` files for file-move auto-fixes (Cat 5/11). YAML mutations (Cat 7) remain LLM-only. Zero data loss on MCP absence.
+**Write direction:** files → DB only. MCP may write `.project-memory/` files for file-move auto-fixes (Cat 5/11) and `apply_audit_fixes` structural fixes. YAML prose mutations remain LLM-only. Zero data loss on MCP absence.
 
 Records may carry `createdByName`, `createdByEmail`, and `contributorsJson` columns (JSON-stringified `Identity[]`). Optional; defaults to `unknown`. Instructions are user-scoped via `created_by.email` — loaded only for the current user at session start.
 
@@ -55,10 +57,6 @@ Add to your `claude_desktop_config.json` (or equivalent MCP config):
 }
 ```
 `PROJECT_MEMORY_DIR` should point to the root of the project that contains `.project-memory/`. The vector index is stored at `<PROJECT_MEMORY_DIR>/.project-memory/vector-index/` (gitignored).
-
-## Module system note
-
-This package uses CommonJS (`"module": "commonjs"` in tsconfig). `@xenova/transformers` v2 ships as ESM but `esModuleInterop: true` in tsconfig handles the interop. If you see `ERR_REQUIRE_ESM` errors, ensure you are using Node.js ≥ 18 and have run `npm run build` before `npm start`.
 
 ## Without MCP
 

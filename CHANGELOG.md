@@ -2,6 +2,111 @@
 
 All notable changes to the project-memory skill and MCP companion server.
 
+## [0.0.4] — 2026-06-17
+
+### Contradiction detection & intellectual honesty
+
+The Agent Thinking Protocol now responds to user claims that contradict recorded
+decisions through a three-tier system: Tier 1 cites the specific record by ID
+and reasoning when the contradiction is direct; Tier 2 surfaces the tension and
+asks for clarification when it is interpretive; Tier 3 acknowledges age and offers
+an override path for decisions older than 30 days or predating the last two eras.
+Override flow: warn once → write a superseding DECISION → move on. Prevents
+re-litigation without silently complying. DECISION-2026-06-14-intellectual-honesty.
+
+### Instruction gate re-injection
+
+Active instructions are now re-injected at every gate checkpoint
+(Pre-Implementation Gate, Pre-Close Gate, Discussion trigger, Topic Shift) in
+addition to session start. Survives compaction and long contexts at ~2% additional
+context cost per session. Supersedes session-start-only loading.
+DECISION-2026-06-14-instruction-gate-injection (ADR 0018).
+
+### Discussion gate — loss heuristic
+
+The 25-55-10-10 weighted scoring gate has been replaced with a loss heuristic:
+the question is now "would losing this discussion hurt us?" rather than additive
+scoring. Removes structural bias toward saving long discussions regardless of
+content quality. DECISION-2026-06-16-loss-heuristic supersedes
+DECISION-2026-06-13-discussion-relevancy-scoring.
+
+### Audit — Cat 8 create-only, Cat 12 deterministic
+
+**Cat 8** now only detects missing ADR files — status sync was dropped. Tracking
+decision status changes via ADR files produced spurious escalations without
+practical value.
+
+**Cat 12** tag inconsistency detection is now fully deterministic: Levenshtein
+distance ≤ 2 replaces LLM judgment, matching the behavior already in the MCP
+`run_audit` path. Combined with `audit_ignore` wildcard patterns, this eliminates
+all non-deterministic audit output.
+
+### apply_audit_fixes — new MCP tool
+
+New MCP tool that deterministically executes the seven `PendingFix` variants
+returned by `run_audit`: `annotate_orphan`, `assign_commit`,
+`add_decision_index_row`, `fix_decision_index_status`, `assign_adr_id`,
+`create_adr_file`, `create_phase_stub`. Source-of-truth-safe (reads only from
+`.project-memory/` files, never from LanceDB, never synthesizes prose). Prose
+cells remain as `<!-- TODO -->` markers for LLM completion. Idempotent. Both
+`full/audit-mcp.md` and `lite/audit-mcp.md` route `pending_fixes` through it.
+MCP server now has **11 tools** (previously 10, previously 9 before
+`index_assignment` in v0.0.2).
+
+### applies_globally — cross-cutting decisions in Pre-Impl Gate
+
+`applies_globally: true|false` added to DECISION frontmatter. The
+Pre-Implementation Gate surfaces `Global = Yes` decisions regardless of touches
+overlap — ensuring cross-cutting policies (language convention, branch workflow,
+maintainer role, ADR opt-in) are never silently missed. Rule 0 added to Decision
+Resolution Rules. Seven existing cross-cutting decisions backfilled.
+DECISION-2026-06-17-global-scope-decisions.
+
+### Semantic conflict scan (optional interactive audit stage)
+
+Optional final stage of interactive audit: after all deterministic categories
+complete, `search_memory` is called with a semantic conflict query to surface
+tension between recorded decisions that share no explicit `supersedes` relationship.
+Results logged to `semantic_audit_log` in `config.yml` to avoid re-scanning.
+MCP-only; never triggered automatically at session start.
+DECISION-2026-06-17-semantic-conflict-scan.
+
+### Skill file architecture — templates-records split
+
+`templates-records.md` (367 lines, 5 record types) split into five dedicated
+files: `templates-decisions.md`, `templates-discussions.md`,
+`templates-instructions.md`, `templates-assignments.md`,
+`templates-attribution.md`. Pure refactor; no schema changes.
+
+### protocol.md cleanup
+
+Four-phase isolated cleanup of `protocol.md`:
+- **Structural (B1):** collapsed step 8 variants; extracted duplicate UX rules to
+  canonical location in `conventions-records.md`; removed stale skill sub-files table.
+- **Semantic (B2):** Tier 3 contradiction threshold made concrete; trigger criteria
+  clarified; Session-start Ordering subsection (7-step checklist) added; era prompt
+  extracted from proactive sync block.
+- **Overlay/compaction honesty:** MCP variant reframed as "overlay (supplements,
+  never replaces)"; compaction re-run claim dropped — no reliable in-band signal.
+- **Cosmetic:** staleness disambiguation table (3 distinct thresholds, 3 distinct
+  questions); Knowledge Preservation escape-valve note.
+
+### README — long-term value + manual audit invitation
+
+Two new sections added to README.md: "A long-term bet" (honest framing of
+session overhead vs. long-run quality gain) and "Can you spare me five minutes?"
+(invitation to run a manual audit once a month).
+
+### Era 005 — Tiered Profiles, Protocol Hardening & Semantic Integrity
+
+Era 005 written and indexed, covering phases 44–63 (2026-06-14 to 2026-06-17).
+23 stale `audit_ignore` entries removed (era-based auto-clean, including
+uncleaned leftovers from eras 001–004).
+
+MCP server version bumped to `0.0.4`.
+
+---
+
 ## [0.0.3] — 2026-06-16
 
 ### Tiered profiles (full / lite / minimal)
