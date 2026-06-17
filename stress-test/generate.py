@@ -15,6 +15,8 @@ import random
 import subprocess
 import sys
 import time
+import urllib.request
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import date, timedelta
 
 # ---------------------------------------------------------------------------
@@ -29,11 +31,19 @@ def parse_args():
     p.add_argument("--out",        default="generated")
     p.add_argument("--seed",       type=int, default=42)
     p.add_argument("--llm",        action="store_true", default=False,
-                   help="Use Anthropic API to generate prose fields (requires ANTHROPIC_API_KEY)")
+                   help="Use LLM to generate prose fields")
+    p.add_argument("--llm-provider", default="claude", dest="llm_provider",
+                   choices=["claude", "openrouter"],
+                   help="LLM provider: 'claude' (uses claude -p, default) or 'openrouter'")
     p.add_argument("--llm-model",  default="claude-haiku-4-5-20251001", dest="llm_model",
-                   help="Model for prose generation (default: claude-haiku-4-5-20251001)")
+                   help="Model ID. For openrouter try: google/gemini-flash-2.0, "
+                        "meta-llama/llama-3.3-70b-instruct (default: claude-haiku-4-5-20251001)")
     p.add_argument("--llm-batch",  type=int, default=10, dest="llm_batch",
                    help="Items per API call batch (default: 10)")
+    p.add_argument("--llm-workers", type=int, default=1, dest="llm_workers",
+                   help="Parallel batch workers — openrouter supports >1 (default: 1)")
+    p.add_argument("--api-key",    default=None, dest="api_key",
+                   help="API key for openrouter provider (or set OPENROUTER_API_KEY env var)")
     return p.parse_args()
 
 # ---------------------------------------------------------------------------
@@ -999,27 +1009,68 @@ LLM_SYSTEM = (
 )
 
 
-def _llm_call(model: str, user: str, retries: int = 3):
+def _parse_llm_response(text: str):
+    text = text.strip()
+    if text.startswith("```"):
+        lines = text.splitlines()
+        inner = lines[1:-1] if lines[-1].strip() == "```" else lines[1:]
+        text = "\n".join(inner)
+    return json.loads(text)
+
+
+def _llm_call_claude(model: str, user: str, retries: int = 3):
     full_prompt = LLM_SYSTEM + "\n\n" + user
     cmd = ["claude", "-p", full_prompt]
     if model:
         cmd += ["--model", model]
     for attempt in range(retries):
         try:
-            result = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=180)
             if result.returncode != 0:
                 raise RuntimeError(result.stderr.strip())
-            text = result.stdout.strip()
-            if text.startswith("```"):
-                lines = text.splitlines()
-                inner = lines[1:-1] if lines[-1].strip() == "```" else lines[1:]
-                text = "\n".join(inner)
-            return json.loads(text)
-        except Exception as exc:
+            return _parse_llm_response(result.stdout)
+        except Exception:
             if attempt < retries - 1:
                 time.sleep(2 ** attempt)
             else:
                 return None
+
+
+def _llm_call_openrouter(api_key: str, model: str, user: str, retries: int = 3):
+    payload = json.dumps({
+        "model": model,
+        "messages": [
+            {"role": "system", "content": LLM_SYSTEM},
+            {"role": "user",   "content": user},
+        ],
+        "max_tokens": 4096,
+    }).encode("utf-8")
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json",
+        "HTTP-Referer": "https://github.com/project-memory",
+    }
+    for attempt in range(retries):
+        try:
+            req = urllib.request.Request(
+                "https://openrouter.ai/api/v1/chat/completions",
+                data=payload, headers=headers, method="POST",
+            )
+            with urllib.request.urlopen(req, timeout=120) as resp:
+                data = json.loads(resp.read().decode("utf-8"))
+            text = data["choices"][0]["message"]["content"]
+            return _parse_llm_response(text)
+        except Exception:
+            if attempt < retries - 1:
+                time.sleep(2 ** attempt)
+            else:
+                return None
+
+
+def _llm_call(provider: str, model: str, user: str, api_key: str = None, retries: int = 3):
+    if provider == "openrouter":
+        return _llm_call_openrouter(api_key, model, user, retries)
+    return _llm_call_claude(model, user, retries)
 
 
 def _decision_user_prompt(specs: list) -> str:
@@ -1074,30 +1125,44 @@ def _discussion_user_prompt(specs: list) -> str:
 
 
 def generate_llm_prose(
-    model: str, batch_size: int,
+    provider: str, model: str, api_key: str, batch_size: int, workers: int,
     decision_specs: list, phase_specs: list, discussion_specs: list,
 ) -> tuple:
     """Returns (decision_prose, phase_prose, discussion_prose) as lists aligned with input specs."""
 
     def run_batches(specs, prompt_fn, label):
-        results = [None] * len(specs)
-        n_batches = math.ceil(len(specs) / batch_size)
-        print(f"  LLM: {label} — {len(specs)} items, {n_batches} batches", flush=True)
-        for b in range(n_batches):
-            batch = specs[b * batch_size: (b + 1) * batch_size]
-            raw = _llm_call(model, prompt_fn(batch))
-            if raw and len(raw) == len(batch):
-                for j, item in enumerate(raw):
-                    results[b * batch_size + j] = item
-            else:
-                print(f"    batch {b+1}/{n_batches}: failed or wrong length — template fallback")
-            if (b + 1) % 5 == 0 or (b + 1) == n_batches:
-                print(f"    {b+1}/{n_batches} done", flush=True)
+        n = len(specs)
+        results = [None] * n
+        n_batches = math.ceil(n / batch_size)
+        batches = [
+            (b, specs[b * batch_size: (b + 1) * batch_size])
+            for b in range(n_batches)
+        ]
+        print(f"  LLM: {label} — {n} items, {n_batches} batches, {workers} worker(s)", flush=True)
+        done = 0
+
+        def process(b_batch):
+            b, batch = b_batch
+            raw = _llm_call(provider, model, prompt_fn(batch), api_key)
+            return b, batch, raw
+
+        with ThreadPoolExecutor(max_workers=workers) as pool:
+            futures = {pool.submit(process, bb): bb[0] for bb in batches}
+            for fut in as_completed(futures):
+                b, batch, raw = fut.result()
+                if raw and len(raw) == len(batch):
+                    for j, item in enumerate(raw):
+                        results[b * batch_size + j] = item
+                else:
+                    print(f"    batch {b+1}/{n_batches}: failed — template fallback")
+                done += 1
+                if done % 5 == 0 or done == n_batches:
+                    print(f"    {done}/{n_batches} done", flush=True)
         return results
 
-    decision_prose  = run_batches(decision_specs,  _decision_user_prompt,  "decisions")
-    phase_prose     = run_batches(phase_specs,      _phase_user_prompt,     "phases")
-    discussion_prose = run_batches(discussion_specs, _discussion_user_prompt, "discussions")
+    decision_prose   = run_batches(decision_specs,   _decision_user_prompt,   "decisions")
+    phase_prose      = run_batches(phase_specs,       _phase_user_prompt,      "phases")
+    discussion_prose = run_batches(discussion_specs,  _discussion_user_prompt, "discussions")
     return decision_prose, phase_prose, discussion_prose
 
 
@@ -1377,12 +1442,20 @@ def main():
     phase_prose_list     = [None] * args.phases
     discussion_prose_list = [None] * num_discussions
 
+    api_key = None
     if args.llm:
-        check = subprocess.run(["claude", "--version"], capture_output=True)
-        if check.returncode != 0:
-            print("Error: 'claude' CLI not found. Make sure Claude Code is installed and on PATH.", file=sys.stderr)
-            sys.exit(1)
-        print(f"LLM prose generation enabled (model={args.llm_model}, batch={args.llm_batch})")
+        if args.llm_provider == "openrouter":
+            api_key = args.api_key or os.environ.get("OPENROUTER_API_KEY")
+            if not api_key:
+                print("Error: --api-key or OPENROUTER_API_KEY required for openrouter provider.", file=sys.stderr)
+                sys.exit(1)
+        else:
+            check = subprocess.run(["claude", "--version"], capture_output=True)
+            if check.returncode != 0:
+                print("Error: 'claude' CLI not found on PATH.", file=sys.stderr)
+                sys.exit(1)
+        print(f"LLM prose generation: provider={args.llm_provider} model={args.llm_model} "
+              f"batch={args.llm_batch} workers={args.llm_workers}")
 
         decision_specs = [
             {"service": decision_services[i], "title": _fill_tmpl(decision_tmpls[i]["title_tmpl"], decision_services[i]),
@@ -1400,7 +1473,8 @@ def main():
         ]
 
         decision_prose_list, phase_prose_list, discussion_prose_list = generate_llm_prose(
-            args.llm_model, args.llm_batch,
+            args.llm_provider, args.llm_model, api_key,
+            args.llm_batch, args.llm_workers,
             decision_specs, phase_specs, discussion_specs,
         )
 

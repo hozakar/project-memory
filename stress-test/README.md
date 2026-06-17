@@ -22,13 +22,24 @@ cd stress-test
 python generate.py --phases 1000 --decisions 250 --time-years 3 --out generated
 ```
 
-LLM mode (realistic prose, ~$1.30 with Haiku, requires Claude Code CLI on PATH):
+LLM mode — via Claude Code CLI (no API key needed):
 ```bash
 cd stress-test
 python generate.py --phases 1000 --decisions 250 --time-years 3 --out generated --llm
-# Override model or batch size:
-# --llm-model claude-haiku-4-5-20251001  (default)
-# --llm-batch 10                          (items per API call, default 10)
+```
+
+LLM mode — via OpenRouter (faster, parallel, any model):
+```bash
+cd stress-test
+python generate.py --phases 1000 --decisions 250 --time-years 3 --out generated \
+  --llm --llm-provider openrouter \
+  --api-key sk-or-... \
+  --llm-model google/gemini-flash-2.0 \
+  --llm-workers 8
+# Or set OPENROUTER_API_KEY env var instead of --api-key
+# Fast model options: google/gemini-flash-2.0, meta-llama/llama-3.3-70b-instruct
+# --llm-batch 10 (items per call, default 10)
+# --llm-workers 8 (parallel calls, default 1 — increase for openrouter)
 ```
 
 The `generated/` directory is gitignored. Template generation takes a few seconds; LLM mode
