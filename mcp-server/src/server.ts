@@ -11,7 +11,8 @@ import { indexEra } from "./tools/index_era";
 import { indexInstruction } from "./tools/index_instruction";
 import { indexAssignment } from "./tools/index_assignment";
 import { runAudit } from "./tools/run_audit";
-import type { IndexEntry } from "./types";
+import { applyAuditFixes } from "./tools/apply_audit_fixes";
+import type { IndexEntry, PendingFix } from "./types";
 import { version } from "../package.json";
 
 export const server = new McpServer({
@@ -236,6 +237,23 @@ srv.tool(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async (args: any) => {
     const result = await runAudit(args.project_memory_dir, args.profile ?? "full");
+    return { content: [{ type: "text" as const, text: JSON.stringify(result) }] };
+  }
+);
+
+srv.tool(
+  "apply_audit_fixes",
+  "Deterministically execute the pending_fixes payload returned by run_audit. Handles annotate_orphan, assign_commit, add_decision_index_row, fix_decision_index_status, assign_adr_id, create_adr_file, create_phase_stub. Idempotent: re-running with the same payload is a no-op. Source-of-truth safe: never reads the vector index, never synthesizes prose (template cells with prose content are returned as `partial` for LLM completion).",
+  {
+    project_memory_dir: z.string().describe("Absolute path to the .project-memory/ directory"),
+    pending_fixes: z.array(z.object({
+      type: z.enum(["annotate_orphan", "assign_commit", "add_decision_index_row", "fix_decision_index_status", "assign_adr_id", "create_adr_file", "create_phase_stub"]),
+    }).passthrough()).describe("The pending_fixes array from run_audit, passed through verbatim."),
+  },
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  async (args: any) => {
+    const fixes = args.pending_fixes as PendingFix[];
+    const result = await applyAuditFixes(args.project_memory_dir, fixes);
     return { content: [{ type: "text" as const, text: JSON.stringify(result) }] };
   }
 );

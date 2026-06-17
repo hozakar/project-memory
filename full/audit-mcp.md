@@ -9,12 +9,21 @@ description: MCP-driven drift audit fast path. Called by audit.md dispatcher whe
 
 1. Call `run_audit(project_memory_dir)` where `project_memory_dir` is the absolute path to `.project-memory/`.
 2. Receive `{ auto_fixed, pending_fixes, escalations }`:
-   - `auto_fixed`: Cat 5 and Cat 11 file-move operations already executed — log them in the auto-fix line of the report.
-   - `pending_fixes`: Cat 7 orphan annotations — apply each one using the Edit tool (annotate the hash in `phases/index.yml` and the corresponding `phases/<phase_id>/phase.yml`).
+   - `auto_fixed`: file-move operations already executed by MCP (Cat 5, Cat 11) — log them in the auto-fix line of the report.
+   - `pending_fixes`: deterministic fixes detected but not yet applied. If `apply_audit_fixes` is in available tools, forward the **entire** array (no filtering) to `apply_audit_fixes(project_memory_dir, pending_fixes)`. **If `apply_audit_fixes` is NOT available** (older MCP server version): apply each fix manually via `Edit` — annotate orphan hashes in `phases/index.yml` and `phases/<phase_id>/phase.yml`, insert decision index rows, etc. The tool returns `{ applied, partial, failed, rerun_audit_recommended }`:
+     - `applied`: fully-completed fixes (annotations, status flips, commit assignments, adr_id assignments, orphan row removals). Log each as MCP-applied — no LLM follow-up needed.
+     - `partial`: the tool wrote a skeleton, but a prose-bearing cell is left as a TODO marker. Each entry carries `llm_must_do` (instruction) and `context` (the data you need). Resolve each one sequentially with `Edit`:
+       - `add_decision_index_row` → fill the `<!-- TODO: claim -->` placeholder in `decisions/index.md` with a one-sentence Claim derived from the DECISION's `# Decision` section.
+       - `create_adr_file` → fill the `<!-- TODO -->` blocks in the new ADR by extracting the corresponding sections from the source `DECISION-*.md` file.
+       - `create_phase_stub` → fill the `<!-- TODO -->` blocks in the new phase file using session memory + git history.
+     - `failed`: fix could not be applied (file missing, schema mismatch). Surface each failure in the audit report; if persistent, escalate to interactive triage.
+     - If `rerun_audit_recommended: true`, optionally re-call `run_audit` once after applying to confirm no residual drift.
    - `escalations`: all other findings, each with `category`, `severity`, `description`, `interactive` (bool), and `data`.
 3. For each escalation where `interactive: true` → enter interactive triage using the question shapes in `audit.md` → Interactive Mode.
 4. For each escalation where `interactive: false` → these are pre-classified for auto-fix by MCP's severity/time-boundary logic. Report them in the auto-fixed log (not interactive triage).
 5. Skip the file-based Detection Procedure in `audit-fs.md` entirely — `run_audit` has already covered all 14 categories.
+
+**Why `apply_audit_fixes` exists:** `pending_fixes` are structural transformations driven by frontmatter + git facts. Source of truth is `.project-memory/` files; MCP just executes the deterministic edits the audit already decided. MCP never reads the vector DB to reconstruct content — that would degrade source. Prose-bearing cells stay as TODO markers for the LLM to fill from the actual source files.
 
 ---
 

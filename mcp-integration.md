@@ -25,6 +25,7 @@ At session start, check if `search_memory`, `index_phase`, `index_decision`, and
 | `check_consistency(project_memory_dir)` | Returns `{missing, orphaned}` for DB/filesystem sync; used in drift audit Cat 13 and proactive sync at session start. |
 | `rebuild_index(entries[])` | Full atomic rebuild of the index; called when DB is empty or on user request. |
 | `run_audit(project_memory_dir)` | Executes all 14 audit categories in a single MCP call. Returns `{auto_fixed, pending_fixes, escalations}`. See `audit-mcp.md`. |
+| `apply_audit_fixes(project_memory_dir, pending_fixes)` | Deterministically applies the `pending_fixes` payload from `run_audit`. Returns `{applied, partial, failed, rerun_audit_recommended}`. Source-of-truth safe (never reads vector index, never synthesizes prose). Idempotent. See `audit-mcp.md` step 2. |
 | `find_similar_commit(diff_snippet, top_k?)` | Search for past commits with similar code changes; used for squash/rebase recovery. |
 
 ## Proactive DB Sync

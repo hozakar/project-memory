@@ -152,6 +152,33 @@ export interface AuditReport {
   escalations: AuditFinding[];
 }
 
+export interface AppliedFix {
+  fix_type: PendingFix["type"];
+  target_file: string;     // relative to project root
+  summary: string;         // one-line, suitable for audit-log
+}
+
+export interface PartialFix {
+  fix_type: PendingFix["type"];
+  target_file: string;
+  llm_must_do: string;     // structured instruction for LLM follow-up
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  context: Record<string, any>;
+}
+
+export interface FailedFix {
+  fix_type: PendingFix["type"];
+  reason: "file_not_found" | "concurrent_modification" | "ambiguous_target" | "schema_mismatch" | "unknown_type";
+  details: string;
+}
+
+export interface ApplyResult {
+  applied: AppliedFix[];
+  partial: PartialFix[];
+  failed: FailedFix[];
+  rerun_audit_recommended: boolean;
+}
+
 export interface LanceRecord {
   id: string;
   type: string;
