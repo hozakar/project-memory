@@ -25,6 +25,16 @@ audit_ignore: []      # permanently suppressed audit findings (see audit.md Perm
 #   "tag-typo:*:skil-md"         — suppresses this tag typo in ALL phases
 #   "phase-completeness:phase-2026*:*.md" — suppresses completeness for a phase cohort
 # Auto-clean: entries referencing phases that get archived in an era are automatically removed.
+
+semantic_audit_log: []   # state for semantic-conflict-scan; see DECISION-2026-06-17-semantic-conflict-scan
+# Each entry:
+#   pair: [DECISION-..., DECISION-...]   # two decision IDs in canonical lexicographic order
+#   status: maybe | skipped              # maybe: LLM was uncertain; skipped: user deferred
+#   seen_at: YYYY-MM-DD                  # date the entry was created
+#   cooldown_until: YYYY-MM-DD           # set only when status: skipped (seen_at + 90 days); null for maybe
+# Lifecycle: maybe entries persist and may be escalated in future runs if no definite-yes exists.
+# skipped entries are not re-raised until cooldown_until passes. Entries referencing either side
+# of a pair that gets resolved via a new superseding decision are auto-removed.
 ```
 
 Example with entries:
@@ -47,6 +57,18 @@ audit_ignore:
     key: "phase-completeness:phase-202606*:*.md"
     reason: "cohort phases pre-date file completeness discipline"
     ignored_at: 2026-06-13
+
+semantic_audit_log:
+  # A "maybe" finding from a prior scan; eligible for escalation if no definite-yes exists next run
+  - pair: [DECISION-2026-06-01-a-slug, DECISION-2026-06-09-b-slug]
+    status: maybe
+    seen_at: 2026-06-15
+    cooldown_until: null
+  # A "skipped" finding; not re-raised until cooldown expires
+  - pair: [DECISION-2026-06-04-c-slug, DECISION-2026-06-10-d-slug]
+    status: skipped
+    seen_at: 2026-06-15
+    cooldown_until: 2026-09-13
 ```
 
 ---

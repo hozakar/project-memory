@@ -26,6 +26,8 @@ Run when the skill is explicitly invoked with the `audit` argument (full and lit
 
 `<profile>` is `full` or `lite`. The lite versions enumerate a reduced category set (Cat 1, 2, 3, 4, 5, 6, 7, 8 (conditional), 10 (modified), 12, 13 (conditional), 14 — Cat 9 and 11 omitted).
 
+**Semantic Conflict Scan (`semantic-conflict-scan`)** is an optional final stage of interactive audit, separate from the numbered categories. It runs *only* when all four gates pass: (1) audit was triggered via `Skill project-memory audit` (not on-load), (2) MCP is available, (3) `profile=full`, (4) `decisions/index.md` Active section is non-empty. When gated out, it is silently skipped — no prompt is shown. Procedure lives in `full/audit-mcp.md`. Governing rules: `DECISION-2026-06-17-semantic-conflict-scan`.
+
 The shared sections below (Severity, Permanent Skip, Era Auto-Clean, Output Format, Interactive Mode) apply to both paths and both profiles.
 
 ---
@@ -180,7 +182,7 @@ When the skill is invoked as `Skill project-memory audit` (full or lite only):
 
 **Question shapes per category:**
 
-Cat 4 is the only interactive category. All others (Cat 1,2,3,5,6,7,8,9,10,11,12,13,14) are auto-fixed silently.
+Cat 4 is the only interactive category among the numbered set. All others (Cat 1,2,3,5,6,7,8,9,10,11,12,13,14) are auto-fixed silently. A second interactive surface — `semantic-conflict-scan` — runs *after* Cat 1–14 finish, only when all four gates pass (user-triggered + MCP + `profile=full` + non-empty active decisions). It is opt-in per audit (default `n`) and is not a category — see `full/audit-mcp.md` for the procedure.
 
 - **Open-phase commit gap (simplified):** Only escalated when heuristic can't resolve.
   "Open phase <id> has <N> commit(s) by <author> that couldn't be auto-assigned. What should I do?"

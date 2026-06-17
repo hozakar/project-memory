@@ -16,6 +16,109 @@ description: MCP-driven drift audit fast path. Called by audit.md dispatcher whe
 4. For each escalation where `interactive: false` → these are pre-classified for auto-fix by MCP's severity/time-boundary logic. Report them in the auto-fixed log (not interactive triage).
 5. Skip the file-based Detection Procedure in `audit-fs.md` entirely — `run_audit` has already covered all 14 categories.
 
+---
+
+# Semantic Conflict Scan (optional final stage)
+
+Governing rules: `DECISION-2026-06-17-semantic-conflict-scan`. This stage runs *after* Cat 1–14 finish, only in interactive audit (i.e. via `Skill project-memory audit`), and only when all four gates pass.
+
+## 1. Gating check
+
+All four must hold; otherwise skip silently (do not show the offer prompt):
+- Audit was triggered by `Skill project-memory audit` (not on-load).
+- MCP is available (`run_audit` and `search_memory` both reachable).
+- `profile=full` in `.project-memory/config.yml`.
+- `decisions/index.md` Active section contains at least one row.
+
+## 2. Offer prompt
+
+Ask the user once, default `n`:
+
+> "Run semantic conflict scan? (y/N)"
+
+On `n` or no response → finish audit. On `y` → continue with step 3.
+
+## 3. Candidate funnel
+
+For each non-superseded decision D in `decisions/index.md` Active section:
+
+1. Build `query` from D's `claim` (one-sentence assertion) joined with its `touches` list.
+2. Call `search_memory({ query, type_filter: "decision", top_k: 3 })`.
+3. For each returned neighbor N (N ≠ D) with similarity score ≥ 0.75, form a candidate pair `(D, N)`.
+
+After all decisions processed:
+- Canonicalize each pair as `[min(id), max(id)]` (lexicographic) and dedup.
+- Drop pairs present in `semantic_audit_log` with `status: skipped` AND `cooldown_until > today`.
+- Sort remaining pairs by similarity descending, keep the top **10**.
+
+## 4. Self-prompt per pair
+
+For each candidate pair `(A, B)`, ask yourself this question verbatim (from `DECISION-2026-06-17-semantic-conflict-scan`):
+
+> "If I tried to apply decision A today, would decision B require me to do something different in the same situation? And if so, is it ambiguous which one I should follow?"
+
+The **ambiguity clause** is mandatory — two decisions can use overlapping `touches` and differ in claim without conflicting in practice (different layers, different lifecycle stages). Without the clause, the false-positive rate inflates and user trust in the stage erodes.
+
+Output: `yes` | `maybe` | `no`.
+
+## 5. Triage outcomes
+
+- **no** → drop, no log entry.
+- **maybe** → append `{ pair: [A, B], status: maybe, seen_at: <today>, cooldown_until: null }` to `semantic_audit_log` in `.project-memory/config.yml`.
+- **yes** → eligible for user-facing escalation in this run.
+
+## 6. Escalation budget
+
+- **Hard cap: 2 user-facing questions per audit run.**
+- Fill from `yes` findings first (highest similarity first).
+- If fewer than 2 `yes` findings exist, fill remaining slots from `maybe` candidates — but **at most one `maybe`** per run regardless of `yes` count.
+- After the cap is consumed, escalate **one additional finding** *only if* the user explicitly asks ("anything else?", "what else do you have?", or equivalent). The +1 slot is user-initiated only — the LLM does not offer it.
+- **Skip does not refund.** A skipped question still consumes its slot.
+
+The cap is anchored in the decision; raise it only via a new superseding decision, not informally.
+
+## 7. User question shape
+
+For each escalated finding, use this template verbatim (substitute the bracketed parts):
+
+> "On `<date-A>` we decided: `<claim A>` (`<DECISION-A-id>`).
+> On `<date-B>` we decided: `<claim B>` (`<DECISION-B-id>`).
+> These may conflict because `<one-sentence reason>`. If this situation came up, I might be unsure which to follow. How should I resolve this?"
+
+Use `AskUserQuestion`. Offer two options alongside the open-text resolution: `"Resolve as described"` (user types resolution) and `"Skip / look later"`.
+
+## 8. User response handling
+
+- **Answer** (user provides resolution text) → proceed to step 9 (supersede write).
+- **"Skip / look later"** → append `{ pair: [A, B], status: skipped, seen_at: <today>, cooldown_until: <today + 90 days> }` to `semantic_audit_log`. The pair will not be re-raised until `cooldown_until` passes. Slot consumed.
+
+## 9. Supersede write
+
+When the user provides a resolution, write a new DECISION through the canonical lifecycle in `conventions-decisions.md`:
+
+1. Choose a short kebab-case slug describing the resolution.
+2. Create `.project-memory/decisions/DECISION-<today>-<slug>.md` with:
+   - `provenance: directive` (user explicitly resolved).
+   - `supersedes: [<DECISION-id-of-the-one-being-overridden>]` — usually one ID; may include both if the user's resolution replaces both halves.
+   - `# Context` note: *"Created via `semantic-conflict-scan` on `<date>`. User resolved a potential conflict between `<A-id>` and `<B-id>` with the following directive: `<paraphrase>`."*
+3. Execute all post-write steps from `conventions-decisions.md`:
+   - Move the superseded row(s) in `decisions/index.md` from Active to Superseded; set Status and Superseded By cells.
+   - Update the superseded DECISION's frontmatter: `status: superseded`, `superseded_by: <new-id>`.
+   - Append current git identity to `contributors` on both the new and superseded DECISION files; dedup by email.
+   - If `adr_enabled: true`, create the ADR mirror per step 4 of `conventions-decisions.md`. If `adr_enabled: false`, skip.
+4. After the write succeeds, remove any `semantic_audit_log` entries referencing either side of the resolved pair.
+
+## 10. End conditions
+
+The stage finishes when any of:
+- Escalation budget is exhausted (2 asked, no user-initiated +1 requested).
+- No eligible `yes` or `maybe` findings remain.
+- User declines a further finding when offered.
+
+After the stage finishes, the interactive audit is complete. Do **not** re-run Cat 1–14 — they already passed.
+
+---
+
 **When `run_audit` is NOT available — MCP installation check:**
 
 1. Check if `mcp-server/package.json` exists and read its `version` field.
