@@ -53,19 +53,19 @@ When this skill activates:
 
 ## audit
 
-`Skill project-memory audit`, or implicit triggers (e.g. "audit yapalım", "let's audit", "drift kontrolü yap", "review project memory"), enters **Interactive Audit Mode**: read `audit.md` → Interactive Mode (which routes to the profile's audit file). Prompt user per finding; re-run detection; loop until clean.
+`Skill project-memory audit`, or natural-language phrasings that clearly request an audit / drift review of project memory (e.g. "let's audit", "run a drift check", "review project memory"), enters **Interactive Audit Mode**: read `audit.md` → Interactive Mode (which routes to the profile's audit file). Prompt user per finding; re-run detection; loop until clean.
 
-In `minimal` profile this argument (and implicit triggers) is a no-op — minimal has no audit. Print a one-line notice and exit.
+In `minimal` profile this argument (and natural-language triggers) is a no-op — minimal has no audit. Print a one-line notice and exit.
 
-**Implicit triggers:** Turkish and English audit/drift-review phrases. Lenient detection. When phrasing is genuinely ambiguous (e.g. "let's review what we have" with no project-memory cue), ask a one-line clarification *"Did you mean run the project-memory drift audit?"* before triggering. Governing rule: `DECISION-2026-06-17-audit-implicit-triggers`.
+**Implicit triggers:** Lenient detection of audit / drift-review intent. The user may phrase the request in any language; recognize the intent, not the keywords. When phrasing is genuinely ambiguous (e.g. "let's review what we have" with no project-memory cue), ask a one-line clarification *"Did you mean run the project-memory drift audit?"* before triggering. Governing rule: `DECISION-2026-06-17-audit-implicit-triggers`.
 
 ## discuss
 
-`Skill project-memory discuss`, or implicit triggers (e.g. "tartışalım", "let's discuss"), enters **Discussion Mode**: read `conventions-discussions.md` for the full lifecycle (shared across profiles). Load `discussions/index.md` for prior context. At close, apply relevancy scoring gate. If saving: write DISCUSSION file, update index.
+`Skill project-memory discuss`, or natural-language phrasings that clearly request a planning / brainstorming conversation (e.g. "let's discuss", "let's brainstorm", "let's talk this through"), enters **Discussion Mode**: read `conventions-discussions.md` for the full lifecycle (shared across profiles). Load `discussions/index.md` for prior context. At close, apply relevancy scoring gate. If saving: write DISCUSSION file, update index.
 
 Discussions are a user-triggered feature — available in all profiles. In `minimal`, discussion files go to `.project-memory/discussions/` even though no other `.project-memory/` infrastructure exists; the directory is created on first use.
 
-**Implicit triggers:** Turkish and English planning/brainstorming phrases. Lenient detection.
+**Implicit triggers:** Lenient detection of planning / brainstorming intent. The user may phrase the request in any language; recognize the intent, not the keywords.
 
 **Resume:** "continue this discussion" → load existing DISCUSSION file, UPDATE it at close.
 

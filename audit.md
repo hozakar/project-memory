@@ -8,8 +8,8 @@ description: Drift audit dispatcher for project-memory. Routes by active profile
 **Context A — On-load (passive), via SKILL.md step 5:**
 Run automatically every session (full and lite only — minimal skips audit entirely). Apply auto-fixes silently. Emit a single drift report block for all findings. If nothing found and nothing auto-fixed, emit the clean line. If any interactive-triage findings remain after auto-fix, immediately transition into Interactive Mode.
 
-**Context B — On-demand (interactive), via `Skill project-memory audit` or implicit triggers:**
-Run when the skill is invoked with the `audit` argument OR when the user uses a natural-language trigger phrase ("audit yapalım", "let's audit", "drift kontrolü yap", "review project memory", and similar — lenient detection, full and lite only). Same detection logic, but prompt the user for each interactive finding via `AskUserQuestion`. Re-run detection after decisions; loop until clean. When the trigger phrase is ambiguous, ask a one-line clarification before entering audit mode. Governing rule: `DECISION-2026-06-17-audit-implicit-triggers`.
+**Context B — On-demand (interactive), via `Skill project-memory audit` or natural-language triggers:**
+Run when the skill is invoked with the `audit` argument OR when the user phrases a request that clearly asks for an audit / drift review of project memory (e.g. "let's audit", "review project memory", "run a drift check" — lenient detection in any language, full and lite only). Same detection logic, but prompt the user for each interactive finding via `AskUserQuestion`. Re-run detection after decisions; loop until clean. When the trigger phrase is ambiguous, ask a one-line clarification before entering audit mode. Governing rule: `DECISION-2026-06-17-audit-implicit-triggers`.
 
 **Minimal profile:** No audit. On-load skips it; `audit` argument prints a single-line notice and exits.
 
