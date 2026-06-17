@@ -71,7 +71,7 @@ Ambiguous (test additions, dep upgrades, doc updates)
 | DECISION-* file created or status changed | If MCP available, index decision per `mcp-integration.md` and `gates.md` Decision Creation |
 | User asks about past phases/decisions/discussions (MCP available) | Call `search_memory` per `mcp-integration.md`; combine exact and semantic filters for sharper results (see `protocol.md` Ad-hoc search rule) |
 | Drift audit runs — `run_audit` available | Call `run_audit(project_memory_dir)` per `mcp-integration.md`; apply `pending_fixes` (Cat 7); log `auto_fixed`; triage `escalations` per `audit.md` MCP Fast Path |
-| Drift audit runs — `run_audit` NOT available | Run file-based detection (13 categories); Cat 13: call `check_consistency`, auto-fix missing entries |
+| Drift audit runs — `run_audit` NOT available | Run file-based detection (14 categories); Cat 13: call `check_consistency`, auto-fix missing entries |
 | User mentions lost commits after squash/rebase | Call `find_similar_commit` per `mcp-integration.md` → load matching phase files from disk |
 | ~10 phases accumulated since last era | Prompt maintainer to create era (developers: silent), then create `era-NNN.md`, add entry to `eras/index.yml`, call `index_era` per `mcp-integration.md` |
 | Assignment created | Add row to `assignments/index.yml` (newest first); if MCP available, call `index_assignment` per `mcp-integration.md` |
