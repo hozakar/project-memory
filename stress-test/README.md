@@ -15,13 +15,25 @@ but don't, or that return unrelated noise at the top of the result set.
 ## Usage
 
 **Step 1 — Generate the fixture**
+
+Template mode (fast, no API key needed):
 ```bash
 cd stress-test
 python generate.py --phases 1000 --decisions 250 --time-years 3 --out generated
 ```
 
-The `generated/` directory is gitignored. Generation takes a few seconds and produces a full
-`.project-memory/` tree (config, phases, decisions, discussions, summaries).
+LLM mode (realistic prose, ~$1.30 with Haiku, requires `ANTHROPIC_API_KEY`):
+```bash
+cd stress-test
+pip install anthropic
+python generate.py --phases 1000 --decisions 250 --time-years 3 --out generated --llm
+# Override model or batch size:
+# --llm-model claude-haiku-4-5-20251001  (default)
+# --llm-batch 10                          (items per API call, default 10)
+```
+
+The `generated/` directory is gitignored. Template generation takes a few seconds; LLM mode
+takes ~5–10 minutes for the default corpus size (~135 API calls).
 
 **Step 2 — Index into LanceDB**
 ```bash

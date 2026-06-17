@@ -8,10 +8,12 @@ Usage:
 """
 
 import argparse
+import json
 import math
 import os
 import random
 import sys
+import time
 from datetime import date, timedelta
 
 # ---------------------------------------------------------------------------
@@ -25,6 +27,12 @@ def parse_args():
     p.add_argument("--time-years", type=float, default=3.0, dest="time_years")
     p.add_argument("--out",        default="generated")
     p.add_argument("--seed",       type=int, default=42)
+    p.add_argument("--llm",        action="store_true", default=False,
+                   help="Use Anthropic API to generate prose fields (requires ANTHROPIC_API_KEY)")
+    p.add_argument("--llm-model",  default="claude-haiku-4-5-20251001", dest="llm_model",
+                   help="Model for prose generation (default: claude-haiku-4-5-20251001)")
+    p.add_argument("--llm-batch",  type=int, default=10, dest="llm_batch",
+                   help="Items per API call batch (default: 10)")
     return p.parse_args()
 
 # ---------------------------------------------------------------------------
@@ -974,6 +982,124 @@ DISCUSSION_TEMPLATES = [
 ]
 
 # ---------------------------------------------------------------------------
+# LLM prose generation (optional, --llm flag)
+# ---------------------------------------------------------------------------
+
+LLM_SYSTEM = (
+    "You are generating realistic engineering decision and phase records for a project-memory "
+    "stress test corpus. Write as a working engineer would — varied tone, sometimes terse, "
+    "sometimes detailed. Natural variation is critical:\n"
+    "  - Some entries mention a past incident or failure that forced the decision\n"
+    "  - Some have a deferred TODO (\"a migration to X is recorded as a future item\")\n"
+    "  - Some reference or implicitly contradict an earlier decision\n"
+    "  - Some include hindsight phrasing (\"in retrospect, this introduced...\")\n"
+    "  - Occasionally leave a rationale slightly incomplete or uncertain\n"
+    "Return ONLY a valid JSON array. No markdown fences, no commentary outside the JSON."
+)
+
+
+def _llm_call(client, model: str, user: str, retries: int = 3):
+    for attempt in range(retries):
+        try:
+            msg = client.messages.create(
+                model=model,
+                max_tokens=4096,
+                system=LLM_SYSTEM,
+                messages=[{"role": "user", "content": user}],
+            )
+            text = msg.content[0].text.strip()
+            if text.startswith("```"):
+                lines = text.splitlines()
+                inner = lines[1:-1] if lines[-1].strip() == "```" else lines[1:]
+                text = "\n".join(inner)
+            return json.loads(text)
+        except Exception as exc:
+            if attempt < retries - 1:
+                time.sleep(2 ** attempt)
+            else:
+                return None
+
+
+def _decision_user_prompt(specs: list) -> str:
+    lines = []
+    for i, s in enumerate(specs):
+        opt_labels = "; ".join(o[0] for o in s["options"])
+        lines.append(
+            f"{i+1}. Service: {s['service']} | Topic: {s['title']} | Options: {opt_labels}"
+        )
+    return (
+        f"Write prose for {len(specs)} engineering decision records.\n"
+        "For each return:\n"
+        "  context: 2-3 sentences — the technical problem that forced this decision\n"
+        "  option_notes: array of strings, one per option — why it was considered "
+        "and rejected (or why the chosen option was selected), written naturally\n"
+        "  rationale: 2-3 sentences — justification for the chosen option\n\n"
+        + "\n".join(lines)
+        + f"\n\nReturn a JSON array of {len(specs)} objects with keys: "
+        "context (string), option_notes (array of strings), rationale (string). "
+        "Each option_notes array must have exactly as many entries as that decision has options."
+    )
+
+
+def _phase_user_prompt(specs: list) -> str:
+    lines = []
+    for i, s in enumerate(specs):
+        lines.append(f"{i+1}. Title: {s['title']} | Domain: {s['domain']} | Date: {s['date']}")
+    return (
+        f"Write a summary for {len(specs)} engineering phase records.\n"
+        "Each summary is 2-4 sentences: what was accomplished, what problem it solved, "
+        "any noteworthy outcome, lesson, or deferred item. Write as commit-message prose, "
+        "not marketing copy.\n\n"
+        + "\n".join(lines)
+        + f"\n\nReturn a JSON array of {len(specs)} objects with key: summary (string)."
+    )
+
+
+def _discussion_user_prompt(specs: list) -> str:
+    lines = []
+    for i, s in enumerate(specs):
+        lines.append(f"{i+1}. Title: {s['title']} | Tags: {', '.join(s['tags'])}")
+    return (
+        f"Write prose for {len(specs)} engineering discussion records.\n"
+        "For each return:\n"
+        "  context: 2-3 sentences — what triggered the discussion\n"
+        "  points: 1 paragraph — main arguments and trade-offs raised\n"
+        "  conclusions: 1 paragraph — what the team aligned on (or explicitly deferred)\n\n"
+        + "\n".join(lines)
+        + f"\n\nReturn a JSON array of {len(specs)} objects "
+        "with keys: context, points, conclusions (all strings)."
+    )
+
+
+def generate_llm_prose(
+    client, model: str, batch_size: int,
+    decision_specs: list, phase_specs: list, discussion_specs: list,
+) -> tuple:
+    """Returns (decision_prose, phase_prose, discussion_prose) as lists aligned with input specs."""
+
+    def run_batches(specs, prompt_fn, label):
+        results = [None] * len(specs)
+        n_batches = math.ceil(len(specs) / batch_size)
+        print(f"  LLM: {label} — {len(specs)} items, {n_batches} batches", flush=True)
+        for b in range(n_batches):
+            batch = specs[b * batch_size: (b + 1) * batch_size]
+            raw = _llm_call(client, model, prompt_fn(batch))
+            if raw and len(raw) == len(batch):
+                for j, item in enumerate(raw):
+                    results[b * batch_size + j] = item
+            else:
+                print(f"    batch {b+1}/{n_batches}: failed or wrong length — template fallback")
+            if (b + 1) % 5 == 0 or (b + 1) == n_batches:
+                print(f"    {b+1}/{n_batches} done", flush=True)
+        return results
+
+    decision_prose  = run_batches(decision_specs,  _decision_user_prompt,  "decisions")
+    phase_prose     = run_batches(phase_specs,      _phase_user_prompt,     "phases")
+    discussion_prose = run_batches(discussion_specs, _discussion_user_prompt, "discussions")
+    return decision_prose, phase_prose, discussion_prose
+
+
+# ---------------------------------------------------------------------------
 # Date generation (Gaussian burst model)
 # ---------------------------------------------------------------------------
 
@@ -1062,13 +1188,17 @@ def write_summaries(out: str) -> None:
     write_file(os.path.join(pm, "roadmap.md"), "# Roadmap\n\nStress-test generated corpus — no real roadmap items.\n")
     write_file(os.path.join(pm, "current-state.md"), "# Current State\n\nStress-test generated corpus.\n")
 
-def write_phase(out: str, phase_id: str, dt: date, tmpl: tuple, rng: random.Random) -> dict:
+def write_phase(out: str, phase_id: str, dt: date, tmpl: tuple, rng: random.Random,
+                prose: dict = None) -> dict:
     domain, verb, subject, ctx = tmpl
     title = f"{verb} {subject} {ctx}"
     tags_pool = DOMAIN_TAGS[domain]
     tags = rng.sample(tags_pool, min(rng.randint(2, 4), len(tags_pool)))
-    summary_tmpl = PHASE_SUMMARIES[domain]
-    summary = summary_tmpl.format(verb_lower=verb.lower(), subject=subject)
+    if prose and prose.get("summary"):
+        summary = prose["summary"]
+    else:
+        summary_tmpl = PHASE_SUMMARIES[domain]
+        summary = summary_tmpl.format(verb_lower=verb.lower(), subject=subject)
     closed = dt + timedelta(days=rng.randint(0, 1))
 
     phase_yml = f"""id: {phase_id}
@@ -1101,18 +1231,26 @@ def write_phases_index(out: str, phases: list) -> None:
 def _fill_tmpl(text: str, service: str) -> str:
     return text.replace("{service}", service)
 
-def write_decision(out: str, decision_id: str, dt: date, tmpl: dict, service: str) -> dict:
+def write_decision(out: str, decision_id: str, dt: date, tmpl: dict, service: str,
+                   prose: dict = None) -> dict:
     title = _fill_tmpl(tmpl["title_tmpl"], service)
-    context = _fill_tmpl(tmpl["context"], service)
-    rationale = _fill_tmpl(tmpl["rationale"], service)
     touches = tmpl["touches"]
     touches_str = ", ".join(touches)
+    chosen = tmpl["chosen"]
+
+    if prose:
+        context = prose.get("context") or _fill_tmpl(tmpl["context"], service)
+        rationale = prose.get("rationale") or _fill_tmpl(tmpl["rationale"], service)
+        option_notes = prose.get("option_notes") or []
+    else:
+        context = _fill_tmpl(tmpl["context"], service)
+        rationale = _fill_tmpl(tmpl["rationale"], service)
+        option_notes = []
 
     options_md = ""
-    for opt_name, opt_desc in tmpl["options"]:
-        options_md += f"\n## {opt_name}\n{opt_desc}\n"
-
-    chosen = tmpl["chosen"]
+    for j, (opt_name, opt_desc) in enumerate(tmpl["options"]):
+        note = option_notes[j] if j < len(option_notes) else opt_desc
+        options_md += f"\n## {opt_name}\n{note}\n"
 
     content = f"""---
 id: {decision_id}
@@ -1149,8 +1287,17 @@ def write_decisions_index(out: str, decisions: list) -> None:
         rows.append(f"| {d['date']} | {d['id']} | active | No | {claim} | {d['touches']} |\n")
     write_file(os.path.join(out, ".project-memory", "decisions", "index.md"), ''.join(rows))
 
-def write_discussion(out: str, disc_id: str, dt: date, tmpl: dict) -> dict:
+def write_discussion(out: str, disc_id: str, dt: date, tmpl: dict, prose: dict = None) -> dict:
     tags_str = ", ".join(tmpl["tags"])
+    if prose:
+        context     = prose.get("context")     or tmpl["context"]
+        points      = prose.get("points")      or tmpl["points"]
+        conclusions = prose.get("conclusions") or tmpl["conclusions"]
+    else:
+        context     = tmpl["context"]
+        points      = tmpl["points"]
+        conclusions = tmpl["conclusions"]
+
     content = f"""---
 id: {disc_id}
 title: "{tmpl['title']}"
@@ -1166,13 +1313,13 @@ tags: [{tags_str}]
 ---
 
 # Context
-{tmpl['context']}
+{context}
 
 # Discussion Points
-{tmpl['points']}
+{points}
 
 # Conclusions
-{tmpl['conclusions']}
+{conclusions}
 """
     write_file(os.path.join(out, ".project-memory", "discussions", f"{disc_id}.md"), content)
     return {
@@ -1212,15 +1359,63 @@ def main():
     write_config(out)
     write_summaries(out)
 
+    # ---- Pre-compute dates and template assignments ----
+    phase_dates      = generate_dates(args.phases, start_d, end_d, rng)
+    num_discussions  = max(10, args.decisions // 5)
+    decision_dates   = generate_dates(args.decisions, start_d, end_d, rng)
+    discussion_dates = generate_dates(num_discussions, start_d, end_d, rng)
+
+    phase_tmpls      = [PHASE_TEMPLATES[i % len(PHASE_TEMPLATES)]    for i in range(args.phases)]
+    decision_tmpls   = [DECISION_TEMPLATES[i % len(DECISION_TEMPLATES)] for i in range(args.decisions)]
+    decision_services = [SERVICES[i % len(SERVICES)]                  for i in range(args.decisions)]
+    discussion_tmpls = [DISCUSSION_TEMPLATES[i % len(DISCUSSION_TEMPLATES)] for i in range(num_discussions)]
+
+    # ---- Optional LLM prose generation ----
+    decision_prose_list  = [None] * args.decisions
+    phase_prose_list     = [None] * args.phases
+    discussion_prose_list = [None] * num_discussions
+
+    if args.llm:
+        try:
+            import anthropic
+        except ImportError:
+            print("Error: 'anthropic' package not found. Install with: pip install anthropic", file=sys.stderr)
+            sys.exit(1)
+        api_key = os.environ.get("ANTHROPIC_API_KEY")
+        if not api_key:
+            print("Error: ANTHROPIC_API_KEY environment variable not set.", file=sys.stderr)
+            sys.exit(1)
+        client = anthropic.Anthropic(api_key=api_key)
+        print(f"LLM prose generation enabled (model={args.llm_model}, batch={args.llm_batch})")
+
+        decision_specs = [
+            {"service": decision_services[i], "title": _fill_tmpl(decision_tmpls[i]["title_tmpl"], decision_services[i]),
+             "domain": decision_tmpls[i]["touches"][0], "options": decision_tmpls[i]["options"]}
+            for i in range(args.decisions)
+        ]
+        phase_specs = [
+            {"title": f"{phase_tmpls[i][1]} {phase_tmpls[i][2]} {phase_tmpls[i][3]}",
+             "domain": phase_tmpls[i][0], "date": phase_dates[i].strftime("%Y-%m-%d")}
+            for i in range(args.phases)
+        ]
+        discussion_specs = [
+            {"title": discussion_tmpls[i]["title"], "tags": discussion_tmpls[i]["tags"]}
+            for i in range(num_discussions)
+        ]
+
+        decision_prose_list, phase_prose_list, discussion_prose_list = generate_llm_prose(
+            client, args.llm_model, args.llm_batch,
+            decision_specs, phase_specs, discussion_specs,
+        )
+
     # ---- Phases ----
-    phase_dates = generate_dates(args.phases, start_d, end_d, rng)
     phase_ids_used: set = set()
     phases = []
     print(f"  Writing {args.phases} phases ", end="", flush=True)
     for i, dt in enumerate(phase_dates):
-        tmpl = PHASE_TEMPLATES[i % len(PHASE_TEMPLATES)]
+        tmpl = phase_tmpls[i]
         phase_id = make_phase_id(dt, f"{tmpl[1]} {tmpl[2]} {tmpl[3]}", phase_ids_used)
-        p = write_phase(out, phase_id, dt, tmpl, rng)
+        p = write_phase(out, phase_id, dt, tmpl, rng, prose=phase_prose_list[i])
         phases.append(p)
         if (i + 1) % 100 == 0:
             print(".", end="", flush=True)
@@ -1229,15 +1424,14 @@ def main():
     write_phases_index(out, phases)
 
     # ---- Decisions ----
-    decision_dates = generate_dates(args.decisions, start_d, end_d, rng)
     decision_ids_used: set = set()
     decisions = []
     print(f"  Writing {args.decisions} decisions ", end="", flush=True)
     for i, dt in enumerate(decision_dates):
-        tmpl = DECISION_TEMPLATES[i % len(DECISION_TEMPLATES)]
-        service = SERVICES[i % len(SERVICES)]
+        tmpl    = decision_tmpls[i]
+        service = decision_services[i]
         decision_id = make_decision_id(dt, tmpl["slug_base"], decision_ids_used)
-        d = write_decision(out, decision_id, dt, tmpl, service)
+        d = write_decision(out, decision_id, dt, tmpl, service, prose=decision_prose_list[i])
         decisions.append(d)
         if (i + 1) % 100 == 0:
             print(".", end="", flush=True)
@@ -1246,15 +1440,13 @@ def main():
     write_decisions_index(out, decisions)
 
     # ---- Discussions ----
-    num_discussions = max(10, args.decisions // 5)
-    discussion_dates = generate_dates(num_discussions, start_d, end_d, rng)
     discussion_ids_used: set = set()
     discussions = []
     print(f"  Writing {num_discussions} discussions ", end="", flush=True)
     for i, dt in enumerate(discussion_dates):
-        tmpl = DISCUSSION_TEMPLATES[i % len(DISCUSSION_TEMPLATES)]
+        tmpl    = discussion_tmpls[i]
         disc_id = make_discussion_id(dt, tmpl["slug"], discussion_ids_used)
-        d = write_discussion(out, disc_id, dt, tmpl)
+        d = write_discussion(out, disc_id, dt, tmpl, prose=discussion_prose_list[i])
         discussions.append(d)
         if (i + 1) % 100 == 0:
             print(".", end="", flush=True)
@@ -1262,7 +1454,9 @@ def main():
 
     write_discussions_index(out, discussions)
 
-    print(f"Generated {args.phases} phases, {args.decisions} decisions, {num_discussions} discussions → {os.path.abspath(out)}")
+    mode = f"LLM ({args.llm_model})" if args.llm else "template"
+    print(f"Generated {args.phases} phases, {args.decisions} decisions, {num_discussions} discussions "
+          f"[{mode}] -> {os.path.abspath(out)}")
 
 if __name__ == "__main__":
     main()
