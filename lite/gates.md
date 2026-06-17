@@ -108,10 +108,11 @@ Classify using the lite binary table above. Trivial → skip Step 3. Everything 
 
    **If MCP available:**
    - Decisions: `search_memory(query, touches_filter=entities, scope_filter=[primary_scope], type_filter="decision")`. Ignore `status: superseded` returns.
+   - **Globals (FS, always):** also read `decisions/index.md` Active section and surface every row where `Global` is `Yes`. Cross-cutting policies bind every implementation — load them unconditionally. See `conventions-decisions.md` → Rule 0 (Global surface).
    - Discussions: `search_memory(task_description, top_k=8, type_filter="discussion")`.
 
    **If MCP unavailable:**
-   - Decisions: scan `decisions/index.md` Active section for `Touches` overlap OR `Scope` match.
+   - Decisions: scan `decisions/index.md` Active section for `Touches` overlap, `Scope` match, **OR `Global` is `Yes`**.
    - Discussions: scan `discussions/index.md` for relevant outcome types.
 
 3. For each candidate, apply the Decision Resolution Rules (`conventions-decisions.md`):

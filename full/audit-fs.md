@@ -9,6 +9,8 @@ Run all 14 categories on every audit pass. Collect findings before acting. Check
 
 **Note on `semantic-conflict-scan`:** The optional semantic-conflict-scan stage (governed by `DECISION-2026-06-17-semantic-conflict-scan`) is MCP-only — it relies on `search_memory` for candidate narrowing. In the FS path (no MCP), the stage is silently skipped. No prompt, no fallback. The `semantic_audit_log` field that may exist in `config.yml` is not a recognized audit category here and is ignored without flagging.
 
+**Note on `applies_globally` field and `Global` column:** The `applies_globally` field on DECISION frontmatter and the `Global` column in `decisions/index.md` (added per `DECISION-2026-06-17-global-scope-decisions`) are non-breaking. Cat 6 currently validates by `id` and `status` only — the new field and column are invisible to drift detection and are accepted as legitimate metadata. Drift detection for `applies_globally ↔ Global` consistency is deferred to a future audit category.
+
 | # | Category | Detection Rule | Tool Calls | Classification | Severity |
 |---|---|---|---|---|---|---|---|
 | 1 | **Commit orphans** | Run `git log --format='%h %ae %aI %s' -30`. For each commit hash, check `phases/index.yml` for a match in any `commits:` list or as a `merge_commit`. Apply trivial-commit regex (see Edge Cases). Auto-assigns same-user commits to phases by file matching. Ambiguous commits logged as info. Aged (>3d) and non-current-user commits skipped. All filters removed on explicit `audit` invocation. | `Bash: git log -30`; `Read: phases/index.yml` | **Auto-fix** | — |

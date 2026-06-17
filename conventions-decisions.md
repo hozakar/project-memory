@@ -32,6 +32,7 @@ primary_scope: <category>           # auth, persistence, deployment, ui, schema,
 touches: [entity1, entity2]         # concrete names — see Touches Field Guidance
 supersedes: DECISION-YYYY-MM-DD-... # null if none
 superseded_by: DECISION-YYYY-MM-DD-... # null if none; set when a later decision overrides this
+applies_globally: false              # default false; true = cross-cutting policy surfaced at every Pre-Implementation Gate regardless of touches overlap. See Decision Resolution Rules → Rule 0 (Global surface) and "When to use applies_globally: true" below.
 adr_id: null                         # assigned integer (0001, 0002, ...) at write time; matches adr/ filename prefix
 created_by:                          # required — see Author Attribution section below
   name: "Hakan Ozakar"
@@ -79,6 +80,8 @@ Rejected alternatives are first-class content. Future agents need to know what w
 
 When more than one decision touches the same area, priority is determined in this order:
 
+0. **Global surface.** Active decisions with `applies_globally: true` are surfaced at every Pre-Implementation Gate evaluation regardless of `touches` overlap. They represent cross-cutting policies (language, attribution, gate behavior, security) that bind every implementation. This rule governs **surfacing**, not priority — once surfaced, globals follow rules 1–4 below for precedence against other surfaced rules. See `DECISION-2026-06-17-global-scope-decisions` for the full rationale.
+
 1. **Explicit supersession.** If decision B has `supersedes: A`, then A is `superseded` and B is the active record. Recency does not enter this case.
 2. **Active conflict.** If two `active` decisions overlap (same `primary_scope` or intersecting `touches`) and their claims contradict, do NOT silently resolve. Surface both to the user and ask which holds, or whether one supersedes the other.
 3. **Active refinement.** If two `active` decisions overlap but their claims do not contradict (one extends or details the other), both remain active. No question needed.
@@ -99,3 +102,25 @@ Avoid: `user` (too abstract — use `user_id`, `user_profile`, etc.), `auth` (us
 Rule of thumb: if you can't grep for the entity in code or config, it's too abstract.
 
 When implementing a new feature, Claude lists the concrete entities the feature touches, then cross-references `decisions/index.md` against that list. Overlap = candidate. Directional conflict among candidates = batch question. Overlap without conflict = silent note.
+
+---
+
+## When to use `applies_globally: true`
+
+Use `applies_globally: true` when the rule binds **every** implementation regardless of which entities are touched. Such rules cannot list a finite, stable set of `touches` because their scope is the entire project surface.
+
+**Good candidates for `applies_globally: true`:**
+- Language / formatting / encoding policies (e.g. skill files English-only).
+- Attribution requirements (`created_by`, `contributors` on every record).
+- Gate-behavior rules (instruction re-injection, contradiction detection protocol).
+- Security / secrets handling rules.
+- Provenance / universal frontmatter field rules.
+
+**Not appropriate for `applies_globally: true`:**
+- Subsystem-specific rules (e.g. "the auth module uses X" → enumerate concrete touches).
+- Feature behavior rules (e.g. "audit accepts implicit triggers" → bind to the feature's concrete files).
+- Repository-specific operational decisions.
+
+Rule of thumb: if you can list a finite, grep-able set of touched entities, use `touches`. If the rule applies to "everything we ever write" by its nature, use `applies_globally: true`. Misuse (marking too many decisions global) dilutes the gate signal — be conservative.
+
+Once marked global, the decision must also be reflected in `decisions/index.md` with `Yes` in the `Global` column. The gate's globals scan reads the index, not individual frontmatters.

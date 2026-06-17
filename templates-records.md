@@ -16,16 +16,16 @@ The index has two sections: **Active** (scanned during Pre-Implementation Gate) 
 
 One row per decision. Loaded at session start by Memory Loading Strategy step 8. Primary input to the Pre-Implementation Gate's decision check.
 
-Rows sorted newest first. `Status: superseded` rows remain in the Superseded section for historical context but are not active constraints. `Touches` column lists concrete entities — match against an implementation's affected entities to find candidates.
+Rows sorted newest first. `Status: superseded` rows remain in the Superseded section for historical context but are not active constraints. `Touches` column lists concrete entities — match against an implementation's affected entities to find candidates. `Global` column is `Yes` when the decision's frontmatter has `applies_globally: true` (cross-cutting policy surfaced at every Pre-Implementation Gate); `-` otherwise.
 
-| Date | ID | Scope | Status | Touches | Claim |
-|---|---|---|---|---|---|
-| 2026-06-08 | DECISION-2026-06-08-decision-cross-reference-mechanism | skill | active | decisions, pre-impl-gate, touches | Decision cross-reference is mandatory pre-implementation step; supersedes is primary, recency is fallback |
+| Date | ID | Scope | Status | Global | Touches | Claim |
+|---|---|---|---|---|---|---|
+| 2026-06-08 | DECISION-2026-06-08-decision-cross-reference-mechanism | skill | active | Yes | decisions, pre-impl-gate, touches | Decision cross-reference is mandatory pre-implementation step; supersedes is primary, recency is fallback |
 
 ## Superseded
 
-| Date | ID | Scope | Status | Touches | Claim | Superseded By |
-|---|---|---|---|---|---|---|
+| Date | ID | Scope | Status | Global | Touches | Claim | Superseded By |
+|---|---|---|---|---|---|---|---|
 ```
 
 Maintenance rules:

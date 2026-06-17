@@ -138,10 +138,11 @@ Classify the work using the commit significance table above.
 
    **If MCP available (see `mcp-integration.md`):**
    - Decisions: `search_memory(query, touches_filter=entities, scope_filter=[primary_scope], type_filter="decision")` — exact `touches` / `primary_scope` filter combined with semantic ranking. The Pre-Implementation Gate ignores `status: superseded` records returned; only active decisions count as candidates.
+   - **Globals (FS, always):** also read `decisions/index.md` Active section and surface every row where `Global` is `Yes`. Global rules are cross-cutting policies that bind every implementation regardless of touches overlap or semantic similarity — load them unconditionally. See `conventions-decisions.md` → Rule 0 (Global surface) and `DECISION-2026-06-17-global-scope-decisions`.
    - Discussions: `search_memory(task_description, top_k=8, type_filter="discussion")` — semantic catch for discussions whose conclusions might affect the proposed direction.
 
    **If MCP unavailable:**
-   - Decisions: scan `decisions/index.md` Active section for rows where any `Touches` entry overlaps your list OR `Scope` matches your primary scope.
+   - Decisions: scan `decisions/index.md` Active section for rows where any `Touches` entry overlaps your list, `Scope` matches your primary scope, **OR `Global` is `Yes`**. The `Global = Yes` rows are cross-cutting policies — surface them on every gate evaluation.
    - Discussions: scan `discussions/index.md` for discussions with relevant outcome types.
 
 3. For each candidate, apply the Decision Resolution Rules (`conventions.md`) and classify:
