@@ -105,8 +105,8 @@ In `minimal`, there is no phase concept — work is logged as rows in `MEMORY.md
 
 **Pre-Implementation Gate:** I cross-reference what you're about to build
 against active decisions before any code is written. If a conflict is detected,
-I surface a single batched question — not a stream of prompts. The gate has 5
-steps in `full`, 4 in `lite`, and 1 (instruction re-injection only) in `minimal`.
+I surface a single batched question — not a stream of prompts. The gate has 6
+steps (Step 0–5) in `full`, 5 in `lite` (Step 0–4), and 1 (instruction re-injection only) in `minimal`.
 
 **Pre-Close Gate:** In `full`, I verify all five phase documents are complete
 before a phase can close. In `lite`, I check that at least one commit is recorded

@@ -10,7 +10,7 @@ This file is a dispatcher. Read the appropriate sub-file:
 | Topic | File | Contains |
 |-------|------|----------|
 | **Decisions, ADR** | `conventions-decisions.md` | Decision lifecycle, ADR creation steps (adr_enabled gate), ADR Status mapping, Decision Resolution Rules (supersession → active conflict → refinement → recency), Touches Field Guidance |
-| **Discussions** | `conventions-discussions.md` | Discussion lifecycle, relevancy scoring gate (25-55-10-10), safety rule, long-term impact rubric, outcome chain, resume, expiry (30-day), Pre-Implementation Gate integration |
+| **Discussions** | `conventions-discussions.md` | Discussion lifecycle, loss heuristic gate (save if losing it causes a concrete future problem), outcome chain, resume, expiry (30-day), Pre-Implementation Gate integration |
 | **Issues** | `conventions-records.md` | Issue lifecycle (open → close), frontmatter schema, move-to-closed procedure |
 | **Instructions** | `conventions-records.md` | Instruction lifecycle (active ↔ dropped), session loading, cross-user fork model, scope limits |
 | **Assignments** | `conventions-records.md` | Assignment state machine (pending → accepted → ongoing → completed/rejected), session-start UX, completion rules, permission model |

@@ -149,7 +149,7 @@ the MCP server automatically.
 You should see these tools available: `search_memory`, `index_phase`,
 `index_decision`, `index_discussion`, `index_era`, `index_instruction`,
 `index_assignment`, `find_similar_commit`, `check_consistency`,
-`rebuild_index`, `run_audit`.
+`rebuild_index`, `run_audit`, `apply_audit_fixes`.
 
 ---
 
