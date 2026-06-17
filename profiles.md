@@ -38,7 +38,7 @@ Same behavior as full. MCP path uses `search_memory` with filters; non-MCP path 
 
 ## Minimal `MEMORY.md` schema
 
-Single file at project root with three fixed sections:
+`.project-memory/MEMORY.md` — single file inside the shared `.project-memory/` directory, with three fixed sections:
 
 ```markdown
 # Memory

@@ -146,7 +146,7 @@ Records carry author attribution via `created_by` and `contributors` frontmatter
 
 ## `MEMORY.md` (minimal)
 
-Single file at project root with three fixed sections (`## Roadmap`, `## Decisions`, `## Log`). No `.project-memory/` directory unless discussions/instructions/issues are created on demand.
+`.project-memory/MEMORY.md` — single file inside the shared `.project-memory/` directory, with three fixed sections (`## Roadmap`, `## Decisions`, `## Log`). User-triggered features (discussions, instructions, issues) create their own subdirectories inside `.project-memory/` on first use.
 
 ## Skill Files
 
