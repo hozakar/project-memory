@@ -99,7 +99,7 @@ All 14 categories are auto-fixed per the simplified severity model. Cat 4 uses a
 **Category 10 auto-fix steps:**
 1. For each missing phase file: Return pendingFix { type: "create_phase_stub", phaseId, missingFile }.
 2. LLM creates stub with `*(none)*` content.
-3. Log: "Created N stub file(s) for M phase(s)"
+3. Log: "Created N stub file(s) for M phase(s)" — this log line appears only in the final consolidated drift report; output nothing during detection or fix steps.
 
 **Category 11 auto-fix steps:**
 1. For each expired discussion (`outcome.type: none` AND `today - date > 30 days`):

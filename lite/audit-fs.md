@@ -42,7 +42,7 @@ The lite auto-fix rules are identical to full for every active category. For ste
 1. For each completed phase: read `phase.yml` (required — finding if missing). Apply profile-history check: if `started_at` is in a `full` window, switch to the full Cat 10 logic (5 files required). Otherwise lite-shape only.
 2. Missing `phase.yml` → Return pendingFix `{ type: "create_phase_stub", phaseId, missingFile: "phase.yml" }`. LLM creates stub.
 3. Lite phases do not need `plan.md` to be marked complete. Absence is silently accepted.
-4. Log: `Created N stub phase.yml file(s) for M phase(s)` (or empty log if all phases healthy).
+4. Log: `Created N stub phase.yml file(s) for M phase(s)` (or empty log if all phases healthy). This log line appears only in the final consolidated drift report — do not output anything during detection or fix steps.
 
 ---
 

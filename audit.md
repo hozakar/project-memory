@@ -120,6 +120,8 @@ For profile-sensitive checks (notably Cat 10 file-completeness), consult `config
 
 # Output Format (On-Load)
 
+**No intermediate messages.** During detection and auto-fix, output nothing. Do not announce findings as you discover them, do not say "auto-fixing...", do not narrate steps. Collect all findings and apply all fixes in complete silence. The consolidated report below is the only output permitted.
+
 **When findings or auto-fixes exist:**
 
 ```
