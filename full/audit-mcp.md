@@ -7,7 +7,7 @@ description: MCP-driven drift audit fast path. Called by audit.md dispatcher whe
 
 **When `run_audit` is in available MCP tools:**
 
-1. Call `run_audit(project_memory_dir)` where `project_memory_dir` is the absolute path to `.project-memory/`.
+1. Call `run_audit(project_memory_dir, { raise_cat4: false })` on on-load, or `run_audit(project_memory_dir, { raise_cat4: true })` when invoked as `Skill project-memory audit`. (`project_memory_dir` is the absolute path to `.project-memory/`.)
 2. Receive `{ auto_fixed, pending_fixes, escalations }`:
    - `auto_fixed`: file-move operations already executed by MCP (Cat 5, Cat 11) — log them in the auto-fix line of the report.
    - `pending_fixes`: deterministic fixes detected but not yet applied. If `apply_audit_fixes` is in available tools, forward the **entire** array (no filtering) to `apply_audit_fixes(project_memory_dir, pending_fixes)`. **If `apply_audit_fixes` is NOT available** (older MCP server version): apply each fix manually via `Edit` — annotate orphan hashes in `phases/index.yml` and `phases/<phase_id>/phase.yml`, insert decision index rows, etc. The tool returns `{ applied, partial, failed, rerun_audit_recommended }`:
@@ -18,10 +18,12 @@ description: MCP-driven drift audit fast path. Called by audit.md dispatcher whe
        - `create_phase_stub` → fill the `<!-- TODO -->` blocks in the new phase file using session memory + git history.
      - `failed`: fix could not be applied (file missing, schema mismatch). Surface each failure in the audit report; if persistent, escalate to interactive triage.
      - If `rerun_audit_recommended: true`, optionally re-call `run_audit` once after applying to confirm no residual drift.
-   - `escalations`: all other findings, each with `category`, `severity`, `description`, `interactive` (bool), and `data`.
-3. For each escalation where `interactive: true` **and `category != 4`** → enter interactive triage using the question shapes in `audit.md` → Interactive Mode. **Cat 4 exception:** if this is an on-load audit (not `Skill project-memory audit`), treat Cat 4 escalations as `info` regardless of the `interactive` flag — add them to the Info section of the drift report, do not prompt.
+   - `escalations`: all other findings, each with `category`, `severity`, `description`, `interactive` (bool), and `data`. When `raise_cat4: false`, Cat 4 findings do NOT appear here — they are suppressed server-side and reflected in `cat4_gap_count` instead.
+   - `cat4_gap_count` *(present only when `raise_cat4: false`)*: count of Cat 4 findings the server suppressed. Use this to build the Info line in the drift report.
+3. For each escalation where `interactive: true` → enter interactive triage using the question shapes in `audit.md` → Interactive Mode.
 4. For each escalation where `interactive: false` → these are pre-classified for auto-fix by MCP's severity/time-boundary logic. Report them in the auto-fixed log (not interactive triage).
-5. Skip the file-based Detection Procedure in `audit-fs.md` entirely — `run_audit` has already covered all 14 categories.
+5. If `cat4_gap_count > 0` → add to the drift report Info section: `• Cat 4: N open-phase gap(s) — commit(s) couldn't be auto-assigned. Run \`audit\` to resolve.`
+6. Skip the file-based Detection Procedure in `audit-fs.md` entirely — `run_audit` has already covered all 14 categories.
 
 **Why `apply_audit_fixes` exists:** `pending_fixes` are structural transformations driven by frontmatter + git facts. Source of truth is `.project-memory/` files; MCP just executes the deterministic edits the audit already decided. MCP never reads the vector DB to reconstruct content — that would degrade source. Prose-bearing cells stay as TODO markers for the LLM to fill from the actual source files.
 
