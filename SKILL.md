@@ -53,9 +53,11 @@ When this skill activates:
 
 ## audit
 
-`Skill project-memory audit` enters **Interactive Audit Mode**: read `audit.md` → Interactive Mode (which routes to the profile's audit file). Prompt user per finding; re-run detection; loop until clean.
+`Skill project-memory audit`, or implicit triggers (e.g. "audit yapalım", "let's audit", "drift kontrolü yap", "review project memory"), enters **Interactive Audit Mode**: read `audit.md` → Interactive Mode (which routes to the profile's audit file). Prompt user per finding; re-run detection; loop until clean.
 
-In `minimal` profile this argument is a no-op — minimal has no audit. Print a one-line notice and exit.
+In `minimal` profile this argument (and implicit triggers) is a no-op — minimal has no audit. Print a one-line notice and exit.
+
+**Implicit triggers:** Turkish and English audit/drift-review phrases. Lenient detection. When phrasing is genuinely ambiguous (e.g. "let's review what we have" with no project-memory cue), ask a one-line clarification *"Did you mean run the project-memory drift audit?"* before triggering. Governing rule: `DECISION-2026-06-17-audit-implicit-triggers`.
 
 ## discuss
 
