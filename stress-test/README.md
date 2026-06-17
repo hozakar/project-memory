@@ -22,10 +22,9 @@ cd stress-test
 python generate.py --phases 1000 --decisions 250 --time-years 3 --out generated
 ```
 
-LLM mode (realistic prose, ~$1.30 with Haiku, requires `ANTHROPIC_API_KEY`):
+LLM mode (realistic prose, ~$1.30 with Haiku, requires Claude Code CLI on PATH):
 ```bash
 cd stress-test
-pip install anthropic
 python generate.py --phases 1000 --decisions 250 --time-years 3 --out generated --llm
 # Override model or batch size:
 # --llm-model claude-haiku-4-5-20251001  (default)

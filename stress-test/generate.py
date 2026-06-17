@@ -12,6 +12,7 @@ import json
 import math
 import os
 import random
+import subprocess
 import sys
 import time
 from datetime import date, timedelta
@@ -998,16 +999,17 @@ LLM_SYSTEM = (
 )
 
 
-def _llm_call(client, model: str, user: str, retries: int = 3):
+def _llm_call(model: str, user: str, retries: int = 3):
+    full_prompt = LLM_SYSTEM + "\n\n" + user
+    cmd = ["claude", "-p", full_prompt]
+    if model:
+        cmd += ["--model", model]
     for attempt in range(retries):
         try:
-            msg = client.messages.create(
-                model=model,
-                max_tokens=4096,
-                system=LLM_SYSTEM,
-                messages=[{"role": "user", "content": user}],
-            )
-            text = msg.content[0].text.strip()
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
+            if result.returncode != 0:
+                raise RuntimeError(result.stderr.strip())
+            text = result.stdout.strip()
             if text.startswith("```"):
                 lines = text.splitlines()
                 inner = lines[1:-1] if lines[-1].strip() == "```" else lines[1:]
@@ -1072,7 +1074,7 @@ def _discussion_user_prompt(specs: list) -> str:
 
 
 def generate_llm_prose(
-    client, model: str, batch_size: int,
+    model: str, batch_size: int,
     decision_specs: list, phase_specs: list, discussion_specs: list,
 ) -> tuple:
     """Returns (decision_prose, phase_prose, discussion_prose) as lists aligned with input specs."""
@@ -1083,7 +1085,7 @@ def generate_llm_prose(
         print(f"  LLM: {label} — {len(specs)} items, {n_batches} batches", flush=True)
         for b in range(n_batches):
             batch = specs[b * batch_size: (b + 1) * batch_size]
-            raw = _llm_call(client, model, prompt_fn(batch))
+            raw = _llm_call(model, prompt_fn(batch))
             if raw and len(raw) == len(batch):
                 for j, item in enumerate(raw):
                     results[b * batch_size + j] = item
@@ -1376,16 +1378,10 @@ def main():
     discussion_prose_list = [None] * num_discussions
 
     if args.llm:
-        try:
-            import anthropic
-        except ImportError:
-            print("Error: 'anthropic' package not found. Install with: pip install anthropic", file=sys.stderr)
+        check = subprocess.run(["claude", "--version"], capture_output=True)
+        if check.returncode != 0:
+            print("Error: 'claude' CLI not found. Make sure Claude Code is installed and on PATH.", file=sys.stderr)
             sys.exit(1)
-        api_key = os.environ.get("ANTHROPIC_API_KEY")
-        if not api_key:
-            print("Error: ANTHROPIC_API_KEY environment variable not set.", file=sys.stderr)
-            sys.exit(1)
-        client = anthropic.Anthropic(api_key=api_key)
         print(f"LLM prose generation enabled (model={args.llm_model}, batch={args.llm_batch})")
 
         decision_specs = [
@@ -1404,7 +1400,7 @@ def main():
         ]
 
         decision_prose_list, phase_prose_list, discussion_prose_list = generate_llm_prose(
-            client, args.llm_model, args.llm_batch,
+            args.llm_model, args.llm_batch,
             decision_specs, phase_specs, discussion_specs,
         )
 
