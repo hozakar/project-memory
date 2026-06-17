@@ -7,3 +7,4 @@ mcp-server/dist/
 .project-memory/vector-index/
 docs/
 scripts/
+stress-test/generated/
