@@ -43,10 +43,35 @@ export function parseFrontmatter(content: string): Record<string, string> {
   return result;
 }
 
-function readAuditIgnore(projectMemoryDir: string): Set<string> {
+// Glob-style wildcard matching: * matches any chars except : (within a single segment).
+// Spec: audit.md → Permanent Skip → Pattern match rules.
+export function matchesIgnorePattern(pattern: string, key: string): boolean {
+  const regexStr = pattern.replace(/[.+?^${}()|[\]\\]/g, "\\$&").replace(/\*/g, "[^:]*");
+  return new RegExp(`^${regexStr}$`).test(key);
+}
+
+export class AuditIgnoreSet {
+  private exact = new Set<string>();
+  private patterns: string[] = [];
+
+  add(key: string): void {
+    if (key.includes("*")) {
+      this.patterns.push(key);
+    } else {
+      this.exact.add(key);
+    }
+  }
+
+  has(key: string): boolean {
+    if (this.exact.has(key)) return true;
+    return this.patterns.some(p => matchesIgnorePattern(p, key));
+  }
+}
+
+function readAuditIgnore(projectMemoryDir: string): AuditIgnoreSet {
   const configPath = path.join(projectMemoryDir, "config.yml");
   const content = readFile(configPath);
-  const ignored = new Set<string>();
+  const ignored = new AuditIgnoreSet();
   const keyRegex = /^\s+key:\s+"?([^"\n]+)"?/gm;
   let m: RegExpExecArray | null;
   while ((m = keyRegex.exec(content)) !== null) {
@@ -124,7 +149,7 @@ const TRIVIAL_RE = /^(docs|chore\(lint|chore\(format|chore\(deps|chore\(memory|c
 function cat1CommitOrphans(
   projectRoot: string,
   phases: PhaseEntry[],
-  ignored: Set<string>
+  ignored: AuditIgnoreSet
 ): { autoFixed: string[]; pendingFixes: PendingFix[]; escalations: AuditFinding[] } {
   const currentUserEmail = git("git config user.email", projectRoot) || "";
 
@@ -198,7 +223,7 @@ function cat1CommitOrphans(
 function cat2SummaryStaleness(
   projectRoot: string,
   projectMemoryDir: string,
-  ignored: Set<string>
+  ignored: AuditIgnoreSet
 ): string[] {
   const latestDate = git("git log -1 --format=%cs", projectRoot);
   if (!latestDate) return [];
@@ -222,7 +247,7 @@ function cat2SummaryStaleness(
   return autoFixed;
 }
 
-function cat3StubPlaceholders(projectMemoryDir: string, ignored: Set<string>): AuditFinding[] {
+function cat3StubPlaceholders(projectMemoryDir: string, ignored: AuditIgnoreSet): AuditFinding[] {
   const summariesDir = path.join(projectMemoryDir, "summaries");
   if (!fs.existsSync(summariesDir)) return [];
 
@@ -269,7 +294,7 @@ function getPhaseFiles(projectRoot: string, phase: PhaseEntry): string[] {
 function cat4OpenPhaseGap(
   projectRoot: string,
   phases: PhaseEntry[],
-  ignored: Set<string>
+  ignored: AuditIgnoreSet
 ): { autoFixed: string[]; pendingFixes: PendingFix[]; escalations: AuditFinding[] } {
   const currentUserEmail = git("git config user.email", projectRoot) || "";
   const autoFixed: string[] = [];
@@ -425,7 +450,7 @@ function cat5MisplacedIssues(projectMemoryDir: string): string[] {
   return autoFixed;
 }
 
-function cat6DecisionDrift(projectMemoryDir: string, ignored: Set<string>): { autoFixed: string[]; pendingFixes: PendingFix[] } {
+function cat6DecisionDrift(projectMemoryDir: string, ignored: AuditIgnoreSet): { autoFixed: string[]; pendingFixes: PendingFix[] } {
   const decisionsDir = path.join(projectMemoryDir, "decisions");
   if (!fs.existsSync(decisionsDir)) return { autoFixed: [], pendingFixes: [] };
 
@@ -535,7 +560,7 @@ function cat7OrphanCommitRefs(projectRoot: string, phases: PhaseEntry[]): Pendin
   return fixes;
 }
 
-function cat8AdrDrift(projectMemoryDir: string, ignored: Set<string>): { autoFixed: string[]; pendingFixes: PendingFix[] } {
+function cat8AdrDrift(projectMemoryDir: string, ignored: AuditIgnoreSet): { autoFixed: string[]; pendingFixes: PendingFix[] } {
   const configContent = readFile(path.join(projectMemoryDir, "config.yml"));
   if (!configContent) return { autoFixed: [], pendingFixes: [] };
   // adr_enabled: false → skip Cat 8. Absent = true (backward compat).
@@ -611,7 +636,7 @@ function cat8AdrDrift(projectMemoryDir: string, ignored: Set<string>): { autoFix
   return { autoFixed, pendingFixes };
 }
 
-function cat9DiscussionDrift(projectMemoryDir: string, ignored: Set<string>): AuditFinding[] {
+function cat9DiscussionDrift(projectMemoryDir: string, ignored: AuditIgnoreSet): AuditFinding[] {
   const discussionsDir = path.join(projectMemoryDir, "discussions");
   if (!fs.existsSync(discussionsDir)) return [];
 
@@ -668,7 +693,7 @@ function cat9DiscussionDrift(projectMemoryDir: string, ignored: Set<string>): Au
 function cat10PhaseCompleteness(
   projectMemoryDir: string,
   phases: PhaseEntry[],
-  ignored: Set<string>,
+  ignored: AuditIgnoreSet,
   profile: "full" | "lite" | "minimal" = "full",
 ): PendingFix[] {
   // In lite, only `phase.yml` is required. `plan.md` is optional, and impl/review/followup
@@ -738,7 +763,7 @@ function cat11DiscussionExpiry(projectMemoryDir: string): string[] {
   return autoFixed;
 }
 
-function cat12TagInconsistency(phases: PhaseEntry[], ignored: Set<string>): AuditFinding[] {
+function cat12TagInconsistency(phases: PhaseEntry[], ignored: AuditIgnoreSet): AuditFinding[] {
   const tagsByPhase = new Map<string, string[]>();
   for (const phase of phases) {
     const tagsSection = phase.block.match(/tags:([\s\S]*?)(?=\n\s{4}\w|\n\s{2}[-\w]|$)/);
@@ -782,7 +807,7 @@ function cat12TagInconsistency(phases: PhaseEntry[], ignored: Set<string>): Audi
 
 function cat14AssignmentIntegrity(
   projectMemoryDir: string,
-  ignored: Set<string>,
+  ignored: AuditIgnoreSet,
 ): { autoFixed: string[]; escalations: AuditFinding[] } {
   const autoFixed: string[] = [];
   const escalations: AuditFinding[] = [];
