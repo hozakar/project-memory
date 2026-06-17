@@ -38,7 +38,7 @@ The model has 2 effective tiers:
 
 | Severity | Categories | Behavior |
 |----------|-----------|----------|
-| **high** | Cat 4 | Heuristic auto-resolves same-user commits. Escalates only on author mismatch or ambiguous file matching. |
+| **high** | Cat 4 | Heuristic auto-resolves same-user commits. **On-load:** unresolved findings shown as `info` — non-blocking, no triage. **Manual audit:** escalates to interactive triage. |
 | **auto-fix** | Cat 1,2,3,5,6,7,8,9,10,11,12,13,14 | Applied silently; logged in drift report. |
 
 In lite, Cat 9 and 11 are not detected at all (not "auto-fixed silently" — simply absent).
@@ -127,10 +127,7 @@ For profile-sensitive checks (notably Cat 10 file-completeness), consult `config
 ```
 [🧠] PROJECT MEMORY LOADED
 
-[⚠️] DRIFT AUDIT — N issue(s), M auto-fixed
-  Interactive triage:
-  • [high] Open-phase gap: phase <id> — <N> commit(s) by <author> couldn't be auto-assigned
-
+[⚠️] DRIFT AUDIT — N auto-fixed
   Auto-fixed:
   • Replaced N stub placeholder(s) in summaries/ → *(none)*
   • Synced N discussion index drift(s): M added, K removed, J fixed
@@ -147,27 +144,16 @@ For profile-sensitive checks (notably Cat 10 file-completeness), consult `config
 
   Info:
   • Cat 1: N orphan commit(s) (last 3 days). Run `audit` to review.
-
-Entering interactive triage — answering each finding in turn.
+  • Cat 4: N open-phase gap(s) — commit(s) couldn't be auto-assigned. Run `audit` to resolve.
 ```
 
-Replace `N` with the total number of escalation findings (Cat 4 only). Replace `M` with the count of auto-fixed items. Omit any bullet that has no findings.
-
-The `Interactive triage:` sub-header is omitted when there are zero interactive findings (Cat 4 heuristic resolved everything). Auto-fix log lines always follow.
+Replace `N` with the count of auto-fixed items. Omit any bullet that has no findings.
 
 **When zero findings AND zero auto-fixes:**
 
 ```
 [🧠] PROJECT MEMORY LOADED — drift audit clean
 ```
-
----
-
-# Auto-Trigger Rule
-
-When on-load detection produces **any interactive-triage finding** (Cat 4 — author mismatch or ambiguous file matching that couldn't be auto-resolved) after auto-fix, the skill MUST immediately proceed into Interactive Mode flow.
-
-Emit the drift report header line, then begin prompting per interactive-triage finding via `AskUserQuestion`. After all findings are resolved, re-run detection and loop until no interactive-triage findings remain.
 
 ---
 

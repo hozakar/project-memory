@@ -19,7 +19,7 @@ description: MCP-driven drift audit fast path. Called by audit.md dispatcher whe
      - `failed`: fix could not be applied (file missing, schema mismatch). Surface each failure in the audit report; if persistent, escalate to interactive triage.
      - If `rerun_audit_recommended: true`, optionally re-call `run_audit` once after applying to confirm no residual drift.
    - `escalations`: all other findings, each with `category`, `severity`, `description`, `interactive` (bool), and `data`.
-3. For each escalation where `interactive: true` → enter interactive triage using the question shapes in `audit.md` → Interactive Mode.
+3. For each escalation where `interactive: true` **and `category != 4`** → enter interactive triage using the question shapes in `audit.md` → Interactive Mode. **Cat 4 exception:** if this is an on-load audit (not `Skill project-memory audit`), treat Cat 4 escalations as `info` regardless of the `interactive` flag — add them to the Info section of the drift report, do not prompt.
 4. For each escalation where `interactive: false` → these are pre-classified for auto-fix by MCP's severity/time-boundary logic. Report them in the auto-fixed log (not interactive triage).
 5. Skip the file-based Detection Procedure in `audit-fs.md` entirely — `run_audit` has already covered all 14 categories.
 
