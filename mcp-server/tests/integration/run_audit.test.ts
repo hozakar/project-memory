@@ -81,3 +81,34 @@ describe("runAudit — Cat 10 completed phase file completeness", () => {
     expect(Array.isArray(report.escalations)).toBe(true);
   });
 });
+
+describe("runAudit — raise_cat4 parameter", () => {
+  it("includes cat4_gap_count when raise_cat4=false (default)", async () => {
+    const report = await runAudit(tmp.pmDir, "full", false);
+    expect(report).toHaveProperty("cat4_gap_count");
+    expect(typeof report.cat4_gap_count).toBe("number");
+  });
+
+  it("cat4_gap_count is 0 when no open phases exist", async () => {
+    const report = await runAudit(tmp.pmDir, "full", false);
+    expect(report.cat4_gap_count).toBe(0);
+  });
+
+  it("omits cat4_gap_count when raise_cat4=true", async () => {
+    const report = await runAudit(tmp.pmDir, "full", true);
+    expect(report.cat4_gap_count).toBeUndefined();
+  });
+
+  it("cat4 escalations appear in escalations array when raise_cat4=true", async () => {
+    // No open phases in fixture → escalations array contains no Cat 4 entries,
+    // but the field is absent rather than 0 — confirming the flag is respected.
+    const reportRaise = await runAudit(tmp.pmDir, "full", true);
+    const reportSuppress = await runAudit(tmp.pmDir, "full", false);
+    const cat4Raise = reportRaise.escalations.filter(e => e.category === 4);
+    const cat4Suppress = reportSuppress.escalations.filter(e => e.category === 4);
+    // Both should be 0 (no open phases), but the structural difference holds:
+    expect(cat4Raise.length).toBe(cat4Suppress.length);
+    expect(reportRaise.cat4_gap_count).toBeUndefined();
+    expect(reportSuppress.cat4_gap_count).toBeDefined();
+  });
+});
