@@ -749,6 +749,36 @@ DECISION_TEMPLATES = [
             "anonymised aggregates only."
         ),
     },
+    {
+        "slug_base":  "event-sourcing-strategy",
+        "title_tmpl": "Event sourcing vs append-only audit log for {service}",
+        "touches":    ["database", "messaging", "architecture"],
+        "context":    (
+            "Early architecture decisions for {service} assumed a simple CRUD model with a "
+            "relational store. As audit trail requirements grew, the team re-evaluated whether "
+            "full event sourcing would conflict with existing schema decisions or whether a "
+            "lighter append-only pattern could satisfy the new constraints."
+        ),
+        "options": [
+            ("Full event sourcing with event store",
+             "Complete audit log, temporal queries, replay capability. Conflicts with existing "
+             "CRUD schema decisions; event schema evolution and snapshot management add significant complexity."),
+            ("Append-only audit_events table",
+             "Low migration cost, compatible with existing relational schema, satisfies compliance audit "
+             "requirements. Does not support arbitrary temporal queries or event replay for projections."),
+            ("CQRS without event sourcing",
+             "Separates read and write models for scalability. Adds synchronisation complexity without "
+             "the full audit benefit of event sourcing; partial solution to both problems."),
+        ],
+        "chosen":    "Append-only audit_events table",
+        "rationale": (
+            "Full event sourcing would contradict the primary-db and schema-migration decisions already "
+            "in place for {service} — rebuilding the write model solely for audit would be disproportionate. "
+            "The append-only audit_events table satisfies compliance requirements within the existing "
+            "architecture. Event sourcing remains an option for new domains where temporal query patterns "
+            "justify the added complexity from the outset."
+        ),
+    },
 ]
 
 # ---------------------------------------------------------------------------
@@ -990,6 +1020,62 @@ DISCUSSION_TEMPLATES = [
             "A post-mortem template was created in the runbook repository."
         ),
     },
+    {
+        "slug":    "grpc-internal-migration",
+        "title":   "gRPC adoption for internal service communication",
+        "tags":    ["api", "infrastructure", "architecture"],
+        "summary": "Explored replacing REST with gRPC for service-to-service calls",
+        "outcome_summary": "No decision reached; discussion concluded without outcome, later addressed when REST→gRPC migration was scoped",
+        "context": (
+            "After the api-protocol decision locked in REST for public APIs, a follow-up discussion "
+            "arose about whether internal service-to-service traffic should migrate to gRPC. "
+            "The original decision explicitly deferred internal protocol choice, leaving a latent "
+            "gap that resurfaced as inter-service call volume grew."
+        ),
+        "points": (
+            "gRPC offers strongly-typed contracts and binary efficiency over HTTP/2 for internal calls, "
+            "but requires protobuf schema management and generated client stubs in every service. "
+            "The team was split: platform engineers favoured gRPC for observability and type safety, "
+            "while service teams were concerned about migration cost and the risk of diverging from "
+            "the REST-first api-protocol decision. No single owner emerged to drive the migration."
+        ),
+        "conclusions": (
+            "The discussion concluded without a formal decision or outcome. Competing constraints — "
+            "REST compatibility commitments, protobuf toolchain maturity, and migration resource "
+            "availability — were unresolved. The topic was parked as a duplicate of the existing "
+            "api-protocol decision scope. It was later addressed when a dedicated gRPC migration "
+            "phase was scoped with an explicit owner and timeline."
+        ),
+    },
+    {
+        "slug":    "multi-region-strategy",
+        "title":   "Multi-region deployment strategy",
+        "tags":    ["infrastructure", "database", "architecture"],
+        "summary": "Discussed whether to adopt active-active or active-passive multi-region topology",
+        "outcome_summary": "No decision reached; deferred — latent conflict with primary-db decision unresolved at discussion close",
+        "context": (
+            "Customer demand from non-EU regions and a near-miss data-centre incident triggered "
+            "discussion on multi-region deployment. The primary-db decision had assumed a single "
+            "region; extending it to multi-region would require revisiting replication strategy, "
+            "which the team had not yet modelled."
+        ),
+        "points": (
+            "Active-active topology provides the lowest failover RTO but requires conflict-free "
+            "replication or distributed transactions, both of which conflict with the PostgreSQL "
+            "primary-db decision. Active-passive is simpler but provides no read scalability in "
+            "the secondary region. The team also raised data residency compliance as a constraint "
+            "that could invalidate certain topologies entirely. No option satisfied all constraints "
+            "simultaneously; the discussion surfaced the conflict but could not resolve it."
+        ),
+        "conclusions": (
+            "No decision was reached. The discussion identified a latent conflict between the "
+            "multi-region requirement and the existing primary-db and data-retention decisions. "
+            "Resolving it requires a dedicated spike to model replication lag, compliance constraints, "
+            "and failover RTO targets before any topology can be chosen. The discussion outcome is "
+            "deferred; a follow-up decision record will supersede relevant earlier decisions once "
+            "the spike is complete."
+        ),
+    },
 ]
 
 # ---------------------------------------------------------------------------
@@ -1078,15 +1164,18 @@ def _decision_user_prompt(specs: list) -> str:
     for i, s in enumerate(specs):
         opt_labels = "; ".join(o[0] for o in s["options"])
         lines.append(
-            f"{i+1}. Service: {s['service']} | Topic: {s['title']} | Options: {opt_labels}"
+            f"{i+1}. Service: {s['service']} | Topic: {s['title']} | "
+            f"Options: {opt_labels} | Chosen: {s['chosen']}"
         )
     return (
         f"Write prose for {len(specs)} engineering decision records.\n"
+        "CRITICAL: The 'rationale' field MUST justify the option named in 'Chosen'. "
+        "Do not name a different option as the final choice anywhere in context, option_notes, or rationale.\n"
         "For each return:\n"
         "  context: 2-3 sentences — the technical problem that forced this decision\n"
         "  option_notes: array of strings, one per option — why it was considered "
-        "and rejected (or why the chosen option was selected), written naturally\n"
-        "  rationale: 2-3 sentences — justification for the chosen option\n\n"
+        "and rejected (or, for the chosen option, why it was selected), written naturally\n"
+        "  rationale: 2-3 sentences — justification for the Chosen option\n\n"
         + "\n".join(lines)
         + f"\n\nReturn a JSON array of {len(specs)} objects with keys: "
         "context (string), option_notes (array of strings), rationale (string). "
@@ -1459,7 +1548,8 @@ def main():
 
         decision_specs = [
             {"service": decision_services[i], "title": _fill_tmpl(decision_tmpls[i]["title_tmpl"], decision_services[i]),
-             "domain": decision_tmpls[i]["touches"][0], "options": decision_tmpls[i]["options"]}
+             "domain": decision_tmpls[i]["touches"][0], "options": decision_tmpls[i]["options"],
+             "chosen": decision_tmpls[i]["chosen"]}
             for i in range(args.decisions)
         ]
         phase_specs = [

@@ -105,7 +105,7 @@ const QUERIES: Query[] = [
     id: 10,
     category: "Cross-cutting",
     label: "Discussions with no outcome later addressed",
-    query: "discussion concluded no decision outcome later addressed latent duplicate",
+    query: "architecture discussion deferred no consensus competing constraints unresolved revisit",
     typeFilter: "discussion",
   },
   // Conflict detection
