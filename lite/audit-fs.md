@@ -5,6 +5,8 @@ description: Lite-profile file-system drift audit. 12 active categories (Cat 9, 
 
 # Detection Procedure (lite)
 
+**Invocation:** at post-first-response hook (default), or on explicit `Skill project-memory audit` (sync), or when first user message is an audit-implicit-trigger (sync).
+
 Run all 12 active categories on every audit pass. Collect findings before acting. Check `audit_ignore` (see `audit.md` → Permanent Skip) before escalating any finding — suppressed findings are omitted entirely.
 
 **Active categories in lite:** 1, 2, 3, 4, 5, 6, 7, 8 (conditional on `adr_enabled`), 10 (modified for lite phase shape), 12, 13 (conditional on MCP), 14.

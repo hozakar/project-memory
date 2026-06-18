@@ -5,6 +5,8 @@ description: Lite-profile MCP-driven drift audit fast path. Calls run_audit with
 
 # MCP Fast Path (lite)
 
+**Invocation:** at post-first-response hook (default), or on explicit `Skill project-memory audit` (sync), or when first user message is an audit-implicit-trigger (sync).
+
 **When `run_audit` is in available MCP tools:**
 
 1. Read `.project-memory/config.yml` to confirm `profile: lite`.

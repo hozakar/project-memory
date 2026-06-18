@@ -5,6 +5,8 @@ description: MCP-driven drift audit fast path. Called by audit.md dispatcher whe
 
 # MCP Fast Path
 
+**Invocation:** at post-first-response hook (default), or on explicit `Skill project-memory audit` (sync), or when first user message is an audit-implicit-trigger (sync).
+
 **When `run_audit` is in available MCP tools:**
 
 1. Call `run_audit(project_memory_dir, { raise_cat4: false })` on on-load, or `run_audit(project_memory_dir, { raise_cat4: true })` when invoked as `Skill project-memory audit`. (`project_memory_dir` is the absolute path to `.project-memory/`.)

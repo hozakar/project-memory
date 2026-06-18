@@ -33,11 +33,12 @@ The session-start work happens in this order. Each step may be a no-op depending
 
 1. **MCP availability check** — set the session-level flag.
 2. **Proactive DB sync** — `check_consistency` + index any missing entries. MCP-only; skipped when unavailable.
-3. **Drift audit** — `run_audit` MCP fast path if available; otherwise file-based detection from `lite/audit-fs.md`. Apply auto-fixes silently.
-4. **Memory Loading Strategy** — execute the reduced steps below.
-5. **Instruction load (one-time, session start)** — load active instructions for the current user. **Lite re-injects only at Pre-Impl Gate Step 0**, NOT at every gate. The session-start load gives you the body once; Step 0 re-asserts before significant implementation.
-6. **Assignment notifications** — same passive single-line summary as full (orthogonal feature).
-7. **Era prompt** — same as full (orthogonal, maintainer-only).
+3. **Memory Loading Strategy** — execute the reduced steps below.
+4. **Instruction load (one-time, session start)** — load active instructions for the current user. **Lite re-injects only at Pre-Impl Gate Step 0**, NOT at every gate. The session-start load gives you the body once; Step 0 re-asserts before significant implementation.
+5. **Assignment notifications** — same passive single-line summary as full (orthogonal feature).
+6. **Era prompt** — same as full (orthogonal, maintainer-only).
+7. **Header emission** — output `🧠 PROJECT MEMORY LOADED` (memory loaded indicator only).
+8. **Post-First-Response Drift Audit** — deferred to after the LLM answers the user's first message. Run the drift audit (lite category set, raise_cat4: false) via `audit.md` (MCP fast path if available, otherwise file-based detection from `lite/audit-fs.md`). Emit the drift report as a follow-up block. Exceptions (audit runs synchronously): (a) explicit `Skill project-memory audit` or natural-language trigger per `DECISION-2026-06-17-audit-implicit-triggers`; (b) first user message is itself an audit trigger — run synchronously; (c) `minimal` profile — no audit, no deferral.
 
 ---
 

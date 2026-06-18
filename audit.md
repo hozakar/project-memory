@@ -5,13 +5,27 @@ description: Drift audit dispatcher for project-memory. Routes by active profile
 
 # When To Run
 
-**Context A — On-load (passive), via SKILL.md step 5:**
-Run automatically every session (full and lite only — minimal skips audit entirely). Apply auto-fixes silently. Emit a single drift report block for all findings. If nothing found and nothing auto-fixed, emit the clean line. If any interactive-triage findings remain after auto-fix, immediately transition into Interactive Mode.
+**Context A1 — On-load header emission (synchronous):**
+Emit `🧠 PROJECT MEMORY LOADED` as a synchronous indicator at session open. This is the memory-loaded header only — no audit results at this point.
+
+**Context A2 — Post-first-response drift audit (async):**
+After the LLM answers the user's first message, run the drift audit automatically (full and lite only — minimal skips audit entirely). Apply auto-fixes silently. Emit a single drift report block for all findings, headed by `[🧠] POST-RESPONSE DRIFT AUDIT — N auto-fixed`. If nothing found and nothing auto-fixed, emit the clean line. If any interactive-triage findings remain after auto-fix, immediately transition into Interactive Mode.
 
 **Context B — On-demand (interactive), via `Skill project-memory audit` or natural-language triggers:**
 Run when the skill is invoked with the `audit` argument OR when the user phrases a request that clearly asks for an audit / drift review of project memory (e.g. "let's audit", "review project memory", "run a drift check" — lenient detection in any language, full and lite only). Same detection logic, but prompt the user for each interactive finding via `AskUserQuestion`. Re-run detection after decisions; loop until clean. When the trigger phrase is ambiguous, ask a one-line clarification before entering audit mode. Governing rule: `DECISION-2026-06-17-audit-implicit-triggers`.
 
 **Minimal profile:** No audit. On-load skips it; `audit` argument prints a single-line notice and exits.
+
+---
+
+# Post-Response Drift Audit
+
+On-load drift audit is deferred to post-first-response. The LLM answers the user's first message first; the drift audit (Cat 1–14, raise_cat4: false) runs AFTER the first user-facing response is delivered. The drift report is emitted as a follow-up block with header `[🧠] POST-RESPONSE DRIFT AUDIT — N auto-fixed`.
+
+Exceptions (audit runs synchronously):
+1. Explicit invocation: `Skill project-memory audit` (or any natural-language audit trigger per `DECISION-2026-06-17-audit-implicit-triggers`).
+2. First user message is itself an audit-implicit/explicit trigger — the LLM must run the audit synchronously to answer correctly. Threshold unchanged from current spec; false positives (user accidentally triggers an audit-tarzı message) are tolerable.
+3. `minimal` profile — no audit at all; no deferral applies.
 
 ---
 
@@ -118,16 +132,22 @@ For profile-sensitive checks (notably Cat 10 file-completeness), consult `config
 
 ---
 
-# Output Format (On-Load)
+# Output Format
+
+## Synchronous header (session open)
+
+```
+🧠 PROJECT MEMORY LOADED
+```
+
+## Deferred post-first-response report
 
 **No intermediate messages.** During detection and auto-fix, output nothing. Do not announce findings as you discover them, do not say "auto-fixing...", do not narrate steps. Collect all findings and apply all fixes in complete silence. The consolidated report below is the only output permitted.
 
 **When findings or auto-fixes exist:**
 
 ```
-[🧠] PROJECT MEMORY LOADED
-
-[⚠️] DRIFT AUDIT — N auto-fixed
+[🧠] POST-RESPONSE DRIFT AUDIT — N auto-fixed
   Auto-fixed:
   • Replaced N stub placeholder(s) in summaries/ → *(none)*
   • Synced N discussion index drift(s): M added, K removed, J fixed
@@ -152,7 +172,7 @@ Replace `N` with the count of auto-fixed items. Omit any bullet that has no find
 **When zero findings AND zero auto-fixes:**
 
 ```
-[🧠] PROJECT MEMORY LOADED — drift audit clean
+[🧠] POST-RESPONSE DRIFT AUDIT — clean
 ```
 
 ---

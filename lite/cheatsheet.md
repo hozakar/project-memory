@@ -70,8 +70,8 @@ Lite does not split "significant" vs "ambiguous". Anything non-trivial is just "
 | Phase opened | If MCP available, call `index_phase` with empty `implementationText` (lite has no impl.md). |
 | Phase closed | If MCP available, call `index_phase` with `status: completed`, planText if present, empty implementationText, commitDiffs. |
 | User asks about past phases/decisions/discussions (MCP available) | `search_memory` per `mcp-integration.md`. |
-| Drift audit — `run_audit` available | Call `run_audit(project_memory_dir, profile: "lite")`. MCP server filters Cat 9/11 internally; apply pending_fixes; triage escalations. |
-| Drift audit — `run_audit` NOT available | Run lite file-based detection (12 active categories from `lite/audit-fs.md`). |
+| Drift audit (post-first-response) — `run_audit` available | Default: deferred to post-first-response. Call `run_audit(project_memory_dir, { profile: "lite", raise_cat4: false })`. MCP server filters Cat 9/11 internally; apply pending_fixes; triage escalations. Sync exceptions: explicit `Skill project-memory audit`, first-user-message is audit-implicit-trigger, or `minimal` profile (no audit). |
+| Drift audit (post-first-response) — `run_audit` NOT available | Default: deferred to post-first-response. Run lite file-based detection (12 active categories, raise_cat4: false). Sync exceptions same as above. |
 | User mentions lost commits after squash/rebase | `find_similar_commit` per `mcp-integration.md`. |
 | ~10 phases accumulated since last era | Maintainer-only prompt. Rare in lite. |
 | Assignment created / status changed | Same as full. Update `assignments/index.yml`, re-call `index_assignment` if MCP. |

@@ -5,6 +5,8 @@ description: File-system drift audit detection procedure. Called by audit.md dis
 
 # Detection Procedure
 
+**Invocation:** at post-first-response hook (default), or on explicit `Skill project-memory audit` (sync), or when first user message is an audit-implicit-trigger (sync).
+
 Run all 14 categories on every audit pass. Collect findings before acting. Check `audit_ignore` (see `audit.md` → Permanent Skip) before escalating any finding — suppressed findings are omitted entirely.
 
 **Note on `semantic-conflict-scan`:** The optional semantic-conflict-scan stage (governed by `DECISION-2026-06-17-semantic-conflict-scan`) is MCP-only — it relies on `search_memory` for candidate narrowing. In the FS path (no MCP), the stage is silently skipped. No prompt, no fallback. The `semantic_audit_log` field that may exist in `config.yml` is not a recognized audit category here and is ignored without flagging.

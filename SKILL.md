@@ -1,6 +1,6 @@
 ---
 name: project-memory
-version: 0.0.4
+version: 0.0.5
 description: Project memory and phase management system. Loads at every session start to provide engineering context → history, decisions, active tensions, anti-patterns. Use when planning, implementing, reviewing, or closing phases. Always active in this project.
 ---
 
@@ -43,7 +43,7 @@ When this skill activates:
    - `profile=lite` → read `lite/protocol.md` for the lite Memory Loading Strategy (loads only `roadmap.md` + `current-state.md`; instruction re-injection scope limited to Pre-Impl Gate Step 0). Then proceed to step 5.
    - `profile=minimal` → follow `minimal/minimal.md` instead — it covers loading, the single gate, and record-append behavior.
 
-5. **Run Drift Audit** (full and lite only) — read `audit.md` for the dispatcher. It routes to `<profile>/audit-mcp.md` or `<profile>/audit-fs.md` based on MCP availability and active profile. Auto-fix findings silently. Interactive triage only on Cat 4 edge cases. `minimal` skips this step entirely.
+5. **Post-first-response drift audit** (full and lite only) — the drift audit is deferred to after the LLM answers the user's first message. After the first user-facing response is delivered, run the drift audit (Cat 1–14, raise_cat4: false) via `audit.md` and emit the drift report as a follow-up block. Exceptions (audit runs synchronously): (a) explicit invocation via `Skill project-memory audit` or natural-language audit trigger per `DECISION-2026-06-17-audit-implicit-triggers`; (b) the first user message is itself an audit-implicit/explicit trigger — run audit synchronously to answer correctly; (c) `minimal` profile — no audit at all, no deferral applies.
 
 6. Continue with the session. Do not ask the user for anything beyond the init UX (step 3) at this stage.
 

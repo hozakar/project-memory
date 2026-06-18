@@ -52,13 +52,14 @@ The session-start work happens in this order. Each step may be a no-op depending
 
 1. **MCP availability check** — set the session-level flag (see MCP Companion Integration → Availability check).
 2. **Proactive DB sync** — `check_consistency` + index any missing entries. MCP-only; skipped when unavailable.
-3. **Drift audit** — `run_audit` MCP fast path if available; otherwise file-based detection from `audit.md`. Apply auto-fixes silently.
-4. **Memory Loading Strategy** — execute steps 1–14 below. Summary files first, then phase/decision/discussion indexes.
-5. **Instruction re-injection** — load active instructions for the current user (idempotent if already loaded in step 4 step 8; the same content is re-asserted before each gate per `gates.md` Step 0).
-6. **Assignment notifications** — emit passive single-line summary per `conventions-records.md` (Assignment lifecycle).
-7. **Era prompt** — if ≥ 10 phases have accumulated since the last era AND session role = maintainer, ask whether to create the next era file.
+3. **Memory Loading Strategy** — execute steps 1–14 below. Summary files first, then phase/decision/discussion indexes.
+4. **Instruction re-injection** — load active instructions for the current user (idempotent if already loaded in step 4 step 8; the same content is re-asserted before each gate per `gates.md` Step 0).
+5. **Assignment notifications** — emit passive single-line summary per `conventions-records.md` (Assignment lifecycle).
+6. **Era prompt** — if ≥ 10 phases have accumulated since the last era AND session role = maintainer, ask whether to create the next era file.
+7. **Header emission** — output `🧠 PROJECT MEMORY LOADED` (memory loaded indicator only).
+8. **Post-First-Response Drift Audit** — deferred to after the LLM answers the user's first message. Run the drift audit (Cat 1–14, raise_cat4: false) via `audit.md` (MCP fast path if available, otherwise file-based detection). Emit the drift report as a follow-up block. Exceptions (audit runs synchronously): (a) explicit `Skill project-memory audit` or natural-language trigger per `DECISION-2026-06-17-audit-implicit-triggers`; (b) first user message is itself an audit trigger — run synchronously; (c) `minimal` profile — no audit, no deferral.
 
-Items 2, 3, and 7 are MCP-conditional but always sit at the same position when they fire.
+Items 2, 6, and 8 are MCP-conditional but always sit at the same position when they fire.
 
 ---
 

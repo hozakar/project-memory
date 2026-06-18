@@ -2,6 +2,23 @@
 
 All notable changes to the project-memory skill and MCP companion server.
 
+## [0.0.5] — 2026-06-18 — SKILL: async on-load drift audit
+
+### Async on-load drift audit
+
+The drift audit that previously ran synchronously during SKILL.md on-load now
+defers to after the first user response. Three exceptions remain synchronous:
+(1) explicit `Skill project-memory audit` invocation, (2) the first message when
+the session detects `audit-implicit-trigger`, and (3) projects using the
+`minimal` profile (no audit by design). The on-load flow now: load memory →
+determine role → post-first-response audit.
+
+Decision: DECISION-2026-06-18-async-on-load-audit.
+Phase: phase-20260618-async-on-load-audit.
+Files: SKILL.md, audit.md, full/protocol.md, lite/protocol.md,
+full/audit-mcp.md, lite/audit-mcp.md, full/audit-fs.md, lite/audit-fs.md,
+full/cheatsheet.md, lite/cheatsheet.md.
+
 ## [0.0.7] — 2026-06-18
 
 ### Structural filtering — typeFilter applied to stress-test Q8
@@ -40,7 +57,7 @@ Decision: DECISION-2026-06-18-search-memory-mmr-reranking.
 Files: utils.ts, db.ts, search_memory.ts, server.ts, query.ts, 2 test files,
 README.md, mcp-integration.md, CHANGELOG.md.
 
-## [0.0.5] — 2026-06-18
+## [0.0.5] — 2026-06-18 — MCP: outcomeTypeFilter structural filtering
 
 ### Structural filtering pattern — outcomeTypeFilter
 
