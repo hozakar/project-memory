@@ -102,6 +102,7 @@ const QUERIES: Query[] = [
     category: "Cross-cutting",
     label: "Infrastructure deployment failure patterns",
     query: "infrastructure deployment failure modes lessons learned recurring systemic gap",
+    typeFilter: "discussion",
     diversify: true,
   },
   {

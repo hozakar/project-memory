@@ -2,6 +2,18 @@
 
 All notable changes to the project-memory skill and MCP companion server.
 
+## [0.0.7] — 2026-06-18
+
+### Structural filtering — typeFilter applied to stress-test Q8
+
+`stress-test/query.ts` Q8 ("Infrastructure deployment failure patterns"): added
+`typeFilter: "discussion"` — top-1 now returns the post-outage multi-region
+re-evaluation discussion (score ~0.428) instead of an IaC tooling decision
+(0.545). Structural correctness win: the query asks for failure patterns /
+lessons-learned / systemic gap, which is discussion-shaped, not decision-shaped.
+No MCP server code change — existing `typeFilter` parameter applied. P@1 remains
+15/15.
+
 ## [0.0.6] — 2026-06-18
 
 ### Result diversity — MMR reranking (opt-in)
