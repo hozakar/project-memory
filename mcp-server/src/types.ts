@@ -195,4 +195,5 @@ export interface LanceRecord {
   assignedToEmail?: string;
   assignedByEmail?: string;
   primaryScope?: string;     // decision primary_scope — supports exact WHERE filter via scope_filter
+  outcomeType?: string;      // derived discussion outcome category (none, phase, decision, roadmap) — supports exact WHERE filter via outcomeTypeFilter
 }

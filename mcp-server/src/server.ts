@@ -37,10 +37,11 @@ srv.tool(
     touches_filter: z.array(z.string()).optional().describe("Exact AND-filter on decision touches field. E.g. [\"conventions_md\"] returns only decisions that touch conventions_md. Multiple values narrow further (AND semantics). Only effective on type=decision records."),
     tags_filter: z.array(z.string()).optional().describe("Exact AND-filter on phase/discussion tags field. E.g. [\"mcp\", \"schema\"] returns records tagged with both. Only effective on type=phase and type=discussion records."),
     scope_filter: z.array(z.string()).optional().describe("Exact OR-filter on decision primary_scope field. E.g. [\"constraint\"] returns only decisions with primary_scope=constraint. Multiple values broaden (OR semantics). Only effective on type=decision records."),
+    outcome_type_filter: z.string().optional().describe("Filter results to a specific discussion outcome type (none, phase, decision, roadmap). Exact match on derived outcomeType column. Only effective on type=discussion records."),
   },
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async (args: any) => {
-    const results = await searchMemory(args.query, args.top_k, args.include_commits, args.created_by_email, args.type_filter, args.touches_filter, args.tags_filter, args.assigned_to_email, args.assigned_by_email, args.scope_filter);
+    const results = await searchMemory(args.query, args.top_k, args.include_commits, args.created_by_email, args.type_filter, args.touches_filter, args.tags_filter, args.assigned_to_email, args.assigned_by_email, args.scope_filter, args.outcome_type_filter);
     return { content: [{ type: "text" as const, text: JSON.stringify(results) }] };
   }
 );

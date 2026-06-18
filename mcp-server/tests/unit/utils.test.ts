@@ -7,6 +7,7 @@ import {
   buildEraText,
   buildInstructionText,
   buildAssignmentText,
+  deriveOutcomeType,
 } from "../../src/utils";
 
 describe("buildPhaseText", () => {
@@ -140,6 +141,32 @@ describe("buildInstructionText", () => {
     expect(result).toContain("INSTRUCTION-2026-06-13-test");
     expect(result).toContain("always use TDD");
     expect(result).toContain("active");
+  });
+});
+
+describe("deriveOutcomeType", () => {
+  it('returns "none" for the literal "none"', () => {
+    expect(deriveOutcomeType("none")).toBe("none");
+  });
+
+  it('returns "phase" for phase-prefix outcomes', () => {
+    expect(deriveOutcomeType("phase-20260612-foo")).toBe("phase");
+  });
+
+  it('returns "decision" for DECISION-prefix outcomes', () => {
+    expect(deriveOutcomeType("DECISION-2026-06-12-bar")).toBe("decision");
+  });
+
+  it('returns "roadmap" for roadmap outcome', () => {
+    expect(deriveOutcomeType("roadmap")).toBe("roadmap");
+  });
+
+  it('returns "none" for empty string', () => {
+    expect(deriveOutcomeType("")).toBe("none");
+  });
+
+  it('returns "none" for unknown format (default fallback)', () => {
+    expect(deriveOutcomeType("unknown-format")).toBe("none");
   });
 });
 

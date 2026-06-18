@@ -1,6 +1,6 @@
 import { embed } from "../embedder";
 import { atomicRebuild } from "../db";
-import { buildPhaseText, buildDecisionText, buildDiscussionText, buildCommitText, buildEraText, buildInstructionText, buildAssignmentText } from "../utils";
+import { buildPhaseText, buildDecisionText, buildDiscussionText, buildCommitText, buildEraText, buildInstructionText, buildAssignmentText, deriveOutcomeType } from "../utils";
 import type { IndexEntry, LanceRecord, PhaseIndexData, DecisionIndexData, DiscussionIndexData, EraIndexData, InstructionIndexData, AssignmentIndexData, Identity } from "../types";
 
 const UNKNOWN_IDENTITY: Identity = { name: "unknown", email: "unknown" };
@@ -66,6 +66,7 @@ export async function rebuildIndex(entries: IndexEntry[]): Promise<{ indexed: nu
       } else if (entry.type === "discussion") {
         const discData = entry.data as DiscussionIndexData;
         record.tagsJson = JSON.stringify(discData.tags ?? []);
+        record.outcomeType = deriveOutcomeType(discData.outcome);
       }
       if (createdBy) {
         record.createdByName = createdBy.name;

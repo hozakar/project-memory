@@ -1,6 +1,6 @@
 import { embed } from "../embedder";
 import { upsert } from "../db";
-import { buildDiscussionText } from "../utils";
+import { buildDiscussionText, deriveOutcomeType } from "../utils";
 import type { DiscussionIndexData, LanceRecord, Identity } from "../types";
 
 export async function indexDiscussion(
@@ -13,6 +13,8 @@ export async function indexDiscussion(
     let text = buildDiscussionText(data);
     text += `\nAuthor: ${createdBy.name} <${createdBy.email}>`;
 
+    const outcomeType = deriveOutcomeType(data.outcome);
+
     const vector = await embed(text);
     const record: LanceRecord = {
       id: data.id,
@@ -24,6 +26,7 @@ export async function indexDiscussion(
       createdByEmail: createdBy.email,
       contributorsJson: JSON.stringify(contributors),
       tagsJson: JSON.stringify(data.tags),
+      outcomeType,
     };
     await upsert(record);
     return { success: true };

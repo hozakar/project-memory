@@ -36,6 +36,7 @@ interface Query {
   label: string;
   query: string;
   typeFilter?: string;
+  outcomeTypeFilter?: string;
 }
 
 const QUERIES: Query[] = [
@@ -107,6 +108,7 @@ const QUERIES: Query[] = [
     label: "Discussions with no outcome later addressed",
     query: "architecture discussion deferred no consensus competing constraints unresolved revisit",
     typeFilter: "discussion",
+    outcomeTypeFilter: "none",
   },
   // Conflict detection
   {
@@ -173,7 +175,7 @@ async function main() {
     }
 
     const t0 = Date.now();
-    const results = await searchMemory(q.query, 5, false, undefined, q.typeFilter);
+    const results = await searchMemory(q.query, 5, false, undefined, q.typeFilter, undefined, undefined, undefined, undefined, undefined, q.outcomeTypeFilter);
     const ms = Date.now() - t0;
 
     console.log(`\nQ${q.id}: ${q.label}${q.typeFilter ? ` [${q.typeFilter}]` : ""}`);

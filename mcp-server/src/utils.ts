@@ -103,3 +103,11 @@ export function buildAssignmentText(data: AssignmentIndexData): string {
   parts.push(`Reminders: ${data.remindCount}`);
   return parts.join("\n").slice(0, 2000);
 }
+
+export function deriveOutcomeType(outcome: string): string {
+  if (!outcome || outcome === "none") return "none";
+  if (outcome.startsWith("phase-")) return "phase";
+  if (outcome.startsWith("DECISION-")) return "decision";
+  if (outcome === "roadmap") return "roadmap";
+  return "none";
+}

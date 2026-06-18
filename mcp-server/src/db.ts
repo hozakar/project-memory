@@ -40,6 +40,7 @@ async function getTable(): Promise<any> {
       assignedToEmail: "",
       assignedByEmail: "",
       primaryScope: "",
+      outcomeType: "",
     };
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const table = await (conn as any).createTable("memory", [dummy]);
@@ -89,7 +90,8 @@ export async function search(
   tagsFilter?: string[],
   assignedToEmail?: string,
   assignedByEmail?: string,
-  scopeFilter?: string[]
+  scopeFilter?: string[],
+  outcomeTypeFilter?: string
 ): Promise<SearchResult[]> {
   try {
     const table = await getTable();
@@ -123,6 +125,9 @@ export async function search(
     if (scopeFilter && scopeFilter.length > 0) {
       const scopeClauses = scopeFilter.map(s => `primaryScope = '${escapeLike(s)}'`);
       whereClauses.push(`(${scopeClauses.join(" OR ")})`);
+    }
+    if (outcomeTypeFilter) {
+      whereClauses.push(`outcomeType = '${escapeLike(outcomeTypeFilter)}'`);
     }
 
     if (whereClauses.length > 0) {
