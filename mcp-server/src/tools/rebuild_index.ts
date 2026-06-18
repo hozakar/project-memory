@@ -56,6 +56,7 @@ export async function rebuildIndex(entries: IndexEntry[]): Promise<{ indexed: nu
         title,
         text,
         vector,
+        status: "",
       };
       if (entry.type === "phase") {
         const pData = entry.data as PhaseIndexData;
@@ -63,6 +64,7 @@ export async function rebuildIndex(entries: IndexEntry[]): Promise<{ indexed: nu
       } else if (entry.type === "decision") {
         const dData = entry.data as DecisionIndexData;
         record.touchesJson = JSON.stringify(dData.touches ?? []);
+        record.status = dData.status;
       } else if (entry.type === "discussion") {
         const discData = entry.data as DiscussionIndexData;
         record.tagsJson = JSON.stringify(discData.tags ?? []);
@@ -93,6 +95,7 @@ export async function rebuildIndex(entries: IndexEntry[]): Promise<{ indexed: nu
               title: diff.message,
               text: commitText,
               vector: commitVector,
+              status: "",
             });
           } catch {
             failCount++;

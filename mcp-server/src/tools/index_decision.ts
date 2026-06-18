@@ -30,6 +30,7 @@ export async function indexDecision(
       contributorsJson: JSON.stringify(contributors),
       touchesJson: JSON.stringify(data.touches),
       primaryScope: data.primaryScope,
+      status: data.status,
     };
 
     await upsert(record);

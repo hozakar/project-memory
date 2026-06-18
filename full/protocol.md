@@ -150,11 +150,13 @@ If `search_memory`, `index_phase`, `index_decision`, and `index_instruction` all
 
 The canonical strategy is the trunk. When MCP is available, two `search_memory` hooks fire at fixed positions; their results are added to the working set alongside whatever the canonical steps load.
 
-- **Hook A — between step 5 and step 6:** If the session has a stated task or goal, call `search_memory(task_description, top_k=8)`. For each result with similarity ≥ 0.6, load the corresponding file from `.project-memory/` (phase directory or DECISION file). These files are *in addition to* steps 6–13, not a substitute.
-- **Hook B — at Pre-Implementation Gate Step 3:** Call `search_memory(natural language description of what you are implementing, top_k=8)` and load any additional relevant files not already in context.
+- **Hook A — between step 5 and step 6:** If the session has a stated task or goal, call `search_memory(task_description, top_k=8)` (does NOT set `include_superseded` — superseded decisions are excluded from awareness load). For each result with similarity ≥ 0.6, load the corresponding file from `.project-memory/` (phase directory or DECISION file). These files are *in addition to* steps 6–13, not a substitute.
+- **Hook B — at Pre-Implementation Gate Step 3:** Call `search_memory(natural language description of what you are implementing, top_k=8)` (does NOT set `include_superseded` — superseded decisions are excluded from gate awareness load) and load any additional relevant files not already in context.
 
 **Ad-hoc search rule:**
 If MCP is available and the user asks a question about past decisions, phases, or discussions (e.g. "what did we decide about X?", "did we ever try Y?", "what phases touched Z?"), call `search_memory(user_question)` to retrieve relevant context before answering. This does not require a gate trigger — it is discretionary judgment.
+
+When the question is explicitly historical — asking about superseded/past decisions that are normally excluded — pass `include_superseded: true` to surface those records. Ordinary lookup queries (e.g. "what did we decide about X?") do NOT set this flag; they naturally get the active-only view. Use judgment: if the user is researching decision history and the absence of a known superseded record would be misleading, set the flag. See DECISION-2026-06-19-search-memory-superseded-exclusion.
 
 When the question targets a specific entity (file, module, system area), combine exact and semantic filters for sharper results:
 - "decisions about X that touch `conventions_md`" → `search_memory(query, touches_filter=["conventions_md"], type_filter="decision")`
@@ -162,7 +164,7 @@ When the question targets a specific entity (file, module, system area), combine
 - Multiple filter values use AND semantics — each additional value narrows further. Use a single value when in doubt.
 
 **Constraint search rule:**
-When Discussion Mode is engaged (explicit `Skill project-memory discuss` or implicit trigger detection per `conventions-discussions.md`) for a new feature or enhancement — before the conversation deepens — call `search_memory("engineering constraints and principles", scope_filter=["constraint"], type_filter="decision")`. Surface any returned decisions to the conversation so they can shape the design direction early. This fires at Discussion Mode engagement, not on every brainstorm-flavored exchange, and not just at the Pre-Implementation Gate.
+When Discussion Mode is engaged (explicit `Skill project-memory discuss` or implicit trigger detection per `conventions-discussions.md`) for a new feature or enhancement — before the conversation deepens — call `search_memory("engineering constraints and principles", scope_filter=["constraint"], type_filter="decision")`. Does NOT set `include_superseded` — superseded constraints are structurally excluded; only active constraints shape design direction. Surface any returned decisions to the conversation so they can shape the design direction early. This fires at Discussion Mode engagement, not on every brainstorm-flavored exchange, and not just at the Pre-Implementation Gate.
 
 **Assignment search:** At session start, when assignments exist, call `search_memory` with both `assigned_to_email` (pending/ongoing) and `assigned_by_email` (rejected/completed) filters and `type_filter: "assignment"`. For targeted lookups (e.g., "what did I assign to Mehmet?"), combine with the user's question text for semantic ranking.
 

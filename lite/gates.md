@@ -107,7 +107,7 @@ Classify using the lite binary table above. Trivial → skip Step 3. Everything 
 2. **Find candidate decisions and discussions** — branch on MCP availability:
 
    **If MCP available:**
-   - Decisions: `search_memory(query, touches_filter=entities, scope_filter=[primary_scope], type_filter="decision")`. Ignore `status: superseded` returns.
+   - Decisions: `search_memory(query, touches_filter=entities, scope_filter=[primary_scope], type_filter="decision")`. Superseded decisions are now deterministically excluded by `search_memory` at the tool level (`WHERE status IS NULL OR status != 'superseded'`) — they never appear in gate results unless `include_superseded: true` is explicitly passed. The gate path never sets this flag, so superseded records are structurally invisible. See DECISION-2026-06-19-search-memory-superseded-exclusion.
    - **Globals (FS, always):** also read `decisions/index.md` Active section and surface every row where `Global` is `Yes`. Cross-cutting policies bind every implementation — load them unconditionally. See `conventions-decisions.md` → Rule 0 (Global surface).
    - Discussions: `search_memory(task_description, top_k=8, type_filter="discussion")`.
 

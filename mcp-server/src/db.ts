@@ -42,6 +42,7 @@ async function getTable(): Promise<any> {
       assignedByEmail: "",
       primaryScope: "",
       outcomeType: "",
+      status: "",
     };
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const table = await (conn as any).createTable("memory", [dummy]);
@@ -93,7 +94,8 @@ export async function search(
   assignedByEmail?: string,
   scopeFilter?: string[],
   outcomeTypeFilter?: string,
-  diversify?: boolean
+  diversify?: boolean,
+  includeSuperseded: boolean = false
 ): Promise<SearchResult[]> {
   try {
     const table = await getTable();
@@ -131,6 +133,9 @@ export async function search(
     if (outcomeTypeFilter) {
       whereClauses.push(`outcomeType = '${escapeLike(outcomeTypeFilter)}'`);
     }
+    if (!includeSuperseded) {
+      whereClauses.push(`(status IS NULL OR status != 'superseded')`);
+    }
 
     if (whereClauses.length > 0) {
       query = query.where(whereClauses.join(" AND "));
@@ -158,12 +163,16 @@ export async function search(
         );
         const createdByName = row.createdByName as string | undefined;
         const createdByEmail = row.createdByEmail as string | undefined;
+        const status = row.status as string | undefined;
         const result: SearchResult = {
           id: row.id as string,
           type: row.type as SearchResult["type"],
           title: row.title as string,
           similarity,
         };
+        if (status) {
+          result.status = status;
+        }
         if (createdByName && createdByEmail) {
           result.createdBy = { name: createdByName, email: createdByEmail };
         }

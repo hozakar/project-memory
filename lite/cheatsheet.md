@@ -69,7 +69,7 @@ Lite does not split "significant" vs "ambiguous". Anything non-trivial is just "
 | Discussion triggers a phase | Set `outcome.type: phase`, `outcome.id: <phase-id>` in DISCUSSION file. |
 | Phase opened | If MCP available, call `index_phase` with empty `implementationText` (lite has no impl.md). |
 | Phase closed | If MCP available, call `index_phase` with `status: completed`, planText if present, empty implementationText, commitDiffs. |
-| User asks about past phases/decisions/discussions (MCP available) | `search_memory` per `mcp-integration.md`. |
+| User asks about past phases/decisions/discussions (MCP available) | `search_memory` per `mcp-integration.md`. `search_memory` now accepts `include_superseded?: boolean` — opt-in flag for historical lookup (default false excludes superseded decisions). Pass `include_superseded: true` only when explicitly researching past/superseded decisions. `SearchResult` carries `status` for decision records. |
 | Drift audit (post-first-response) — `run_audit` available | Default: deferred to post-first-response. Call `run_audit(project_memory_dir, { profile: "lite", raise_cat4: false })`. MCP server filters Cat 9/11 internally; apply pending_fixes; triage escalations. Sync exceptions: explicit `Skill project-memory audit`, first-user-message is audit-implicit-trigger, or `minimal` profile (no audit). |
 | Drift audit (post-first-response) — `run_audit` NOT available | Default: deferred to post-first-response. Run lite file-based detection (12 active categories, raise_cat4: false). Sync exceptions same as above. |
 | User mentions lost commits after squash/rebase | `find_similar_commit` per `mcp-integration.md`. |

@@ -103,11 +103,11 @@ See `mcp-integration.md` for the full tool catalog. MCP behavior in lite is most
 - **Availability check:** same. If `search_memory`, `index_phase`, `index_decision`, `index_instruction` are all present → MCP available.
 - **Proactive DB sync:** same — call `check_consistency` and index any missing entries on session start.
 - **Memory Loading Strategy overlay:**
-  - **Hook A — between step 4 and step 5:** if the session has a stated task, call `search_memory(task_description, top_k=8)` for similarity ≥ 0.6 files. Same as full.
-  - **Hook B — at Pre-Impl Gate Step 3:** same as full.
-  - **No Hook C** — the broad awareness load (Step 5 of full's gate) does not exist in lite.
-- **Ad-hoc search rule:** same as full — call `search_memory` when the user asks about past decisions/phases/discussions.
-- **Constraint search rule** (Discussion Mode trigger): same as full — call `search_memory("engineering constraints and principles", scope_filter=["constraint"], type_filter="decision")` when discussion mode engages.
+   - **Hook A — between step 4 and step 5:** if the session has a stated task, call `search_memory(task_description, top_k=8)` for similarity ≥ 0.6 files. Does NOT set `include_superseded` — superseded decisions are excluded from awareness load. Same as full.
+   - **Hook B — at Pre-Impl Gate Step 3:** same as full. Does NOT set `include_superseded` — superseded decisions excluded from gate awareness load.
+   - **No Hook C** — the broad awareness load (Step 5 of full's gate) does not exist in lite.
+- **Ad-hoc search rule:** same as full — call `search_memory` when the user asks about past decisions/phases/discussions. When the question is explicitly historical (researching superseded/past decisions), pass `include_superseded: true` to surface those records. Ordinary lookup queries do NOT set this flag. See DECISION-2026-06-19-search-memory-superseded-exclusion.
+- **Constraint search rule** (Discussion Mode trigger): same as full — call `search_memory("engineering constraints and principles", scope_filter=["constraint"], type_filter="decision")` when discussion mode engages. Does NOT set `include_superseded` — only active constraints shape design direction.
 - **Assignment search:** same as full (orthogonal feature).
 - **Squash/rebase recovery:** same as full (`find_similar_commit`).
 - **Drift audit via MCP:** same — `run_audit` if available. The lite category set is enforced by `lite/audit-mcp.md` (Cat 9, 11 dropped from the returned findings).

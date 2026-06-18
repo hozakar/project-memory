@@ -94,6 +94,7 @@ export interface SearchResult {
   similarity: number;      // 0 to 1, higher = more similar
   title: string;
   createdBy?: Identity;
+  status?: string;            // record status (e.g. decision: active | superseded | amended)
 }
 
 export interface CommitSearchResult {
@@ -196,4 +197,5 @@ export interface LanceRecord {
   assignedByEmail?: string;
   primaryScope?: string;     // decision primary_scope — supports exact WHERE filter via scope_filter
   outcomeType?: string;      // derived discussion outcome category (none, phase, decision, roadmap) — supports exact WHERE filter via outcomeTypeFilter
+  status?: string;            // record status (e.g. decision: active | superseded | amended)
 }

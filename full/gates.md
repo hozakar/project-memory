@@ -137,7 +137,7 @@ Classify the work using the commit significance table above.
 2. **Find candidate decisions and discussions** — branch on MCP availability:
 
    **If MCP available (see `mcp-integration.md`):**
-   - Decisions: `search_memory(query, touches_filter=entities, scope_filter=[primary_scope], type_filter="decision")` — exact `touches` / `primary_scope` filter combined with semantic ranking. The Pre-Implementation Gate ignores `status: superseded` records returned; only active decisions count as candidates.
+   - Decisions: `search_memory(query, touches_filter=entities, scope_filter=[primary_scope], type_filter="decision")` — exact `touches` / `primary_scope` filter combined with semantic ranking. Superseded decisions are now deterministically excluded by `search_memory` at the tool level (`WHERE status IS NULL OR status != 'superseded'`) — they never appear in gate results unless `include_superseded: true` is explicitly passed. The gate path never sets this flag, so superseded records are structurally invisible. See DECISION-2026-06-19-search-memory-superseded-exclusion.
    - **Globals (FS, always):** also read `decisions/index.md` Active section and surface every row where `Global` is `Yes`. Global rules are cross-cutting policies that bind every implementation regardless of touches overlap or semantic similarity — load them unconditionally. See `conventions-decisions.md` → Rule 0 (Global surface) and `DECISION-2026-06-17-global-scope-decisions`.
    - Discussions: `search_memory(task_description, top_k=8, type_filter="discussion")` — semantic catch for discussions whose conclusions might affect the proposed direction.
 
