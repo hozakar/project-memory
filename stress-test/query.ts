@@ -37,6 +37,7 @@ interface Query {
   query: string;
   typeFilter?: string;
   outcomeTypeFilter?: string;
+  diversify?: boolean;
 }
 
 const QUERIES: Query[] = [
@@ -47,6 +48,7 @@ const QUERIES: Query[] = [
     label: "Connection pooling alternatives",
     query: "database connection pooling strategy alternatives evaluated rejected reasons",
     typeFilter: "decision",
+    diversify: true,
   },
   {
     id: 2,
@@ -54,12 +56,14 @@ const QUERIES: Query[] = [
     label: "Event sourcing conflicts with early decisions",
     query: "event sourcing architecture conflicts early project decisions",
     typeFilter: "decision",
+    diversify: true,
   },
   {
     id: 3,
     category: "Temporal",
     label: "API gateway migration cluster",
     query: "API gateway migration phases decisions deferred follow-up unresolved",
+    diversify: true,
   },
   {
     id: 4,
@@ -67,6 +71,7 @@ const QUERIES: Query[] = [
     label: "Lock-in after primary database choice",
     query: "primary database choice secondary decisions lock-in costly to reverse",
     typeFilter: "decision",
+    diversify: true,
   },
   {
     id: 5,
@@ -74,6 +79,7 @@ const QUERIES: Query[] = [
     label: "Auth / session early constraints",
     query: "authentication session management early decisions constraints shaped later",
     typeFilter: "decision",
+    diversify: true,
   },
   // Cross-cutting semantic
   {
@@ -81,6 +87,7 @@ const QUERIES: Query[] = [
     category: "Cross-cutting",
     label: "Migration data integrity risks",
     query: "migration schema change traffic cutover silent data integrity risk mitigation",
+    diversify: true,
   },
   {
     id: 7,
@@ -88,12 +95,14 @@ const QUERIES: Query[] = [
     label: "Contradictory cache invalidation strategies",
     query: "caching strategy invalidation stale reads contradictory across services",
     typeFilter: "decision",
+    diversify: true,
   },
   {
     id: 8,
     category: "Cross-cutting",
     label: "Infrastructure deployment failure patterns",
     query: "infrastructure deployment failure modes lessons learned recurring systemic gap",
+    diversify: true,
   },
   {
     id: 9,
@@ -101,6 +110,7 @@ const QUERIES: Query[] = [
     label: "Security × API/auth/payments",
     query: "security constraint API authentication payments decisions",
     typeFilter: "decision",
+    diversify: true,
   },
   {
     id: 10,
@@ -109,6 +119,7 @@ const QUERIES: Query[] = [
     query: "architecture discussion deferred no consensus competing constraints unresolved revisit",
     typeFilter: "discussion",
     outcomeTypeFilter: "none",
+    diversify: true,
   },
   // Conflict detection
   {
@@ -117,12 +128,14 @@ const QUERIES: Query[] = [
     label: "Message broker replacement",
     query: "async message broker choice alternatives rejected dependent decisions",
     typeFilter: "decision",
+    diversify: true,
   },
   {
     id: 12,
     category: "Conflict",
     label: "REST → gRPC migration impact",
     query: "REST HTTP internal service communication protocol assumptions decisions phases",
+    diversify: true,
   },
   {
     id: 13,
@@ -130,6 +143,7 @@ const QUERIES: Query[] = [
     label: "bcrypt → Argon2id password hashing",
     query: "password hashing bcrypt algorithm security credential storage downstream",
     typeFilter: "decision",
+    diversify: true,
   },
   {
     id: 14,
@@ -137,12 +151,14 @@ const QUERIES: Query[] = [
     label: "Object storage consolidation constraints",
     query: "object storage provider backend data residency compliance constraint consolidation",
     typeFilter: "decision",
+    diversify: true,
   },
   {
     id: 15,
     category: "Conflict",
     label: "Data warehouse / ETL lakehouse migration",
     query: "data warehouse ETL pipeline schema data model retention policy analytics migration",
+    diversify: true,
   },
 ];
 
@@ -175,7 +191,7 @@ async function main() {
     }
 
     const t0 = Date.now();
-    const results = await searchMemory(q.query, 5, false, undefined, q.typeFilter, undefined, undefined, undefined, undefined, undefined, q.outcomeTypeFilter);
+    const results = await searchMemory(q.query, 5, false, undefined, q.typeFilter, undefined, undefined, undefined, undefined, undefined, q.outcomeTypeFilter, q.diversify);
     const ms = Date.now() - t0;
 
     console.log(`\nQ${q.id}: ${q.label}${q.typeFilter ? ` [${q.typeFilter}]` : ""}`);

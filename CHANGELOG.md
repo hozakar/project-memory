@@ -2,6 +2,32 @@
 
 All notable changes to the project-memory skill and MCP companion server.
 
+## [0.0.6] — 2026-06-18
+
+### Result diversity — MMR reranking (opt-in)
+
+`search_memory` gains an opt-in `diversify` parameter. When true, the tool
+over-fetches 5x and applies Maximum Marginal Relevance (MMR) reranking with
+lambda=0.7 (relevance-leaning). First pick = max similarity to query (P@1
+preserved); subsequent picks trade off relevance vs novelty against
+already-selected records. Addresses stress-test Q1/Q11 top-5 clustering
+(same-template records dominating top-K).
+
+Caller-decides trigger: the `diversify` flag is set by the caller based on
+query intent, guided by the tool description heuristic ("set true for
+survey/exploration queries with top_k >= 5; leave false for pinpoint lookups
+or top_k <= 3"). No auto-trigger — magic behavior based on topK creates
+debugging nightmares; Claude (the caller) is best positioned to judge intent
+from user phrasing.
+
+Pure `mmrRerank()` + `cosine()` functions in `utils.ts` (shared utility
+pattern, matches `deriveOutcomeType`). Lambda hardcoded at 0.7 — not exposed
+to MCP (too many knobs).
+
+Decision: DECISION-2026-06-18-search-memory-mmr-reranking.
+Files: utils.ts, db.ts, search_memory.ts, server.ts, query.ts, 2 test files,
+README.md, mcp-integration.md, CHANGELOG.md.
+
 ## [0.0.5] — 2026-06-18
 
 ### Structural filtering pattern — outcomeTypeFilter
