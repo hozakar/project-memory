@@ -44,6 +44,11 @@ def parse_args():
                    help="Parallel batch workers — openrouter supports >1 (default: 1)")
     p.add_argument("--api-key",    default=None, dest="api_key",
                    help="API key for openrouter provider (or set OPENROUTER_API_KEY env var)")
+    p.add_argument("--differentiate", action="store_true", default=False,
+                   help="In template mode: post-process duplicate instances via LLM to add meaningful "
+                        "variation (service-specific, time-specific context). Only calls LLM for "
+                        "duplicate groups — more economical than --llm. "
+                        "In --llm mode this step runs automatically; flag is redundant but harmless.")
     return p.parse_args()
 
 # ---------------------------------------------------------------------------
@@ -1079,6 +1084,370 @@ DISCUSSION_TEMPLATES = [
 ]
 
 # ---------------------------------------------------------------------------
+# Duplicate detection & differentiation (--differentiate flag)
+# ---------------------------------------------------------------------------
+
+def _extract_decision_slug(filename: str) -> str:
+    """DECISION-2024-09-19-connection-pooling.md → connection-pooling"""
+    name = filename[:-3] if filename.endswith('.md') else filename
+    parts = name.split('-')
+    # DECISION-YYYY-MM-DD-slug... → skip first 4 tokens
+    return '-'.join(parts[4:]) if len(parts) > 4 else ''
+
+def _extract_phase_slug(dirname: str) -> str:
+    """phase-20230703-implement-jwt-...-auth-service → implement-jwt-...-auth-service (strip -N suffix)"""
+    import re as _re
+    m = _re.match(r'^phase-\d{8}-(.+)$', dirname)
+    if not m:
+        return ''
+    slug = m.group(1)
+    return _re.sub(r'-\d+$', '', slug)
+
+def _extract_discussion_slug(filename: str) -> str:
+    """DISCUSSION-2024-09-19-grpc-internal-migration.md → grpc-internal-migration"""
+    import re as _re
+    name = filename[:-3] if filename.endswith('.md') else filename
+    parts = name.split('-')
+    # DISCUSSION-YYYY-MM-DD-slug... → skip first 4 tokens; strip trailing -N suffix
+    slug = '-'.join(parts[4:]) if len(parts) > 4 else ''
+    return _re.sub(r'-\d+$', '', slug)
+
+def _read_decision_fields(filepath: str) -> dict:
+    import re as _re
+    content = open(filepath, encoding='utf-8').read()
+    date_m    = _re.search(r'^date: (\S+)', content, _re.MULTILINE)
+    title_m   = _re.search(r'^title: "(.+?)"', content, _re.MULTILINE)
+    ctx_m     = _re.search(r'# Context\n(.*?)(?=\n#)', content, _re.DOTALL)
+    rat_m     = _re.search(r'# Rationale\n(.*?)$', content, _re.DOTALL)
+    return {
+        'filepath': filepath,
+        'date':     date_m.group(1)     if date_m  else 'unknown',
+        'title':    title_m.group(1)    if title_m else '',
+        'context':  ctx_m.group(1).strip()  if ctx_m  else '',
+        'rationale': rat_m.group(1).strip() if rat_m  else '',
+        'content':  content,
+    }
+
+def _read_discussion_fields(filepath: str) -> dict:
+    import re as _re
+    content = open(filepath, encoding='utf-8').read()
+    date_m   = _re.search(r'^date: (\S+)', content, _re.MULTILINE)
+    title_m  = _re.search(r'^title: "(.+?)"', content, _re.MULTILINE)
+    ctx_m    = _re.search(r'# Context\n(.*?)(?=\n#)', content, _re.DOTALL)
+    pts_m    = _re.search(r'# Discussion Points\n(.*?)(?=\n#)', content, _re.DOTALL)
+    conc_m   = _re.search(r'# Conclusions\n(.*?)$', content, _re.DOTALL)
+    return {
+        'filepath':    filepath,
+        'date':        date_m.group(1)        if date_m  else 'unknown',
+        'title':       title_m.group(1)       if title_m else '',
+        'context':     ctx_m.group(1).strip() if ctx_m   else '',
+        'points':      pts_m.group(1).strip() if pts_m   else '',
+        'conclusions': conc_m.group(1).strip() if conc_m else '',
+        'content':     content,
+    }
+
+def _read_phase_fields(filepath: str) -> dict:
+    import re as _re
+    content = open(filepath, encoding='utf-8').read()
+    date_m    = _re.search(r'^started_at: (\S+)', content, _re.MULTILINE)
+    title_m   = _re.search(r'^title: "(.+?)"', content, _re.MULTILINE)
+    summary_m = _re.search(r'^summary: \>\n  (.+?)$', content, _re.MULTILINE | _re.DOTALL)
+    return {
+        'filepath': filepath,
+        'date':     date_m.group(1)         if date_m    else 'unknown',
+        'title':    title_m.group(1)        if title_m   else '',
+        'summary':  summary_m.group(1).strip() if summary_m else '',
+        'content':  content,
+    }
+
+def detect_duplicate_groups(out: str) -> tuple:
+    """
+    Returns (decision_groups, phase_groups, discussion_groups).
+    Each is a dict {slug: [record_dict, ...]} for groups with >1 member.
+    """
+    import os as _os
+
+    decision_groups: dict = {}
+    decisions_dir = _os.path.join(out, ".project-memory", "decisions")
+    if _os.path.isdir(decisions_dir):
+        for f in _os.listdir(decisions_dir):
+            if not f.endswith('.md') or f == 'index.md':
+                continue
+            slug = _extract_decision_slug(f)
+            if slug:
+                record = _read_decision_fields(_os.path.join(decisions_dir, f))
+                decision_groups.setdefault(slug, []).append(record)
+    decision_groups = {k: v for k, v in decision_groups.items() if len(v) > 1}
+
+    phase_groups: dict = {}
+    phases_dir = _os.path.join(out, ".project-memory", "phases")
+    if _os.path.isdir(phases_dir):
+        for d in _os.listdir(phases_dir):
+            phase_yml = _os.path.join(phases_dir, d, "phase.yml")
+            if not _os.path.isfile(phase_yml):
+                continue
+            slug = _extract_phase_slug(d)
+            if slug:
+                record = _read_phase_fields(phase_yml)
+                phase_groups.setdefault(slug, []).append(record)
+    phase_groups = {k: v for k, v in phase_groups.items() if len(v) > 1}
+
+    discussion_groups: dict = {}
+    discussions_dir = _os.path.join(out, ".project-memory", "discussions")
+    if _os.path.isdir(discussions_dir):
+        for f in _os.listdir(discussions_dir):
+            if not f.endswith('.md') or f == 'index.md':
+                continue
+            slug = _extract_discussion_slug(f)
+            if slug:
+                record = _read_discussion_fields(_os.path.join(discussions_dir, f))
+                discussion_groups.setdefault(slug, []).append(record)
+    discussion_groups = {k: v for k, v in discussion_groups.items() if len(v) > 1}
+
+    return decision_groups, phase_groups, discussion_groups
+
+
+def _differentiate_decisions_prompt(slug: str, group: list) -> str:
+    n = len(group)
+    lines = [
+        f"These {n} engineering decision records all cover the same architectural topic "
+        f"('{slug}') but were made at different times for different services in a growing system.\n"
+        "Rewrite 'title', 'context', and 'rationale' for each so they are meaningfully distinct:\n"
+        "  - Title: keep the core topic and service name, but add a short distinguishing phrase\n"
+        "    that reflects when or why it happened (e.g. 'after Q3 traffic spike', 'post-migration cleanup',\n"
+        "    're-evaluation following 2024 incident', 'for v2 rollout'). Do NOT change the service name.\n"
+        "  - Earlier dates -> greenfield constraints, simpler scale, team learning\n"
+        "  - Later dates -> scale pressure, past incidents, lessons from earlier instances\n"
+        "  - Service identity shapes requirements: auth/security != analytics/throughput != billing/compliance\n"
+        "  - Vary the triggering event: incident, capacity review, new regulatory requirement, tech refresh\n"
+        "  - Use plain ASCII only -- no Unicode arrows or special characters\n"
+        "  - Keep chosen option and alternatives unchanged -- only title, context and rationale change.\n\n",
+    ]
+    for i, r in enumerate(group):
+        lines.append(
+            f"Instance {i+1}: title=\"{r['title']}\"  date={r['date']}\n"
+            f"  context:   {r['context'][:200]}\n"
+            f"  rationale: {r['rationale'][:200]}\n\n"
+        )
+    lines.append(
+        f"Return a JSON array of exactly {n} objects, each with keys:\n"
+        '  "title": string (varied title preserving service name),\n'
+        '  "context": string (2-3 sentences),\n'
+        '  "rationale": string (2-3 sentences)\n'
+        "Order must match the instances above."
+    )
+    return ''.join(lines)
+
+
+def _differentiate_phases_prompt(slug: str, group: list) -> str:
+    n = len(group)
+    lines = [
+        f"These {n} engineering phase records all represent the same type of work "
+        f"('{slug}') done at different points in a project's history.\n"
+        "Rewrite 'title' and 'summary' for each so they reflect what was different each time:\n"
+        "  - Title: keep the core action and service name, but add a short distinguishing phrase\n"
+        "    reflecting scope or iteration (e.g. 'phase 2', 'for billing-service', 'post-incident hardening',\n"
+        "    'extended to analytics pipeline'). Do NOT change the service name.\n"
+        "  - First instance -> initial implementation, rough edges, unexpected problems\n"
+        "  - Middle instances -> iteration, performance tuning, extending to new services\n"
+        "  - Later instances -> hardening, automation, handling edge cases from production experience\n"
+        "  - Mention concrete outcomes: latency improvements, incident resolution, cost savings\n"
+        "  - Use plain ASCII only -- no Unicode arrows or special characters\n\n",
+    ]
+    for i, r in enumerate(group):
+        lines.append(
+            f"Instance {i+1}: title=\"{r['title']}\"  date={r['date']}\n"
+            f"  current summary: {r['summary'][:200]}\n\n"
+        )
+    lines.append(
+        f"Return a JSON array of exactly {n} objects, each with keys:\n"
+        '  "title": string (varied title preserving service name),\n'
+        '  "summary": string (2-4 sentences)\n'
+        "Order must match the instances above."
+    )
+    return ''.join(lines)
+
+
+def _apply_decision_differentiation(record: dict, prose: dict) -> None:
+    import re as _re
+    content = record['content']
+    if prose.get('title'):
+        content = _re.sub(
+            r'^(title: ").*?(")',
+            lambda m: m.group(1) + prose['title'] + m.group(2),
+            content, flags=_re.MULTILINE
+        )
+    if prose.get('context'):
+        content = _re.sub(
+            r'(# Context\n).*?(?=\n#)',
+            lambda m: m.group(1) + prose['context'] + '\n',
+            content, flags=_re.DOTALL
+        )
+    if prose.get('rationale'):
+        content = _re.sub(
+            r'(# Rationale\n).*$',
+            lambda m: m.group(1) + prose['rationale'] + '\n',
+            content, flags=_re.DOTALL
+        )
+    with open(record['filepath'], 'w', encoding='utf-8') as f:
+        f.write(content)
+
+
+def _differentiate_discussions_prompt(slug: str, group: list) -> str:
+    n = len(group)
+    lines = [
+        f"These {n} engineering discussion records all cover the same topic "
+        f"('{slug}') but occurred at different points in a project's history.\n"
+        "Rewrite 'title', 'context', 'points', and 'conclusions' for each so they reflect what was different each time:\n"
+        "  - Title: keep the core topic but add a short distinguishing phrase reflecting the occasion\n"
+        "    (e.g. 'revisited after Q2 incident', 'initial feasibility', 'post-migration review',\n"
+        "    '2025 re-evaluation'). Keep it concise.\n"
+        "  - Earlier instances -> early-stage concerns, simpler constraints, team alignment sessions\n"
+        "  - Middle instances -> revisiting after incidents or growth, new stakeholders, changed requirements\n"
+        "  - Later instances -> post-mortem driven, validating earlier conclusions, course corrections\n"
+        "  - Vary the triggering event and outcome emphasis across instances\n"
+        "  - Use plain ASCII only -- no Unicode arrows or special characters\n\n",
+    ]
+    for i, r in enumerate(group):
+        lines.append(
+            f"Instance {i+1}: title=\"{r['title']}\"  date={r['date']}\n"
+            f"  context:     {r['context'][:150]}\n"
+            f"  points:      {r['points'][:150]}\n"
+            f"  conclusions: {r['conclusions'][:150]}\n\n"
+        )
+    lines.append(
+        f"Return a JSON array of exactly {n} objects, each with keys:\n"
+        '  "title": string (varied title preserving core topic),\n'
+        '  "context": string (2-3 sentences),\n'
+        '  "points": string (1 paragraph),\n'
+        '  "conclusions": string (1 paragraph)\n'
+        "Order must match the instances above."
+    )
+    return ''.join(lines)
+
+
+def _apply_discussion_differentiation(record: dict, prose: dict) -> None:
+    import re as _re
+    content = record['content']
+    if prose.get('title'):
+        content = _re.sub(
+            r'^(title: ").*?(")',
+            lambda m: m.group(1) + prose['title'] + m.group(2),
+            content, flags=_re.MULTILINE
+        )
+    if prose.get('context'):
+        content = _re.sub(
+            r'(# Context\n).*?(?=\n#)',
+            lambda m: m.group(1) + prose['context'] + '\n',
+            content, flags=_re.DOTALL
+        )
+    if prose.get('points'):
+        content = _re.sub(
+            r'(# Discussion Points\n).*?(?=\n#)',
+            lambda m: m.group(1) + prose['points'] + '\n',
+            content, flags=_re.DOTALL
+        )
+    if prose.get('conclusions'):
+        content = _re.sub(
+            r'(# Conclusions\n).*$',
+            lambda m: m.group(1) + prose['conclusions'] + '\n',
+            content, flags=_re.DOTALL
+        )
+    with open(record['filepath'], 'w', encoding='utf-8') as f:
+        f.write(content)
+
+
+def _apply_phase_differentiation(record: dict, prose: dict) -> None:
+    import re as _re
+    content = record['content']
+    if prose.get('title'):
+        content = _re.sub(
+            r'^(title: ").*?(")',
+            lambda m: m.group(1) + prose['title'] + m.group(2),
+            content, flags=_re.MULTILINE
+        )
+    if prose.get('summary'):
+        new_summary = prose['summary'].replace('\n', '\n  ')
+        content = _re.sub(
+            r'(summary: \>\n  ).*?(\nstatus:|\Z)',
+            lambda m: m.group(1) + new_summary + '\n' + (m.group(2) if m.group(2) else ''),
+            content, flags=_re.DOTALL
+        )
+    with open(record['filepath'], 'w', encoding='utf-8') as f:
+        f.write(content)
+
+
+def run_differentiation(
+    out: str, provider: str, model: str, api_key: str,
+    batch_size: int, workers: int,
+    record_types: set = None,  # None = all; pass {'discussion'} for targeted pass
+) -> None:
+    if record_types is None:
+        record_types = {'decision', 'phase', 'discussion'}
+    decision_groups, phase_groups, discussion_groups = detect_duplicate_groups(out)
+    if 'decision' not in record_types:
+        decision_groups = {}
+    if 'phase' not in record_types:
+        phase_groups = {}
+    if 'discussion' not in record_types:
+        discussion_groups = {}
+
+    total_dec  = sum(len(v) for v in decision_groups.values())
+    total_ph   = sum(len(v) for v in phase_groups.values())
+    total_disc = sum(len(v) for v in discussion_groups.values())
+    total_slugs = len(decision_groups) + len(phase_groups) + len(discussion_groups)
+    print(f"  Differentiate: {len(decision_groups)} decision slugs ({total_dec} files), "
+          f"{len(phase_groups)} phase slugs ({total_ph} files), "
+          f"{len(discussion_groups)} discussion slugs ({total_disc} files)")
+
+    if total_slugs == 0:
+        print("  No duplicates found -- nothing to differentiate.")
+        return
+
+    def process_group(args_tuple):
+        record_type, slug, group, prompt_fn, apply_fn = args_tuple
+        prompt = prompt_fn(slug, group)
+        raw = _llm_call(provider, model, prompt, api_key)
+        if not raw or len(raw) != len(group):
+            print(f"    [{record_type}] {slug}: LLM failed or wrong length -- skipped")
+            return 0
+        for record, prose in zip(group, raw):
+            apply_fn(record, prose)
+        return len(group)
+
+    tasks = []
+    for slug, group in decision_groups.items():
+        for i in range(0, len(group), batch_size):
+            sub = group[i:i + batch_size]
+            tasks.append(('decision', slug, sub,
+                           _differentiate_decisions_prompt, _apply_decision_differentiation))
+    for slug, group in phase_groups.items():
+        for i in range(0, len(group), batch_size):
+            sub = group[i:i + batch_size]
+            tasks.append(('phase', slug, sub,
+                           _differentiate_phases_prompt, _apply_phase_differentiation))
+    for slug, group in discussion_groups.items():
+        for i in range(0, len(group), batch_size):
+            sub = group[i:i + batch_size]
+            tasks.append(('discussion', slug, sub,
+                           _differentiate_discussions_prompt, _apply_discussion_differentiation))
+
+    done = 0
+    rewritten = 0
+    with ThreadPoolExecutor(max_workers=workers) as pool:
+        futures = {pool.submit(process_group, t): t[1] for t in tasks}
+        for fut in as_completed(futures):
+            n = fut.result()
+            rewritten += n
+            done += 1
+            if done % 10 == 0 or done == len(tasks):
+                print(f"    {done}/{len(tasks)} groups done ({rewritten} files rewritten)",
+                      flush=True)
+
+    print(f"  Differentiation complete: {rewritten} files rewritten")
+
+
+# ---------------------------------------------------------------------------
 # LLM prose generation (optional, --llm flag)
 # ---------------------------------------------------------------------------
 
@@ -1345,9 +1714,9 @@ def write_summaries(out: str) -> None:
     write_file(os.path.join(pm, "current-state.md"), "# Current State\n\nStress-test generated corpus.\n")
 
 def write_phase(out: str, phase_id: str, dt: date, tmpl: tuple, rng: random.Random,
-                prose: dict = None) -> dict:
+                prose: dict = None, service: str = None) -> dict:
     domain, verb, subject, ctx = tmpl
-    title = f"{verb} {subject} {ctx}"
+    title = f"{verb} {subject} {ctx}" + (f" for {service}" if service else "")
     tags_pool = DOMAIN_TAGS[domain]
     tags = rng.sample(tags_pool, min(rng.randint(2, 4), len(tags_pool)))
     if prose and prose.get("summary"):
@@ -1355,6 +1724,8 @@ def write_phase(out: str, phase_id: str, dt: date, tmpl: tuple, rng: random.Rand
     else:
         summary_tmpl = PHASE_SUMMARIES[domain]
         summary = summary_tmpl.format(verb_lower=verb.lower(), subject=subject)
+        if service:
+            summary += f" Affected service: {service}."
     closed = dt + timedelta(days=rng.randint(0, 1))
 
     phase_yml = f"""id: {phase_id}
@@ -1515,20 +1886,55 @@ def main():
     write_config(out)
     write_summaries(out)
 
-    # ---- Pre-compute dates and template assignments ----
-    phase_dates      = generate_dates(args.phases, start_d, end_d, rng)
-    num_discussions  = max(10, args.decisions // 5)
-    decision_dates   = generate_dates(args.decisions, start_d, end_d, rng)
-    discussion_dates = generate_dates(num_discussions, start_d, end_d, rng)
+    # ---- Pre-compute counts, then dates and template assignments ----
 
-    phase_tmpls      = [PHASE_TEMPLATES[i % len(PHASE_TEMPLATES)]    for i in range(args.phases)]
-    decision_tmpls   = [DECISION_TEMPLATES[i % len(DECISION_TEMPLATES)] for i in range(args.decisions)]
-    decision_services = [SERVICES[i % len(SERVICES)]                  for i in range(args.decisions)]
-    discussion_tmpls = [DISCUSSION_TEMPLATES[i % len(DISCUSSION_TEMPLATES)] for i in range(num_discussions)]
+    # Decisions: cartesian product (template × service), shuffled — no duplicate pairs
+    dec_pairs = [(t, s) for t in range(len(DECISION_TEMPLATES)) for s in range(len(SERVICES))]
+    rng.shuffle(dec_pairs)
+    max_unique_decisions = len(dec_pairs)  # 26 × 11 = 286
+    if args.llm:
+        n_decisions = args.decisions
+    else:
+        if args.decisions > max_unique_decisions:
+            print(f"  Note: capping decisions at {max_unique_decisions} unique template×service combinations "
+                  f"(use --llm to exceed this, or --differentiate for post-generation variation)")
+        n_decisions = min(args.decisions, max_unique_decisions)
+
+    # Phases: cartesian product (template × service), shuffled
+    phase_pairs = [(t, s) for t in range(len(PHASE_TEMPLATES)) for s in range(len(SERVICES))]
+    rng.shuffle(phase_pairs)
+    max_unique_phases = len(phase_pairs)  # 40 × 11 = 440
+    if args.llm:
+        n_phases = args.phases
+    else:
+        if args.phases > max_unique_phases:
+            print(f"  Note: capping phases at {max_unique_phases} unique template×service combinations "
+                  f"(use --llm to exceed this, or --differentiate for post-generation variation)")
+        n_phases = min(args.phases, max_unique_phases)
+
+    phase_dates       = generate_dates(n_phases,    start_d, end_d, rng)
+    decision_dates    = generate_dates(n_decisions, start_d, end_d, rng)
+    decision_tmpls    = [DECISION_TEMPLATES[dec_pairs[i % len(dec_pairs)][0]] for i in range(n_decisions)]
+    decision_services = [SERVICES[dec_pairs[i % len(dec_pairs)][1]]           for i in range(n_decisions)]
+    phase_tmpls    = [PHASE_TEMPLATES[phase_pairs[i % len(phase_pairs)][0]] for i in range(n_phases)]
+    phase_services = [SERVICES[phase_pairs[i % len(phase_pairs)][1]]        for i in range(n_phases)]
+
+    # Discussions: cap at unique template count in template mode (LLM generates unique prose anyway)
+    max_unique_discussions = len(DISCUSSION_TEMPLATES)
+    if args.llm:
+        num_discussions = max(max_unique_discussions, args.decisions // 5)
+    else:
+        raw_num = max(10, args.decisions // 5)
+        if raw_num > max_unique_discussions:
+            print(f"  Note: capping discussions at {max_unique_discussions} unique templates (template mode)")
+        num_discussions = min(raw_num, max_unique_discussions)
+    discussion_tmpls = [DISCUSSION_TEMPLATES[i % max_unique_discussions] for i in range(num_discussions)]
 
     # ---- Optional LLM prose generation ----
-    decision_prose_list  = [None] * args.decisions
-    phase_prose_list     = [None] * args.phases
+    discussion_dates = generate_dates(num_discussions, start_d, end_d, rng)
+
+    decision_prose_list  = [None] * n_decisions
+    phase_prose_list     = [None] * n_phases
     discussion_prose_list = [None] * num_discussions
 
     api_key = None
@@ -1550,12 +1956,12 @@ def main():
             {"service": decision_services[i], "title": _fill_tmpl(decision_tmpls[i]["title_tmpl"], decision_services[i]),
              "domain": decision_tmpls[i]["touches"][0], "options": decision_tmpls[i]["options"],
              "chosen": decision_tmpls[i]["chosen"]}
-            for i in range(args.decisions)
+            for i in range(n_decisions)
         ]
         phase_specs = [
-            {"title": f"{phase_tmpls[i][1]} {phase_tmpls[i][2]} {phase_tmpls[i][3]}",
+            {"title": f"{phase_tmpls[i][1]} {phase_tmpls[i][2]} {phase_tmpls[i][3]} for {phase_services[i]}",
              "domain": phase_tmpls[i][0], "date": phase_dates[i].strftime("%Y-%m-%d")}
-            for i in range(args.phases)
+            for i in range(n_phases)
         ]
         discussion_specs = [
             {"title": discussion_tmpls[i]["title"], "tags": discussion_tmpls[i]["tags"]}
@@ -1571,11 +1977,12 @@ def main():
     # ---- Phases ----
     phase_ids_used: set = set()
     phases = []
-    print(f"  Writing {args.phases} phases ", end="", flush=True)
+    print(f"  Writing {n_phases} phases ", end="", flush=True)
     for i, dt in enumerate(phase_dates):
         tmpl = phase_tmpls[i]
-        phase_id = make_phase_id(dt, f"{tmpl[1]} {tmpl[2]} {tmpl[3]}", phase_ids_used)
-        p = write_phase(out, phase_id, dt, tmpl, rng, prose=phase_prose_list[i])
+        phase_id = make_phase_id(dt, f"{tmpl[1]} {tmpl[2]} {tmpl[3]} {phase_services[i]}", phase_ids_used)
+        p = write_phase(out, phase_id, dt, tmpl, rng, prose=phase_prose_list[i],
+                        service=phase_services[i])
         phases.append(p)
         if (i + 1) % 100 == 0:
             print(".", end="", flush=True)
@@ -1586,7 +1993,7 @@ def main():
     # ---- Decisions ----
     decision_ids_used: set = set()
     decisions = []
-    print(f"  Writing {args.decisions} decisions ", end="", flush=True)
+    print(f"  Writing {n_decisions} decisions ", end="", flush=True)
     for i, dt in enumerate(decision_dates):
         tmpl    = decision_tmpls[i]
         service = decision_services[i]
@@ -1615,8 +2022,33 @@ def main():
     write_discussions_index(out, discussions)
 
     mode = f"LLM ({args.llm_model})" if args.llm else "template"
-    print(f"Generated {args.phases} phases, {args.decisions} decisions, {num_discussions} discussions "
+    print(f"Generated {n_phases} phases, {n_decisions} decisions, {num_discussions} discussions "
           f"[{mode}] -> {os.path.abspath(out)}")
+
+    # ---- Differentiate duplicate template instances via LLM ----
+    # Always runs in --llm mode (duplicates are expected when counts exceed unique combos).
+    # Also runs in template mode when --differentiate is explicitly passed.
+    if args.llm or args.differentiate:
+        if not args.llm:
+            # Template mode + --differentiate: validate LLM access
+            if args.llm_provider == "openrouter":
+                api_key = args.api_key or os.environ.get("OPENROUTER_API_KEY")
+                if not api_key:
+                    print("Error: --api-key or OPENROUTER_API_KEY required for --differentiate with openrouter.",
+                          file=sys.stderr)
+                    sys.exit(1)
+            else:
+                check = subprocess.run(["claude", "--version"], capture_output=True)
+                if check.returncode != 0:
+                    print("Error: 'claude' CLI not found on PATH (required for --differentiate).",
+                          file=sys.stderr)
+                    sys.exit(1)
+        print(f"Running differentiation: provider={args.llm_provider} model={args.llm_model} "
+              f"batch={args.llm_batch} workers={args.llm_workers}")
+        run_differentiation(
+            out, args.llm_provider, args.llm_model, api_key,
+            args.llm_batch, args.llm_workers,
+        )
 
 if __name__ == "__main__":
     main()

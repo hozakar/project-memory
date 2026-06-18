@@ -1,0 +1,23 @@
+{
+  "frozen_at": "2026-06-18",
+  "generator": "generate.py",
+  "params": {
+    "phases": 1200,
+    "decisions": 600,
+    "time_years": 3,
+    "seed": 42,
+    "llm": true,
+    "llm_provider": "claude",
+    "llm_model": "claude-haiku-4-5-20251001",
+    "llm_batch": 10,
+    "llm_workers": 1
+  },
+  "notes": [
+    "Differentiation runs automatically in --llm mode (no --differentiate flag needed).",
+    "Phases capped at 440 unique template×service combos in template mode; --llm removes the cap.",
+    "Decisions capped at 286 unique combos in template mode; --llm removes the cap.",
+    "Discussions = max(12, decisions // 5) in --llm mode.",
+    "LLM differentiation rewrites title + content for all duplicate groups (decisions, phases, discussions).",
+    "LanceDB index built with: npx tsx stress-test/index.ts stress-test/generated"
+  ]
+}
