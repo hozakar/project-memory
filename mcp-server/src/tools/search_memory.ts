@@ -13,11 +13,12 @@ export async function searchMemory(
   assignedToEmail?: string,
   assignedByEmail?: string,
   scopeFilter?: string[],
-  outcomeTypeFilter?: string
+  outcomeTypeFilter?: string,
+  diversify?: boolean
 ): Promise<SearchResult[]> {
   try {
     const vector = await embed(query);
-    const results = await search(vector, topK, typeFilter, !include_commits, createdByEmail, touchesFilter, tagsFilter, assignedToEmail, assignedByEmail, scopeFilter, outcomeTypeFilter);
+    const results = await search(vector, topK, typeFilter, !include_commits, createdByEmail, touchesFilter, tagsFilter, assignedToEmail, assignedByEmail, scopeFilter, outcomeTypeFilter, diversify);
     return results;
   } catch {
     return [];

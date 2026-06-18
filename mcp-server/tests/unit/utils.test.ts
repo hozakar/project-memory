@@ -8,6 +8,8 @@ import {
   buildInstructionText,
   buildAssignmentText,
   deriveOutcomeType,
+  cosine,
+  mmrRerank,
 } from "../../src/utils";
 
 describe("buildPhaseText", () => {
@@ -244,5 +246,86 @@ describe("buildAssignmentText", () => {
     });
     expect(result).toContain("not my area");
     expect(result).toContain("2026-06-15");
+  });
+});
+
+describe("cosine", () => {
+  it("returns 1 for identical vectors", () => {
+    const v = [1, 0, 0];
+    expect(cosine(v, v)).toBeCloseTo(1, 6);
+  });
+
+  it("returns 0 for orthogonal vectors", () => {
+    expect(cosine([1, 0], [0, 1])).toBeCloseTo(0, 6);
+  });
+
+  it("returns -1 for opposite vectors", () => {
+    expect(cosine([1, 0], [-1, 0])).toBeCloseTo(-1, 6);
+  });
+
+  it("returns 0 for zero vector", () => {
+    expect(cosine([0, 0], [1, 0])).toBe(0);
+  });
+});
+
+describe("mmrRerank", () => {
+  // Synthetic 3D vectors: query at [1,0,0], two near-duplicates at [0.99,0.01,0],
+  // a moderately relevant diverse record at [0.7,0.7,0], and an unrelated record at [0,0,1].
+  // Distances precomputed as L2 (matching LanceDB _distance for normalized vectors).
+  // C has high enough query relevance and is diverse from A, so at lambda=0.7
+  // the MMR score for C beats B (near-duplicate of A) for the second pick.
+  const queryVec = [1, 0, 0];
+  const rows = [
+    { id: "A", vector: [0.99, 0.01, 0], _distance: 0.10 },  // near-duplicate 1
+    { id: "B", vector: [0.99, 0.02, 0], _distance: 0.11 },  // near-duplicate 2
+    { id: "C", vector: [0.7, 0.7, 0], _distance: 0.50 },    // moderately relevant, diverse from A
+    { id: "D", vector: [0, 0, 1], _distance: 1.35 },        // unrelated
+  ];
+
+  it("returns all indices when topK >= rows.length", () => {
+    const result = mmrRerank(queryVec, rows, 0.7, 5);
+    expect(result).toHaveLength(4);
+    expect(new Set(result)).toEqual(new Set([0, 1, 2, 3]));
+  });
+
+  it("first pick is the max-similarity row (P@1 preserved)", () => {
+    const result = mmrRerank(queryVec, rows, 0.7, 3);
+    expect(result[0]).toBe(0); // row A has lowest _distance = highest sim
+  });
+
+  it("with lambda=0.7, second pick diversifies away from near-duplicate", () => {
+    // Row A is top-1. Row B is near-duplicate of A. With lambda=0.7, MMR should
+    // prefer C or D (diverse) over B (near-duplicate) for the second pick.
+    const result = mmrRerank(queryVec, rows, 0.7, 3);
+    expect(result[1]).not.toBe(1); // not the near-duplicate B
+  });
+
+  it("with lambda=1.0, degenerates to similarity sort (no diversity)", () => {
+    // lambda=1.0 ignores diversity penalty entirely => picks by similarity only.
+    // Both A and B have _distance=0.01, so A (first in array) is picked first,
+    // B (second with same sim) is picked second.
+    const result = mmrRerank(queryVec, rows, 1.0, 3);
+    expect(result[0]).toBe(0); // A (first among equal sim)
+    const secondPick = result[1];
+    // At lambda=1.0, diversity penalty is zero, so the second pick is max querySim.
+    // Index 0 is already selected, index 1 has the next highest querySim.
+    expect(secondPick).toBe(1);
+  });
+
+  it("with lambda=0.0, pure diversity (first pick still max sim, rest maximally diverse)", () => {
+    const result = mmrRerank(queryVec, rows, 0.0, 3);
+    expect(result[0]).toBe(0); // first pick always max sim
+    // Subsequent picks maximize diversity from selected.
+    expect(result).toHaveLength(3);
+  });
+
+  it("handles empty rows", () => {
+    const result = mmrRerank(queryVec, [], 0.7, 3);
+    expect(result).toEqual([]);
+  });
+
+  it("handles single row", () => {
+    const result = mmrRerank(queryVec, [rows[0]], 0.7, 3);
+    expect(result).toEqual([0]);
   });
 });

@@ -38,10 +38,11 @@ srv.tool(
     tags_filter: z.array(z.string()).optional().describe("Exact AND-filter on phase/discussion tags field. E.g. [\"mcp\", \"schema\"] returns records tagged with both. Only effective on type=phase and type=discussion records."),
     scope_filter: z.array(z.string()).optional().describe("Exact OR-filter on decision primary_scope field. E.g. [\"constraint\"] returns only decisions with primary_scope=constraint. Multiple values broaden (OR semantics). Only effective on type=decision records."),
     outcome_type_filter: z.string().optional().describe("Filter results to a specific discussion outcome type (none, phase, decision, roadmap). Exact match on derived outcomeType column. Only effective on type=discussion records."),
+    diversify: z.boolean().optional().default(false).describe("Apply MMR reranking for result diversity. Set true for survey/exploration queries ('what have we done about X', 'find all decisions touching Y and Z') with top_k >= 5; leave false for pinpoint lookups ('find the decision where we chose X') or top_k <= 3. When true: over-fetches 5x and reranks with lambda=0.7 (relevance-leaning). P@1 preserved (first pick = max similarity). Default: false."),
   },
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async (args: any) => {
-    const results = await searchMemory(args.query, args.top_k, args.include_commits, args.created_by_email, args.type_filter, args.touches_filter, args.tags_filter, args.assigned_to_email, args.assigned_by_email, args.scope_filter, args.outcome_type_filter);
+    const results = await searchMemory(args.query, args.top_k, args.include_commits, args.created_by_email, args.type_filter, args.touches_filter, args.tags_filter, args.assigned_to_email, args.assigned_by_email, args.scope_filter, args.outcome_type_filter, args.diversify);
     return { content: [{ type: "text" as const, text: JSON.stringify(results) }] };
   }
 );

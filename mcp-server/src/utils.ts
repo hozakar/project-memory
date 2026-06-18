@@ -111,3 +111,71 @@ export function deriveOutcomeType(outcome: string): string {
   if (outcome === "roadmap") return "roadmap";
   return "none";
 }
+
+export function cosine(a: number[], b: number[]): number {
+  let dot = 0;
+  let na = 0;
+  let nb = 0;
+  for (let i = 0; i < a.length; i++) {
+    dot += a[i] * b[i];
+    na += a[i] * a[i];
+    nb += b[i] * b[i];
+  }
+  if (na === 0 || nb === 0) return 0;
+  return dot / (Math.sqrt(na) * Math.sqrt(nb));
+}
+
+/**
+ * Maximum Marginal Relevance reranking.
+ *
+ * Greedy selection: first pick = max similarity to query (P@1 preserved);
+ * subsequent picks = max [lambda * sim(query, item) - (1 - lambda) * max(sim(item, selected))].
+ *
+ * @param queryVec  query embedding
+ * @param rows      over-fetched rows; each must expose `vector: number[]` and `_distance: number`
+ * @param lambda    relevance/diversity trade-off (0.7 = relevance-leaning, preserves P@1)
+ * @param topK      number of results to select
+ * @returns         array of indices into `rows`, length min(topK, rows.length), MMR-ordered
+ */
+export function mmrRerank(
+  queryVec: number[],
+  rows: Array<{ vector: number[]; _distance: number }>,
+  lambda: number,
+  topK: number
+): number[] {
+  if (rows.length <= topK) return rows.map((_, i) => i);
+
+  // Query-item similarity via LanceDB _distance (cosine for normalized vectors).
+  const querySim = rows.map(r => Math.max(0, 1 - (r._distance * r._distance) / 2));
+
+  const selected: number[] = [];
+  const remaining = new Set<number>(rows.map((_, i) => i));
+
+  // First pick: max similarity to query (guarantees P@1 unchanged).
+  let firstIdx = -1;
+  let firstSim = -Infinity;
+  for (const i of remaining) {
+    if (querySim[i] > firstSim) { firstSim = querySim[i]; firstIdx = i; }
+  }
+  selected.push(firstIdx);
+  remaining.delete(firstIdx);
+
+  // Subsequent picks: MMR score.
+  while (selected.length < topK && remaining.size > 0) {
+    let bestIdx = -1;
+    let bestScore = -Infinity;
+    for (const r of remaining) {
+      let maxSimSelected = -Infinity;
+      for (const s of selected) {
+        const sim = cosine(rows[r].vector, rows[s].vector);
+        if (sim > maxSimSelected) maxSimSelected = sim;
+      }
+      const score = lambda * querySim[r] - (1 - lambda) * maxSimSelected;
+      if (score > bestScore) { bestScore = score; bestIdx = r; }
+    }
+    selected.push(bestIdx);
+    remaining.delete(bestIdx);
+  }
+
+  return selected;
+}

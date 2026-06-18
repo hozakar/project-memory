@@ -1,6 +1,7 @@
 // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-explicit-any
 const lancedb: any = require("@lancedb/lancedb");
 import type { LanceRecord, SearchResult } from "./types";
+import { mmrRerank } from "./utils";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let _conn: any = null;
@@ -91,11 +92,12 @@ export async function search(
   assignedToEmail?: string,
   assignedByEmail?: string,
   scopeFilter?: string[],
-  outcomeTypeFilter?: string
+  outcomeTypeFilter?: string,
+  diversify?: boolean
 ): Promise<SearchResult[]> {
   try {
     const table = await getTable();
-    const fetchLimit = topK;
+    const fetchLimit = diversify ? Math.max(topK, topK * 5) : topK;
     let query = table.vectorSearch(vector);
 
     // Build WHERE clauses for pre-filtering
@@ -136,7 +138,18 @@ export async function search(
 
     const rows = await query.limit(fetchLimit).toArray();
 
-    let results = rows
+    // Pre-filter commits before MMR so commit exclusion doesn't shrink below topK.
+    let candidateRows = rows;
+    if (excludeCommits && !typeFilter) {
+      candidateRows = candidateRows.filter((r: Record<string, unknown>) => r.type !== "commit");
+    }
+    // MMR reranking for diversity (opt-in). First pick = max sim (P@1 preserved).
+    if (diversify && candidateRows.length > topK) {
+      const indices = mmrRerank(vector, candidateRows as Array<{ vector: number[]; _distance: number }>, 0.7, topK);
+      candidateRows = indices.map(i => candidateRows[i]);
+    }
+
+    let results = candidateRows
       .map((row: Record<string, unknown>) => {
         const distance = row._distance as number;
         const similarity = Math.max(
@@ -156,11 +169,11 @@ export async function search(
         }
         return result;
       })
-      .sort((a: SearchResult, b: SearchResult) => b.similarity - a.similarity);
-
-    if (excludeCommits && !typeFilter) {
-      results = results.filter((r: SearchResult) => r.type !== "commit");
+    if (!diversify) {
+      results = results.sort((a: SearchResult, b: SearchResult) => b.similarity - a.similarity);
     }
+
+    // Commit exclusion is handled above in the pre-filter for both diversify and non-diversify paths.
 
     return results.slice(0, topK);
   } catch (err) {
