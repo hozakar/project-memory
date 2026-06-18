@@ -2,6 +2,29 @@
 
 All notable changes to the project-memory skill and MCP companion server.
 
+## [0.0.5] — 2026-06-18
+
+### Structural filtering pattern — outcomeTypeFilter
+
+`search_memory` is now a hybrid semantic + structural tool. Structural metadata
+gets a per-field DB column + exact-match filter parameter, composing with vector
+search in a single call. `outcome_type_filter` is the first concrete instance:
+a derived `outcomeType` column (none/phase/decision/roadmap) on discussion
+records, filtered via exact-match WHERE clause. Closes the Q10 structural gap
+from the stress-test baseline (score 0.355 — vector search cannot reliably
+surface discussions by outcome type from content embeddings alone).
+
+The per-field pattern is codified: each filter-worthy field gets (a) a dedicated
+DB column in `LanceRecord`, (b) derivation at index time, (c) a filter parameter
+in `search_memory` and `server.ts` tool schema, (d) an exact-match WHERE clause
+in `db.ts`. Generic `metadataFilter` is deferred until 4+ filter-worthy fields
+make the per-field pattern repetitive.
+
+Decision: DECISION-2026-06-18-search-memory-structural-filtering.
+Files: types.ts, utils.ts (deriveOutcomeType), index_discussion.ts,
+rebuild_index.ts, search_memory.ts, db.ts, server.ts, query.ts, 2 test files.
+76 tests pass, typecheck + lint clean.
+
 ## [0.0.4] — 2026-06-17
 
 ### Contradiction detection & intellectual honesty

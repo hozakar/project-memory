@@ -15,7 +15,7 @@ At session start, check if `search_memory`, `index_phase`, `index_decision`, and
 
 | Tool | Purpose |
 |------|---------|
-| `search_memory(query, top_k?, type_filter?, created_by_email?, assigned_to_email?, assigned_by_email?, touches_filter?, tags_filter?)` | Hybrid search: vector similarity + optional exact pre-filters. `touches_filter` narrows decisions by entities touched; `tags_filter` narrows phases/discussions by tags; `assigned_to_email`/`assigned_by_email` filter assignments. Also the candidate-narrowing vehicle for `semantic-conflict-scan` (use `type_filter: "decision"`) — see `full/audit-mcp.md`. |
+| `search_memory(query, top_k?, include_commits?, created_by_email?, assigned_to_email?, assigned_by_email?, type_filter?, touches_filter?, tags_filter?, scope_filter?, outcome_type_filter?)` | Hybrid search: vector similarity + optional exact pre-filters. `touches_filter` narrows decisions by entities touched; `tags_filter` narrows phases/discussions by tags; `scope_filter` narrows decisions by primary scope (OR semantics); `outcome_type_filter` narrows discussions by derived outcome category (none/phase/decision/roadmap); `assigned_to_email`/`assigned_by_email` filter assignments; `include_commits` opt-in for per-commit records. Also the candidate-narrowing vehicle for `semantic-conflict-scan` (use `type_filter: "decision"`) — see `full/audit-mcp.md`. |
 | `index_phase(data)` | Upsert a phase into the vector index; called on phase open and close. Also indexes per-commit records for `find_similar_commit`. |
 | `index_decision(data)` | Upsert a decision; called on creation and status change. |
 | `index_discussion(data)` | Upsert a discussion; called on conclusion and status change. |

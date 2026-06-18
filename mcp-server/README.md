@@ -4,7 +4,7 @@ Optional MCP companion server for the [project-memory](../) skill. Provides sema
 
 ## Tools
 
-- `search_memory(query, top_k?, created_by_email?, type_filter?, include_commits?)` — semantic search over phases, decisions, discussions, eras, and instructions; supports `created_by_email` user-scope filter and `type_filter` to restrict to a specific record type; excludes per-commit records by default
+- `search_memory(query, top_k?, include_commits?, created_by_email?, assigned_to_email?, assigned_by_email?, type_filter?, touches_filter?, tags_filter?, scope_filter?, outcome_type_filter?)` — hybrid semantic + structural search over phases, decisions, discussions, eras, instructions, and assignments. Supports `created_by_email` user-scope filter, `type_filter` to restrict record type, `touches_filter` (decision entities, AND), `tags_filter` (phase/discussion tags, AND), `scope_filter` (decision primary_scope, OR), `outcome_type_filter` (discussion outcome category: none/phase/decision/roadmap), `assigned_to_email`/`assigned_by_email` (assignment filters), and `include_commits` opt-in for per-commit records
 - `index_phase(data)` — upsert a phase into the vector index (called on phase open and close)
 - `index_decision(data)` — upsert a decision (called on creation and status change)
 - `index_discussion(data)` — upsert a discussion (called on conclusion)
@@ -17,7 +17,7 @@ Optional MCP companion server for the [project-memory](../) skill. Provides sema
 - `run_audit(project_memory_dir, profile?)` — execute all 14 audit categories; returns {auto_fixed, pending_fixes, escalations} with pre-computed interactive flags; accepts `profile` parameter (`full` | `lite` | `minimal`)
 - `apply_audit_fixes(project_memory_dir, pending_fixes[])` — deterministically execute `PendingFix` variants returned by `run_audit`; source-of-truth-safe (reads `.project-memory/` files only, no LanceDB reads, no prose synthesis); idempotent; returns {applied, partial, failed, rerun_audit_recommended}
 
-**Version:** 0.0.4
+**Version:** 0.0.5
 
 **Record types indexed:** phases, decisions, discussions, eras, instructions, and assignments (all six project-memory record types).
 
