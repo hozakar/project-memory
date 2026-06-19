@@ -3,6 +3,8 @@ name: project-memory-cheatsheet-lite
 description: Lite-profile quick reference and event-based triggers. Reflects the reduced lite gate, audit, and summary set.
 ---
 
+> **Profile:** `lite` — This cheatsheet covers lite-ceremony behavior. For tier differences and full/minimal alternatives, see `profiles.md`.
+
 # Quick Reference Cheatsheet (lite)
 
 **About to commit?**

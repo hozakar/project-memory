@@ -3,6 +3,8 @@ name: project-memory-cheatsheet
 description: Quick reference cheatsheet and event-based trigger table for project-memory.
 ---
 
+> **Profile:** `full` — This cheatsheet covers full-ceremony behavior. For tier differences and lite/minimal alternatives, see `profiles.md`.
+
 # Quick Reference Cheatsheet
 
 **About to commit?**
