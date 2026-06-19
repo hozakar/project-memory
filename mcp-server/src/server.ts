@@ -14,6 +14,7 @@ import { runAudit } from "./tools/run_audit";
 import { applyAuditFixes } from "./tools/apply_audit_fixes";
 import { listContributors } from "./tools/list_contributors";
 import { findTouchingPhases } from "./tools/find_touching_phases";
+import { findPhaseDependencies, getAllDependencies } from "./tools/find_phase_dependencies";
 import type { IndexEntry, PendingFix } from "./types";
 import { version } from "../package.json";
 
@@ -300,6 +301,28 @@ srv.tool(
   },
   async (args: any) => {
     const result = await findTouchingPhases(args.file_path);
+    return { content: [{ type: "text" as const, text: JSON.stringify(result) }] };
+  }
+);
+
+srv.tool(
+  "find_phase_dependencies",
+  "Analyze the dependency graph for a specific phase. Returns upstream (phases this one depends on), downstream (phases that depend on this one), conflicts, and transitive closure via BFS traversal. Reads depends_on/enables/conflicts_with from phase.yml files across all phases.",
+  {
+    phase_id: z.string().describe("Phase ID, e.g. 'phase-20260619-roadmap-run'."),
+  },
+  async (args: any) => {
+    const result = await findPhaseDependencies(args.phase_id);
+    return { content: [{ type: "text" as const, text: JSON.stringify(result) }] };
+  }
+);
+
+srv.tool(
+  "get_all_dependencies",
+  "Analyze the entire phase dependency graph. Returns all phases with their relationship data, lists of blocked/unblocked phases, and detected circular dependency cycles. Useful for roadmap planning: 'what can I start now?' and 'are there any dependency deadlocks?'",
+  {},
+  async () => {
+    const result = await getAllDependencies();
     return { content: [{ type: "text" as const, text: JSON.stringify(result) }] };
   }
 );

@@ -16,7 +16,11 @@ summary: null                # written at Pre-Close Gate: 2-3 sentences — what
 branch: null                 # set if a dedicated branch exists; null for direct commits
 related_phases: []
 commits: []                  # list of commit hashes; orphaned entries annotated as: abc1234 [orphaned YYYY-MM-DD]
-merge_commit: null           # set only if branch was merged; null for direct-commit phases; orphaned form: abc1234 [orphaned YYYY-MM-DD]
+    merge_commit: null           # set only if branch was merged; null for direct-commit phases; orphaned form: abc1234 [orphaned YYYY-MM-DD]
+    # --- Phase dependency graph (C3) ---
+    depends_on: []               # Phase IDs that must complete before this one can start
+    enables: []                  # Phase IDs this phase unblocks when completed
+    conflicts_with: []           # Phase IDs that may conflict (same files, competing approaches)
 closed_at: null              # set to YYYY-MM-DD when phase completes or is abandoned (non-merge)
 abandoned_reason: null       # set only when status: abandoned
 issues_created: []
