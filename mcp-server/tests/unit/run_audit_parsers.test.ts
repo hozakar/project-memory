@@ -1,5 +1,8 @@
-import { describe, it, expect } from "vitest";
-import { parseFrontmatter, matchesIgnorePattern, AuditIgnoreSet, resolveProfileAtDate } from "../../src/tools/run_audit";
+import * as fs from "fs";
+import * as os from "os";
+import * as path from "path";
+import { afterEach, beforeEach, describe, it, expect } from "vitest";
+import { parseFrontmatter, matchesIgnorePattern, AuditIgnoreSet, resolveProfileAtDate, readProfileHistory } from "../../src/tools/run_audit";
 import type { ProfileHistoryEntry } from "../../src/tools/run_audit";
 
 describe("parseFrontmatter", () => {
@@ -159,5 +162,73 @@ describe("resolveProfileAtDate", () => {
     ];
     // Phase date before the only history entry → fallback
     expect(resolveProfileAtDate("2026-06-01", history, "lite")).toBe("lite");
+  });
+});
+
+describe("readProfileHistory", () => {
+  let tmpDir: string;
+
+  beforeEach(() => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "pm-rph-test-"));
+    fs.mkdirSync(path.join(tmpDir, ".project-memory"));
+  });
+
+  afterEach(() => {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  function writeConfig(content: string): void {
+    fs.writeFileSync(path.join(tmpDir, ".project-memory", "config.yml"), content, "utf-8");
+  }
+
+  it("returns empty array when config.yml has no profile_history key", () => {
+    writeConfig("profile: full\nadr_enabled: false\n");
+    expect(readProfileHistory(path.join(tmpDir, ".project-memory"))).toEqual([]);
+  });
+
+  it("parses a single profile_history entry correctly", () => {
+    writeConfig([
+      "profile: full",
+      "profile_history:",
+      "  - profile: full",
+      '    effective_date: 2026-06-08',
+      '    reason: "initial"',
+    ].join("\n"));
+    expect(readProfileHistory(path.join(tmpDir, ".project-memory"))).toEqual([
+      { profile: "full", effective_date: "2026-06-08" },
+    ]);
+  });
+
+  it("parses multiple entries and returns them sorted ascending by effective_date", () => {
+    // reason field appears between profile: and effective_date: — real config.yml format
+    writeConfig([
+      "profile: lite",
+      "profile_history:",
+      "  - profile: lite",
+      '    effective_date: 2026-06-15',
+      '    reason: "downgrade"',
+      "  - profile: full",
+      '    effective_date: 2026-06-08',
+      '    reason: "initial"',
+    ].join("\n"));
+    const result = readProfileHistory(path.join(tmpDir, ".project-memory"));
+    expect(result).toEqual([
+      { profile: "full", effective_date: "2026-06-08" },
+      { profile: "lite", effective_date: "2026-06-15" },
+    ]);
+  });
+
+  it("skips entries with unrecognized profile values", () => {
+    writeConfig([
+      "profile: full",
+      "profile_history:",
+      "  - profile: full",
+      '    effective_date: 2026-06-08',
+      "  - profile: experimental",
+      '    effective_date: 2026-06-10',
+    ].join("\n"));
+    const result = readProfileHistory(path.join(tmpDir, ".project-memory"));
+    expect(result).toHaveLength(1);
+    expect(result[0].profile).toBe("full");
   });
 });

@@ -104,14 +104,20 @@ export function readProfileHistory(projectMemoryDir: string): ProfileHistoryEntr
   const sectionMatch = content.match(/profile_history:\s*([\s\S]*?)(?=\n\w|$)/);
   if (!sectionMatch) return history;
 
+  const VALID_PROFILES = new Set(["full", "lite", "minimal"]);
   let m: RegExpExecArray | null;
   while ((m = itemRe.exec(sectionMatch[1])) !== null) {
-    const p = m[1].replace(/^['"]|['"]$/g, "") as "full" | "lite" | "minimal";
-    history.push({ profile: p, effective_date: m[2] });
+    const p = m[1].replace(/^['"]|['"]$/g, "");
+    if (!VALID_PROFILES.has(p)) continue;
+    history.push({ profile: p as "full" | "lite" | "minimal", effective_date: m[2] });
   }
   return history.sort((a, b) => a.effective_date.localeCompare(b.effective_date));
 }
 
+/**
+ * @param profileHistory Must be sorted ascending by effective_date.
+ *   Use readProfileHistory() to obtain a correctly sorted array.
+ */
 export function resolveProfileAtDate(
   date: string,
   profileHistory: ProfileHistoryEntry[],
