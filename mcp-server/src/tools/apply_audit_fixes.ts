@@ -397,6 +397,21 @@ function applyAssignAdrId(
 }
 
 // ---------------------------------------------------------------------------
+// ADR_STATUS_MAP — canonical mapping from decision/phase status → ADR status string.
+// Unknown statuses fall back to title-case (first char upper, rest lower).
+// ---------------------------------------------------------------------------
+
+const ADR_STATUS_MAP: Record<string, string> = {
+  active: "Accepted",
+  accepted: "Accepted",
+  superseded: "Superseded",
+  deprecated: "Deprecated",
+  rejected: "Rejected",
+  proposed: "Proposed",
+  draft: "Draft",
+};
+
+// ---------------------------------------------------------------------------
 // create_adr_file — write ADR stub with header + Status + section placeholders.
 // Body sections are TODO for LLM (prose extraction from DECISION sections).
 // Returns PartialFix.
@@ -434,7 +449,8 @@ function applyCreateAdrFile(
   const dateMatch = decisionId.match(/^DECISION-(\d{4}-\d{2}-\d{2})/);
   const date = dateMatch ? dateMatch[1] : new Date().toISOString().slice(0, 10);
   const statusRaw = fm["status"] || "active";
-  const status = statusRaw === "active" ? "Accepted" : statusRaw.charAt(0).toUpperCase() + statusRaw.slice(1);
+  const mappedStatus = ADR_STATUS_MAP[statusRaw.toLowerCase()] ?? (statusRaw.charAt(0).toUpperCase() + statusRaw.slice(1).toLowerCase());
+  const status = mappedStatus;
 
   if (fileExists(adrPath)) {
     return {

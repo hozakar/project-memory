@@ -227,6 +227,30 @@ describe("apply_audit_fixes — create_adr_file", () => {
     expect(adrContent).toContain("Status: Accepted");
     expect(adrContent).toContain("<!-- TODO");
   });
+
+  const adrStatusCases: Array<[string, string]> = [
+    ["active", "Accepted"],
+    ["accepted", "Accepted"],
+    ["superseded", "Superseded"],
+    ["deprecated", "Deprecated"],
+    ["rejected", "Rejected"],
+    ["proposed", "Proposed"],
+    ["draft", "Draft"],
+    ["custom-status", "Custom-status"],
+  ];
+
+  it.each(adrStatusCases)("maps decision status %s → ADR Status: %s", async (inputStatus, expectedStatus) => {
+    w("config.yml", `adr_dir: adr\n`);
+    w(
+      "decisions/DECISION-2026-06-17-statustest.md",
+      `---\nid: DECISION-2026-06-17-statustest\nstatus: ${inputStatus}\n---\n# Status Test\n\n## Context\nBody.\n`,
+    );
+    const fix: PendingFix = { type: "create_adr_file", decisionId: "DECISION-2026-06-17-statustest", adrId: "0099" };
+    await applyAuditFixes(pmDir, [fix]);
+    const adrPath = path.join(tmpRoot, "adr", `0099-statustest.md`);
+    const adrContent = fs.readFileSync(adrPath, "utf-8");
+    expect(adrContent).toContain(`Status: ${expectedStatus}`);
+  });
 });
 
 describe("apply_audit_fixes — create_phase_stub", () => {
