@@ -133,6 +133,8 @@ async function main() {
 
   let hits = 0;
   const lines: string[] = [];
+  const total = EXPECTED.length;
+  const threshold = total - 1;
 
   for (const exp of EXPECTED) {
     const res = await searchMemory(
@@ -154,16 +156,16 @@ async function main() {
 
     if (isHit) {
       hits++;
-      lines.push(`Q${String(exp.id).padStart(2)} HIT  (${((top as { similarity?: number }).similarity ?? 0).toFixed(3)}): ${top.id}`);
+      lines.push(`Q${String(exp.id).padStart(2)} HIT  (${top.similarity.toFixed(3)}): ${top.id}`);
     } else {
       lines.push(`Q${String(exp.id).padStart(2)} MISS: got "${top.id}" — expected keyword(s): [${exp.keywords.join(", ")}]`);
     }
   }
 
   lines.forEach(l => console.log(l));
-  console.log(`\nP@1: ${hits}/15  (threshold: 14/15)`);
+  console.log(`\nP@1: ${hits}/${total}  (threshold: ${threshold}/${total})`);
 
-  if (hits < 14) {
+  if (hits < threshold) {
     console.error("FAIL: P@1 below threshold — search regression detected");
     process.exit(1);
   }

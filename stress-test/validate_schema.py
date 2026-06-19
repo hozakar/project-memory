@@ -50,7 +50,7 @@ def main() -> None:
                 errors.append(f"MISSING_FILE: {phase_dir.name}/phase.yml")
                 continue
             try:
-                data = yaml.safe_load(yml.read_text(encoding="utf-8"))
+                data = yaml.safe_load(yml.read_text(encoding="utf-8-sig"))
             except yaml.YAMLError as e:
                 errors.append(f"YAML_ERROR {phase_dir.name}/phase.yml: {e}")
                 continue
@@ -60,7 +60,7 @@ def main() -> None:
             if data.get("status") not in PHASE_VALID_STATUSES:
                 errors.append(f"INVALID_STATUS {phase_dir.name}/phase.yml: '{data.get('status')}'")
             # Detect duplicate keys (PyYAML silently overwrites — use raw text check)
-            raw_keys = [ln.split(":")[0].strip() for ln in yml.read_text(encoding="utf-8").splitlines()
+            raw_keys = [ln.split(":")[0].strip() for ln in yml.read_text(encoding="utf-8-sig").splitlines()
                         if ln and not ln.startswith(" ") and ":" in ln and not ln.startswith("#") and not ln.startswith("-")]
             dupes = [k for k in set(raw_keys) if raw_keys.count(k) > 1]
             if dupes:
