@@ -28,7 +28,7 @@ issues_resolved: []
 decisions_referenced: []
 implements_decision: null    # DECISION-YYYY-MM-DD-slug this phase directly implements; null if not decision-driven
 tags: []
-created_by:                  # required — see templates-attribution.md
+created_by:                  # required — see templates/attribution.md
   name: "Hakan Ozakar"
   email: "hozakar@gmail.com"
 contributors:                # required — list grows on status-changing writes

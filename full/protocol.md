@@ -67,7 +67,7 @@ The session-start work happens in this order. Each step may be a no-op depending
 5. **Assignment load** — load pending/ongoing/rejected assignments for the current user:
    - Pending/ongoing: `search_memory(type_filter="assignment", assigned_to_email="<run: git config user.email>")`
    - Rejected: `search_memory(type_filter="assignment", assigned_by_email="<run: git config user.email>")`
-   - Emit passive single-line summaries per `conventions-records.md` (Assignment lifecycle — Session-start UX).
+   - Emit passive single-line summaries per `conventions/records.md` (Assignment lifecycle — Session-start UX).
    - MCP unavailable fallback: scan `.project-memory/assignments/` ASSIGNMENT-*.md files, filter by frontmatter email fields.
 6. **Era prompt** — if ≥ 10 phases have accumulated since the last era AND session role = maintainer, ask whether to create the next era file.
 7. **Header emission** — output `🧠 PROJECT MEMORY LOADED` (memory loaded indicator only).
@@ -100,7 +100,7 @@ At session start (see `Session-start Ordering` above for the surrounding sequenc
    - Rejected assignments created by the user (EXECUTE — see Step 5 above)
    - Completed assignment notifications — same filter as rejected; shown once, non-persistent
 
-   Notification format, "passive single line" rule, and interaction model are defined in `conventions-records.md` (Assignment lifecycle — Session-start UX). Do not duplicate those rules here.
+   Notification format, "passive single line" rule, and interaction model are defined in `conventions/records.md` (Assignment lifecycle — Session-start UX). Do not duplicate those rules here.
 9. .project-memory/decisions/index.md — Active section only (primary input to Pre-Implementation Gate); Superseded section is available on demand for historical lookups but is NOT scanned during Pre-Implementation Gate
 10. Individual DECISION-YYYY-MM-DD-* files (only when planning in a scope the index flags as relevant)
 11. Open issues (as needed)
@@ -133,7 +133,7 @@ The word "stale" appears in three places in this skill, measuring three differen
 |---|---|---|
 | Tier 3 contradiction detection (Agent Thinking Protocol above) | ≥ 30 days since closure OR ≥ 2 eras back | Is the decision context still current, or should I offer an override path? |
 | Token Budget Guidelines (this section) | ≥ 20 phases in `phases/index.yml` | Is the index large enough that I need tag-aware filtering at load time? |
-| Discussion expiry (`conventions-discussions.md`) | ≥ 30 days AND `outcome: none` | Did this open discussion go nowhere? Archive it. |
+| Discussion expiry (`conventions/discussions.md`) | ≥ 30 days AND `outcome: none` | Did this open discussion go nowhere? Archive it. |
 
 Picking the wrong threshold for the wrong purpose will produce the wrong behaviour — e.g., archiving discussions on a 2-era boundary loses recent context; loading every phase on a 30-day window misses load-time scalability.
 
@@ -181,7 +181,7 @@ When the question targets a specific entity (file, module, system area), combine
 - Multiple filter values use AND semantics — each additional value narrows further. Use a single value when in doubt.
 
 **Constraint search rule:**
-When Discussion Mode is engaged (explicit `Skill project-memory discuss` or implicit trigger detection per `conventions-discussions.md`) for a new feature or enhancement — before the conversation deepens — call `search_memory("engineering constraints and principles", scope_filter=["constraint"], type_filter="decision")`. Does NOT set `include_superseded` — superseded constraints are structurally excluded; only active constraints shape design direction. Surface any returned decisions to the conversation so they can shape the design direction early. This fires at Discussion Mode engagement, not on every brainstorm-flavored exchange, and not just at the Pre-Implementation Gate.
+When Discussion Mode is engaged (explicit `Skill project-memory discuss` or implicit trigger detection per `conventions/discussions.md`) for a new feature or enhancement — before the conversation deepens — call `search_memory("engineering constraints and principles", scope_filter=["constraint"], type_filter="decision")`. Does NOT set `include_superseded` — superseded constraints are structurally excluded; only active constraints shape design direction. Surface any returned decisions to the conversation so they can shape the design direction early. This fires at Discussion Mode engagement, not on every brainstorm-flavored exchange, and not just at the Pre-Implementation Gate.
 
 **Assignment search:** At session start, when assignments exist, call `search_memory` with both `assigned_to_email` (pending/ongoing) and `assigned_by_email` (rejected/completed) filters and `type_filter: "assignment"`. For targeted lookups (e.g., "what did I assign to Mehmet?"), combine with the user's question text for semantic ranking.
 

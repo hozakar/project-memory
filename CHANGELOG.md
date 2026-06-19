@@ -219,15 +219,15 @@ DECISION-2026-06-17-semantic-conflict-scan.
 ### Skill file architecture — templates-records split
 
 `templates-records.md` (367 lines, 5 record types) split into five dedicated
-files: `templates-decisions.md`, `templates-discussions.md`,
-`templates-instructions.md`, `templates-assignments.md`,
-`templates-attribution.md`. Pure refactor; no schema changes.
+files: `templates/decisions.md`, `templates/discussions.md`,
+`templates/instructions.md`, `templates/assignments.md`,
+`templates/attribution.md`. Pure refactor; no schema changes.
 
 ### protocol.md cleanup
 
 Four-phase isolated cleanup of `protocol.md`:
 - **Structural (B1):** collapsed step 8 variants; extracted duplicate UX rules to
-  canonical location in `conventions-records.md`; removed stale skill sub-files table.
+  canonical location in `conventions/records.md`; removed stale skill sub-files table.
 - **Semantic (B2):** Tier 3 contradiction threshold made concrete; trigger criteria
   clarified; Session-start Ordering subsection (7-step checklist) added; era prompt
   extracted from proactive sync block.

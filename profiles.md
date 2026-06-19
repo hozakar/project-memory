@@ -147,17 +147,19 @@ User changes profile via natural language ("switch project-memory to full"). SKI
 │   └── minimal.md                 ← single-file spec (~50-80 lines)
 │
 ├── audit.md                       ← dispatcher (shared) — routes to <profile>/audit-*
-├── templates.md                   ← dispatcher (shared) — routes to <profile>/templates-* where applicable
-├── conventions.md                 ← dispatcher (shared) — routes to conventions-*.md
-├── conventions-decisions.md       ← shared
-├── conventions-discussions.md     ← shared
-├── conventions-records.md         ← shared
-├── conventions-maintainer.md      ← shared (with profile-specific attribution notes)
-├── templates-decisions.md         ← shared
-├── templates-discussions.md       ← shared
-├── templates-instructions.md      ← shared
-├── templates-assignments.md       ← shared
-├── templates-attribution.md       ← shared (created_by / contributors schema)
+├── conventions/                   ← dispatcher (shared) — routes to conventions/*.md
+│   ├── index.md                   ← Dispatcher
+│   ├── decisions.md               ← shared
+│   ├── discussions.md             ← shared
+│   ├── records.md                 ← shared
+│   └── maintainer.md              ← shared (with profile-specific attribution notes)
+├── templates/                     ← dispatcher (shared) — routes to templates/*.md
+│   ├── index.md                   ← Dispatcher
+│   ├── decisions.md               ← shared
+│   ├── discussions.md             ← shared
+│   ├── instructions.md            ← shared
+│   ├── assignments.md             ← shared
+│   └── attribution.md             ← shared (created_by / contributors schema)
 ├── mcp-integration.md             ← shared
 └── README.md
 ```

@@ -24,14 +24,14 @@ issues_resolved: []
 decisions_referenced: []
 implements_decision: null    # DECISION-YYYY-MM-DD-slug this phase directly implements; null if not decision-driven
 tags: []
-created_by:                  # required — see conventions-maintainer.md (Author Attribution → lite scope)
+created_by:                  # required — see conventions/maintainer.md (Author Attribution → lite scope)
   name: "Hakan Ozakar"
   email: "hozakar@gmail.com"
 # contributors field omitted in lite
 ```
 
 **Differences from full:**
-- No `contributors` field. Lite only writes `created_by`. See `conventions-maintainer.md` → Author Attribution → lite scope.
+- No `contributors` field. Lite only writes `created_by`. See `conventions/maintainer.md` → Author Attribution → lite scope.
 - `summary` is still required at Pre-Close, but the suggested length is 1-2 sentences (not 2-3).
 - `tags` are still useful for tag-aware filtering in `phases/index.yml` — keep them populated.
 

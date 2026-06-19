@@ -14,7 +14,7 @@ Instruction records capture user workflow preferences as short prompts injected 
 ---
 id: INSTRUCTION-YYYY-MM-DD-short-slug
 state: active              # active | dropped
-created_by:                # required — see templates-attribution.md
+created_by:                # required — see templates/attribution.md
   name: "Hakan Ozakar"
   email: "hozakar@gmail.com"
 mode: prompt               # always prompt — re-injected at every gate, no per-instruction trigger needed

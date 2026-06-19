@@ -98,7 +98,7 @@ Create when **significant work begins**. Create the phase directory and files **
 
 For `phase.yml` schema, read `lite/templates-phase.md`.
 
-**Author attribution:** Set `created_by` from the current git identity. Lite does NOT use the `contributors` field. See `conventions-maintainer.md` → Author Attribution (lite scope).
+**Author attribution:** Set `created_by` from the current git identity. Lite does NOT use the `contributors` field. See `conventions/maintainer.md` → Author Attribution (lite scope).
 
 **MCP index on phase open (if available):** same as full — call `index_phase` with what's available (`planText` empty if no plan.md). Best-effort.
 

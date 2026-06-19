@@ -1,6 +1,6 @@
 ---
 name: project-memory-templates-attribution
-description: Shared Author Attribution schema (created_by, contributors) referenced by all record templates. Full attribution rules live in conventions-maintainer.md.
+description: Shared Author Attribution schema (created_by, contributors) referenced by all record templates. Full attribution rules live in conventions/maintainer.md.
 ---
 
 # Author Attribution Fields

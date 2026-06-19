@@ -309,15 +309,15 @@ that don't diverge across profiles stay at the root.
 | File | Purpose |
 |---|---|
 | `audit.md` | Dispatcher — routes to `<profile>/audit-mcp.md` or `<profile>/audit-fs.md` |
-| `templates.md` | Dispatcher — routes to profile-specific template files |
-| `conventions.md` | Dispatcher — routes to shared convention sub-files |
-| `conventions-decisions.md` | Decision lifecycle, ADR steps, touches guidance |
-| `conventions-discussions.md` | Discussion lifecycle, relevancy scoring, expiry |
-| `conventions-records.md` | Issue, instruction, assignment lifecycles |
-| `conventions-maintainer.md` | Language policy, author attribution rules, maintainer role |
-| `templates-decisions.md` | DECISION + ADR + decisions/index.md templates |
-| `templates-discussions.md` | DISCUSSION + discussions/index.md templates |
-| `templates-instructions.md` | INSTRUCTION template |
-| `templates-assignments.md` | ASSIGNMENT + assignments/index.yml templates |
-| `templates-attribution.md` | Shared `created_by` / `contributors` schema |
+| `templates/index.md` | Dispatcher — routes to profile-specific template files |
+| `conventions/index.md` | Dispatcher — routes to shared convention sub-files |
+| `conventions/decisions.md` | Decision lifecycle, ADR steps, touches guidance |
+| `conventions/discussions.md` | Discussion lifecycle, relevancy scoring, expiry |
+| `conventions/records.md` | Issue, instruction, assignment lifecycles |
+| `conventions/maintainer.md` | Language policy, author attribution rules, maintainer role |
+| `templates/decisions.md` | DECISION + ADR + decisions/index.md templates |
+| `templates/discussions.md` | DISCUSSION + discussions/index.md templates |
+| `templates/instructions.md` | INSTRUCTION template |
+| `templates/assignments.md` | ASSIGNMENT + assignments/index.yml templates |
+| `templates/attribution.md` | Shared `created_by` / `contributors` schema |
 | `mcp-integration.md` | MCP tool catalog, proactive sync, degradation rules |

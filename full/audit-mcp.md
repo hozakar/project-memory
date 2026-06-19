@@ -107,18 +107,18 @@ Use `AskUserQuestion`. Offer two options alongside the open-text resolution: `"R
 
 ## 9. Supersede write
 
-When the user provides a resolution, write a new DECISION through the canonical lifecycle in `conventions-decisions.md`:
+When the user provides a resolution, write a new DECISION through the canonical lifecycle in `conventions/decisions.md`:
 
 1. Choose a short kebab-case slug describing the resolution.
 2. Create `.project-memory/decisions/DECISION-<today>-<slug>.md` with:
    - `provenance: directive` (user explicitly resolved).
    - `supersedes: [<DECISION-id-of-the-one-being-overridden>]` — usually one ID; may include both if the user's resolution replaces both halves.
    - `# Context` note: *"Created via `semantic-conflict-scan` on `<date>`. User resolved a potential conflict between `<A-id>` and `<B-id>` with the following directive: `<paraphrase>`."*
-3. Execute all post-write steps from `conventions-decisions.md`:
+3. Execute all post-write steps from `conventions/decisions.md`:
    - Move the superseded row(s) in `decisions/index.md` from Active to Superseded; set Status and Superseded By cells.
    - Update the superseded DECISION's frontmatter: `status: superseded`, `superseded_by: <new-id>`.
    - Append current git identity to `contributors` on both the new and superseded DECISION files; dedup by email.
-   - If `adr_enabled: true`, create the ADR mirror per step 4 of `conventions-decisions.md`. If `adr_enabled: false`, skip.
+   - If `adr_enabled: true`, create the ADR mirror per step 4 of `conventions/decisions.md`. If `adr_enabled: false`, skip.
 4. After the write succeeds, remove any `semantic_audit_log` entries referencing either side of the resolved pair.
 
 ## 10. End conditions

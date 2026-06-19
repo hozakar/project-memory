@@ -58,7 +58,7 @@ Classify the work using the commit significance table above.
 
    **If MCP available (see `mcp-integration.md`):**
    - Decisions: `search_memory(query, touches_filter=entities, scope_filter=[primary_scope], type_filter="decision")` — exact `touches` / `primary_scope` filter combined with semantic ranking. Superseded decisions are now deterministically excluded by `search_memory` at the tool level (`WHERE status IS NULL OR status != 'superseded'`) — they never appear in gate results unless `include_superseded: true` is explicitly passed. The gate path never sets this flag, so superseded records are structurally invisible. See DECISION-2026-06-19-search-memory-superseded-exclusion.
-   - **Globals (FS, always):** also read `decisions/index.md` Active section and surface every row where `Global` is `Yes`. Global rules are cross-cutting policies that bind every implementation regardless of touches overlap or semantic similarity — load them unconditionally. See `conventions-decisions.md` → Rule 0 (Global surface) and `DECISION-2026-06-17-global-scope-decisions`.
+   - **Globals (FS, always):** also read `decisions/index.md` Active section and surface every row where `Global` is `Yes`. Global rules are cross-cutting policies that bind every implementation regardless of touches overlap or semantic similarity — load them unconditionally. See `conventions/decisions.md` → Rule 0 (Global surface) and `DECISION-2026-06-17-global-scope-decisions`.
    - Discussions: `search_memory(task_description, top_k=8, type_filter="discussion")` — semantic catch for discussions whose conclusions might affect the proposed direction.
 
    **If MCP unavailable:**
@@ -93,20 +93,20 @@ Classify using the lite binary table above. Trivial → skip Step 3. Everything 
 
 **Step 3 — Decision check:**
 
-1. List concrete entities the work touches (e.g. `user_id`, `auth_token`, `deployment_target`). See `conventions-decisions.md` → Touches Field Guidance.
+1. List concrete entities the work touches (e.g. `user_id`, `auth_token`, `deployment_target`). See `conventions/decisions.md` → Touches Field Guidance.
 
 2. **Find candidate decisions and discussions** — branch on MCP availability:
 
    **If MCP available:**
    - Decisions: `search_memory(query, touches_filter=entities, scope_filter=[primary_scope], type_filter="decision")`. Superseded decisions are now deterministically excluded by `search_memory` at the tool level (`WHERE status IS NULL OR status != 'superseded'`) — they never appear in gate results unless `include_superseded: true` is explicitly passed. The gate path never sets this flag, so superseded records are structurally invisible. See DECISION-2026-06-19-search-memory-superseded-exclusion.
-   - **Globals (FS, always):** also read `decisions/index.md` Active section and surface every row where `Global` is `Yes`. Cross-cutting policies bind every implementation — load them unconditionally. See `conventions-decisions.md` → Rule 0 (Global surface).
+   - **Globals (FS, always):** also read `decisions/index.md` Active section and surface every row where `Global` is `Yes`. Cross-cutting policies bind every implementation — load them unconditionally. See `conventions/decisions.md` → Rule 0 (Global surface).
    - Discussions: `search_memory(task_description, top_k=8, type_filter="discussion")`.
 
    **If MCP unavailable:**
    - Decisions: scan `decisions/index.md` Active section for `Touches` overlap, `Scope` match, **OR `Global` is `Yes`**.
    - Discussions: scan `discussions/index.md` for relevant outcome types.
 
-3. For each candidate, apply the Decision Resolution Rules (`conventions-decisions.md`):
+3. For each candidate, apply the Decision Resolution Rules (`conventions/decisions.md`):
    - **Directional conflict** → add to batch question.
    - **Refinement / overlap without conflict** → silent one-line note, continue.
    - **Unrelated** → ignore.

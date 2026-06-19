@@ -19,7 +19,7 @@ description: Lite-profile agent thinking protocol, reduced memory loading strate
 **Before writing any plan:**
 - List the concrete entities (`touches` candidates) this plan affects.
 - Find prior decisions and discussions touching those entities or sharing the same `primary_scope` — see `gates/implementation.md` Pre-Implementation Gate Step 3.
-- Apply the Decision Resolution Rules from `conventions-decisions.md` to candidates.
+- Apply the Decision Resolution Rules from `conventions/decisions.md` to candidates.
 - Has something similar been attempted and abandoned before?
 
 **When the user's claim contradicts project memory:**
@@ -47,7 +47,7 @@ The session-start work happens in this order. Each step may be a no-op depending
 5. **Assignment load** — load pending/ongoing/rejected assignments for the current user:
    - Pending/ongoing: `search_memory(type_filter="assignment", assigned_to_email="<run: git config user.email>")`
    - Rejected: `search_memory(type_filter="assignment", assigned_by_email="<run: git config user.email>")`
-   - Emit passive single-line summaries per `conventions-records.md` (Assignment lifecycle — Session-start UX).
+   - Emit passive single-line summaries per `conventions/records.md` (Assignment lifecycle — Session-start UX).
    - MCP unavailable fallback: scan `.project-memory/assignments/` ASSIGNMENT-*.md files, filter by frontmatter email fields.
 6. **Era prompt** — same as full (orthogonal, maintainer-only).
 7. **Header emission** — output `🧠 PROJECT MEMORY LOADED` (memory loaded indicator only).
@@ -68,7 +68,7 @@ The session-start work happens in this order. Each step may be a no-op depending
      - MCP unavailable: scan `.project-memory/instructions/` for `INSTRUCTION-*.md`; filter `applies_globally: true`.
    - Active instructions (EXECUTE — see Step 4 above)
    - Pending/ongoing assignments (EXECUTE — see Step 5 above)
-   - Notification format etc. defined in conventions-records.md
+   - Notification format etc. defined in conventions/records.md
 6. .project-memory/decisions/index.md — Active section (primary input to Pre-Impl Gate Step 3)
 7. .project-memory/discussions/index.md (active entries only)
 8. Recent git commits (as needed)

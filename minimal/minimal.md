@@ -49,7 +49,7 @@ Profile metadata (`profile`, `profile_history`) lives in `config.yml` — same a
 
 ## Discussions / issues / instructions / assignments (orthogonal)
 
-These features are user-triggered. When used in a minimal-profile project, the corresponding `.project-memory/<feature>/` directory is created on first use. Their lifecycles follow the shared `conventions-discussions.md`, `conventions-records.md` etc. — minimal does not change their behavior.
+These features are user-triggered. When used in a minimal-profile project, the corresponding `.project-memory/<feature>/` directory is created on first use. Their lifecycles follow the shared `conventions/discussions.md`, `conventions/records.md` etc. — minimal does not change their behavior.
 
 ## Author attribution
 

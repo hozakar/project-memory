@@ -1,6 +1,6 @@
 ---
 name: project-memory-templates-decisions
-description: Templates for DECISION records and their indexes. Covers DECISION-*.md, adr/NNNN-*.md, decisions/index.md. Author Attribution schema in templates-attribution.md.
+description: Templates for DECISION records and their indexes. Covers DECISION-*.md, adr/NNNN-*.md, decisions/index.md. Author Attribution schema in templates/attribution.md.
 ---
 
 # Decision Templates
@@ -42,7 +42,7 @@ Maintenance rules:
 
 See `conventions.md` for the required frontmatter schema (`id`, `status`, `provenance`, `primary_scope`, `touches`, `supersedes`, `superseded_by`, `adr_id`) and Decision Resolution Rules.
 
-Author attribution fields (`created_by`, `contributors`) are required. See `templates-attribution.md` for the shared schema.
+Author attribution fields (`created_by`, `contributors`) are required. See `templates/attribution.md` for the shared schema.
 
 ---
 

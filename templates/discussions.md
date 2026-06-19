@@ -1,6 +1,6 @@
 ---
 name: project-memory-templates-discussions
-description: Templates for DISCUSSION records and discussions/index.md. Author Attribution schema in templates-attribution.md.
+description: Templates for DISCUSSION records and discussions/index.md. Author Attribution schema in templates/attribution.md.
 ---
 
 # Discussion Templates
@@ -22,7 +22,7 @@ outcome:
   id: phase-YYYYMMDD-... | DECISION-YYYY-... | ISSUE-YYYY-... | null
   summary: ""               # free-text for roadmap entries; null otherwise
 tags: []
-created_by:                 # required — see templates-attribution.md
+created_by:                 # required — see templates/attribution.md
   name: "Hakan Ozakar"
   email: "hozakar@gmail.com"
 contributors:               # required — appended on resume / close

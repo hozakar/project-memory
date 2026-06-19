@@ -1,6 +1,6 @@
 ---
 name: project-memory-templates-assignments
-description: Templates for ASSIGNMENT records and assignments/index.yml. Cross-user task delegation with session-start notifications. Author Attribution schema in templates-attribution.md.
+description: Templates for ASSIGNMENT records and assignments/index.yml. Cross-user task delegation with session-start notifications. Author Attribution schema in templates/attribution.md.
 ---
 
 # Assignment Templates
@@ -92,7 +92,7 @@ rejected → remind me later → pending (remind_count++)
 - MCP: `search_memory` with `assigned_to_email` filter for pending/accepted/ongoing assignments; `assigned_by_email` filter for rejected/completed notifications
 - Fallback: directory scan of `.project-memory/assignments/` filtered by frontmatter `assigned_to.email` / `assigned_by.email`
 
-**Author attribution:** Set `created_by` (assigned_by identity) and seed `contributors` on creation. Append current git identity to `contributors` on status change and on completion (dedup by email). Full rules: `conventions.md` → Author Attribution. Schema: `templates-attribution.md`.
+**Author attribution:** Set `created_by` (assigned_by identity) and seed `contributors` on creation. Append current git identity to `contributors` on status change and on completion (dedup by email). Full rules: `conventions.md` → Author Attribution. Schema: `templates/attribution.md`.
 
 ## assignments/index.yml
 

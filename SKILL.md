@@ -61,7 +61,7 @@ In `minimal` profile this argument (and natural-language triggers) is a no-op �
 
 ## discuss
 
-`Skill project-memory discuss`, or natural-language phrasings that clearly request a planning / brainstorming conversation (e.g. "let's discuss", "let's brainstorm", "let's talk this through"), enters **Discussion Mode**: read `conventions-discussions.md` for the full lifecycle (shared across profiles). Load `discussions/index.md` for prior context. At close, apply relevancy scoring gate. If saving: write DISCUSSION file, update index.
+`Skill project-memory discuss`, or natural-language phrasings that clearly request a planning / brainstorming conversation (e.g. "let's discuss", "let's brainstorm", "let's talk this through"), enters **Discussion Mode**: read `conventions/discussions.md` for the full lifecycle (shared across profiles). Load `discussions/index.md` for prior context. At close, apply relevancy scoring gate. If saving: write DISCUSSION file, update index.
 
 Discussions are a user-triggered feature — available in all profiles. In `minimal`, discussion files go to `.project-memory/discussions/` even though no other `.project-memory/` infrastructure exists; the directory is created on first use.
 
@@ -128,7 +128,7 @@ Project Memory answers: why it was changed, what alternatives were considered an
 
 Git is the source of truth for code changes. `.project-memory/` (or `MEMORY.md` under minimal) is the source of truth for engineering reasoning.
 
-Records carry author attribution via `created_by` and `contributors` frontmatter fields. Full rules: `conventions-maintainer.md` → Author Attribution. (Note: `contributors` is omitted in `lite`; both omitted in `minimal`.)
+Records carry author attribution via `created_by` and `contributors` frontmatter fields. Full rules: `conventions/maintainer.md` → Author Attribution. (Note: `contributors` is omitted in `lite`; both omitted in `minimal`.)
 
 ---
 
@@ -188,17 +188,19 @@ Records carry author attribution via `created_by` and `contributors` frontmatter
 │   └── minimal.md             ← Single-file spec (covers everything)
 │
 ├── audit.md                   ← Dispatcher (shared) — routes to <profile>/audit-*.md
-├── templates.md               ← Dispatcher (shared) — routes to <profile>/templates-* where applicable
-├── conventions.md             ← Dispatcher (shared) — routes to conventions-*.md (all shared root)
-├── conventions-decisions.md   ← Shared (lifecycle identical across profiles)
-├── conventions-discussions.md ← Shared
-├── conventions-records.md     ← Shared
-├── conventions-maintainer.md  ← Shared (with profile-specific notes for attribution)
-├── templates-decisions.md     ← Shared
-├── templates-discussions.md   ← Shared
-├── templates-instructions.md  ← Shared
-├── templates-assignments.md   ← Shared
-├── templates-attribution.md   ← Shared (created_by / contributors schema)
+├── conventions/               ← Dispatcher (shared) — routes to conventions/*.md
+│   ├── index.md               ← Dispatcher
+│   ├── decisions.md           ← Shared (lifecycle identical across profiles)
+│   ├── discussions.md         ← Shared
+│   ├── records.md             ← Shared
+│   └── maintainer.md          ← Shared (with profile-specific notes for attribution)
+├── templates/                 ← Dispatcher (shared) — routes to templates/*.md
+│   ├── index.md               ← Dispatcher
+│   ├── decisions.md           ← Shared
+│   ├── discussions.md         ← Shared
+│   ├── instructions.md        ← Shared
+│   ├── assignments.md         ← Shared
+│   └── attribution.md         ← Shared (created_by / contributors schema)
 ├── mcp-integration.md         ← Shared
 └── README.md                  ← Human-readable overview
 ```
@@ -232,10 +234,10 @@ Minimal has no phase concept — work is logged as rows in `MEMORY.md`.
 
 For naming conventions, file templates, lifecycle rules, and the Decision Resolution Rules → read `conventions.md` (dispatcher — routes to shared topic-specific sub-files).
 
-For decision lifecycle, ADR steps, touches guidance → `conventions-decisions.md`.
-For discussion lifecycle, relevancy scoring, expiry → `conventions-discussions.md`.
-For issue, instruction, assignment lifecycles → `conventions-records.md`.
-For language policy, author attribution, maintainer role → `conventions-maintainer.md`.
+For decision lifecycle, ADR steps, touches guidance → `conventions/decisions.md`.
+For discussion lifecycle, relevancy scoring, expiry → `conventions/discussions.md`.
+For issue, instruction, assignment lifecycles → `conventions/records.md`.
+For language policy, author attribution, maintainer role → `conventions/maintainer.md`.
 
 ---
 
