@@ -431,6 +431,11 @@ describe("apply_audit_fixes — path traversal hardening", () => {
     await expect(applyAuditFixes(pmDir, [fix])).rejects.toThrow("Invalid phaseId");
   });
 
+  it("fix_decision_index_status: rejects decisionId with traversal sequence", async () => {
+    const fix: PendingFix = { type: "fix_decision_index_status", decisionId: "../../etc/passwd", correctStatus: "active" };
+    await expect(applyAuditFixes(pmDir, [fix])).rejects.toThrow("Invalid decisionId");
+  });
+
   it("annotate_orphan: rejects phaseId with forward slash", async () => {
     const fix: PendingFix = { type: "annotate_orphan", phase_id: "foo/bar", hash: "deadbee", location: "commits", date: "2026-06-17" };
     await expect(applyAuditFixes(pmDir, [fix])).rejects.toThrow("Invalid phaseId");

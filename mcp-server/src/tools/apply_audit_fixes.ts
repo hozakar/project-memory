@@ -319,6 +319,7 @@ function applyFixDecisionIndexStatus(
   if (!decisionId || !correctStatus) {
     return { fix_type: "fix_decision_index_status", reason: "schema_mismatch", details: "missing decisionId/correctStatus" };
   }
+  validateMemoryId(decisionId, "decisionId");
   const indexPath = path.join(projectMemoryDir, "decisions", "index.md");
   if (!fileExists(indexPath)) {
     return { fix_type: "fix_decision_index_status", reason: "file_not_found", details: indexPath };
