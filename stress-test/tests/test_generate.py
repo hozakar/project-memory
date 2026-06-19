@@ -116,3 +116,23 @@ def test_decisions_index(generated):
     index = pm(generated) / "decisions" / "index.md"
     assert index.exists(), "decisions/index.md missing"
     assert "| Date |" in index.read_text(), "decisions/index.md missing header row"
+
+
+def test_discussions_files(generated):
+    discussions_dir = pm(generated) / "discussions"
+    files = list(discussions_dir.glob("DISCUSSION-*.md"))
+    assert len(files) >= 1, "No DISCUSSION-*.md files found in discussions/"
+
+
+def test_discussion_frontmatter(generated):
+    discussions_dir = pm(generated) / "discussions"
+    required = ("id", "title", "date", "status", "outcome", "tags")
+    for f in discussions_dir.glob("DISCUSSION-*.md"):
+        fm = parse_frontmatter(f.read_text())
+        for field in required:
+            assert field in fm, f"{f.name}: frontmatter missing '{field}'"
+
+
+def test_discussions_index(generated):
+    index = pm(generated) / "discussions" / "index.md"
+    assert index.exists(), "discussions/index.md missing"
