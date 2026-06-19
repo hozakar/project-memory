@@ -293,7 +293,7 @@ that don't diverge across profiles stay at the root.
 
 | File | Purpose |
 |---|---|
-| `gates.md` | Pre-Implementation Gate, Pre-Close Gate, commit significance, topic shift, phase lifecycle |
+| `gates/` (5 files) | commit.md (significance + pre-commit), implementation.md (pre-impl gate), close.md (pre-close + maintenance), lifecycle.md (phase lifecycle + creation + topic shift), mcp-triggers.md (MCP index triggers) |
 | `protocol.md` | Agent thinking protocol, memory loading strategy, knowledge preservation |
 | `cheatsheet.md` | Quick reference, event-based trigger table |
 | `audit-fs.md` | Drift audit — filesystem detection path |

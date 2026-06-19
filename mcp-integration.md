@@ -39,7 +39,7 @@ File system is always source of truth. DB is a derived index. Write direction is
 ## Detailed Integration Rules
 
 - **Session start + proactive sync:** `protocol.md` → MCP Companion Integration
-- **Phase Creation + End-of-Phase:** `gates.md` → MCP index triggers
+- **Phase Creation + End-of-Phase:** `gates/mcp-triggers.md`
 - **Audit fast path:** `audit.md` → Dispatcher (routes to `audit-mcp.md` when `run_audit` available)
 - **Squash/rebase recovery:** `protocol.md` → `find_similar_commit`
 - **Drift audit Cat 13:** `audit-fs.md` → Category 13

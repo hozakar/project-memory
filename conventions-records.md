@@ -71,7 +71,7 @@ origin_updated: false     # true when origin modified since fork
 - At session start, current user's active instructions are loaded:
   - MCP available: `search_memory(query="<topic or relevant keywords>", type="instruction")` with `created_by_email` filter.
   - MCP unavailable: scan `.project-memory/instructions/` for INSTRUCTION-*.md files, filter by `created_by.email`.
-- At every gate checkpoint (Pre-Implementation Gate, Pre-Close Gate, Discussion trigger, Topic Shift), active instructions are re-loaded and prepended to gate context. This ensures instructions survive compaction and long contexts. See `gates.md` Step 0.
+- At every gate checkpoint (Pre-Implementation Gate, Pre-Close Gate, Discussion trigger, Topic Shift), active instructions are re-loaded and prepended to gate context. This ensures instructions survive compaction and long contexts. See `gates/implementation.md` GATE 0.
 - ≥5 active instructions triggers a warning
 - Other users' instructions are never loaded without explicit request
 

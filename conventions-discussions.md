@@ -24,7 +24,7 @@ See `templates.md` for the full schema. Key fields:
 ```
 Trigger (explicit or implicit)
   -> Discussion Mode engages
-      -> Load active instructions (same as Pre-Implementation Gate Step 0 in gates.md)
+      -> Load active instructions (same as GATE 0 in gates/implementation.md)
       -> Find prior discussions:
            - MCP available: `search_memory(query="<topic keywords>", type="discussion", top_k=5)` — semantically relevant discussions returned in `body` field.
            - MCP unavailable: load `discussions/index.md`; read entries matching topic by title/tags; open the 2–3 most relevant DISCUSSION-*.md files.

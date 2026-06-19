@@ -18,7 +18,7 @@ description: Lite-profile agent thinking protocol, reduced memory loading strate
 
 **Before writing any plan:**
 - List the concrete entities (`touches` candidates) this plan affects.
-- Find prior decisions and discussions touching those entities or sharing the same `primary_scope` — see `lite/gates.md` Pre-Implementation Gate Step 3.
+- Find prior decisions and discussions touching those entities or sharing the same `primary_scope` — see `gates/implementation.md` Pre-Implementation Gate Step 3.
 - Apply the Decision Resolution Rules from `conventions-decisions.md` to candidates.
 - Has something similar been attempted and abandoned before?
 
@@ -40,8 +40,15 @@ The session-start work happens in this order. Each step may be a no-op depending
 1. **MCP availability check** — set the session-level flag.
 2. **Proactive DB sync** — `check_consistency` + index any missing entries. MCP-only; skipped when unavailable.
 3. **Memory Loading Strategy** — execute the reduced steps below.
-4. **Instruction load (one-time, session start)** — load active instructions for the current user. **Lite re-injects only at Pre-Impl Gate Step 0**, NOT at every gate. The session-start load gives you the body once; Step 0 re-asserts before significant implementation.
-5. **Assignment notifications** — same passive single-line summary as full (orthogonal feature).
+4. **Instruction load (one-time, session start)** — load and prepend active instructions for the current user:
+   - MCP available: `search_memory(type_filter="instruction", created_by_email="<run: git config user.email>")` — use `body` field directly.
+   - MCP unavailable: scan `.project-memory/instructions/` INSTRUCTION-*.md files, filter by `created_by.email`, read `# Prompt` section.
+   - **Lite re-injects only at Pre-Impl Gate (gates/implementation.md GATE 0)**, NOT at every gate. The session-start load gives you the body once; GATE 0 re-asserts before significant implementation.
+5. **Assignment load** — load pending/ongoing/rejected assignments for the current user:
+   - Pending/ongoing: `search_memory(type_filter="assignment", assigned_to_email="<run: git config user.email>")`
+   - Rejected: `search_memory(type_filter="assignment", assigned_by_email="<run: git config user.email>")`
+   - Emit passive single-line summaries per `conventions-records.md` (Assignment lifecycle — Session-start UX).
+   - MCP unavailable fallback: scan `.project-memory/assignments/` ASSIGNMENT-*.md files, filter by frontmatter email fields.
 6. **Era prompt** — same as full (orthogonal, maintainer-only).
 7. **Header emission** — output `🧠 PROJECT MEMORY LOADED` (memory loaded indicator only).
 8. **Post-First-Response Drift Audit** — deferred to after the LLM answers the user's first message. Run the drift audit (lite category set, raise_cat4: false) via `audit.md` (MCP fast path if available, otherwise file-based detection from `lite/audit-fs.md`). Emit the drift report as a follow-up block. Exceptions (audit runs synchronously): (a) explicit `Skill project-memory audit` or natural-language trigger per `DECISION-2026-06-17-audit-implicit-triggers`; (b) first user message is itself an audit trigger — run synchronously; (c) `minimal` profile — no audit, no deferral.
@@ -59,9 +66,8 @@ The session-start work happens in this order. Each step may be a no-op depending
    - **Instructions (global):**
      - MCP available: `search_memory(query="instructions applies globally", type="instruction", top_k=10)` — filter `applies_globally: true`.
      - MCP unavailable: scan `.project-memory/instructions/` for `INSTRUCTION-*.md`; filter `applies_globally: true`.
-   - Active instructions — search_memory with created_by_email filter, type_filter "instruction"
-     (directory scan fallback when MCP unavailable)
-   - Pending/ongoing assignments — search_memory with assigned_to_email filter, type_filter "assignment"
+   - Active instructions (EXECUTE — see Step 4 above)
+   - Pending/ongoing assignments (EXECUTE — see Step 5 above)
    - Notification format etc. defined in conventions-records.md
 6. .project-memory/decisions/index.md — Active section (primary input to Pre-Impl Gate Step 3)
 7. .project-memory/discussions/index.md (active entries only)

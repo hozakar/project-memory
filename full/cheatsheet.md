@@ -38,7 +38,7 @@ Significant (feature, bugfix, refactor, schema change, config with runtime effec
 → Set `status: abandoned` in `phase.yml`, add `abandoned_reason` field
 
 **About to implement something significant?**
-→ Step 1: phase open? → Step 2: classify trivial/significant/ambiguous → Step 3: scan `decisions/index.md` and `discussions/index.md` for conflicts → batch any directional conflicts into one question → Step 4: if no candidate exists for an architectural move, offer to record one → Step 5: if MCP available, run context load per `gates.md` Step 5 and `mcp-integration.md`.
+→ GATE 0: load active instructions (EXECUTE search_memory) → Step 1: phase open? → Step 2: classify trivial/significant/ambiguous → Step 3: scan `decisions/index.md` and `discussions/index.md` for conflicts → batch any directional conflicts into one question → Step 4: if no candidate exists for an architectural move, offer to record one → Step 5: if MCP available, run context load per `gates/implementation.md` Step 5 and `mcp-integration.md`.
 
 **About to route work to a teammate?**
 → Determine type: direct (linked to existing record) or freeform (standalone task)
@@ -73,9 +73,9 @@ Significant (feature, bugfix, refactor, schema change, config with runtime effec
 | Discussion concluded | Write `DISCUSSION-*.md` to `discussions/`; add row to `discussions/index.md`; if outcome references a phase/decision/issue/roadmap, create the referenced artifact; if `index_discussion` tool available: call `index_discussion` with id, title, status, outcome, tags, summary, bodyText (first 2000 chars), plus `created_by` + `contributors` from frontmatter |
 | Discussion resumed | Load the existing DISCUSSION file; update it at close; do not create a new file |
 | Discussion triggers a phase | Set `outcome.type: phase` and `outcome.id: <phase-id>` in the DISCUSSION file |
-| Phase opened (status: planning written) | If MCP available, index phase per `mcp-integration.md` and `gates.md` Phase Creation |
-| Phase closed (status: completed written) | If MCP available, index phase with full content per `mcp-integration.md` and `gates.md` End-of-Phase Maintenance |
-| DECISION-* file created or status changed | If MCP available, index decision per `mcp-integration.md` and `gates.md` Decision Creation |
+| Phase opened (status: planning written) | If MCP available, index phase per `mcp-integration.md` and `gates/lifecycle.md` Phase Creation |
+| Phase closed (status: completed written) | If MCP available, index phase with full content per `mcp-integration.md` and `gates/close.md` End-of-Phase Maintenance |
+| DECISION-* file created or status changed | If MCP available, index decision per `mcp-integration.md` and `gates/mcp-triggers.md` Decision Creation |
 | User asks about past phases/decisions/discussions (MCP available) | Call `search_memory` per `mcp-integration.md`; combine exact and semantic filters for sharper results (see `protocol.md` Ad-hoc search rule). `search_memory` now accepts `include_superseded?: boolean` — opt-in flag for historical lookup (default false excludes superseded decisions). Pass `include_superseded: true` only when explicitly researching past/superseded decisions. `SearchResult` carries `status` for decision records. |
 | Drift audit runs (post-first-response) — `run_audit` available | Default: deferred to post-first-response. Call `run_audit(project_memory_dir, { raise_cat4: false })` per `mcp-integration.md`; apply `pending_fixes`; log `auto_fixed`; triage `escalations` per `audit.md` MCP Fast Path. Sync exceptions: explicit `Skill project-memory audit`, first-user-message is audit-implicit-trigger, or `minimal` profile (no audit). |
 | Drift audit runs (post-first-response) — `run_audit` NOT available | Default: deferred to post-first-response. Run file-based detection (14 categories, raise_cat4: false). Sync exceptions same as above. |

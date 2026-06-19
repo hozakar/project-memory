@@ -12,14 +12,14 @@ description: Agent thinking protocol, memory loading strategy with token budgets
 - Do any sections contain stale placeholders (`"None recorded yet"`, `"TBD"`, `"system just initialized"`)? Clear them if real data exists.
 
 **Before committing:**
-- Classify significance (trivial / significant / ambiguous) per `gates.md` commit significance table.
+- Classify significance (trivial / significant / ambiguous) per `gates/commit.md` commit significance table.
 - If significant: update phase files (`implementation.md`, `followup.md`, `review-and-fixes.md`) before the commit lands. Capture reasoning, not just the what — the phase files are the structured counterpart to the commit message. Append incrementally.
 - Trivial and ambiguous commits: attach to phase silently, no file updates.
 - This is the Pre-Commit Gate — the enforcement mechanism for the Knowledge Preservation Rule ("without reconstructing history from source code").
 
 **Before writing any plan:**
 - List the concrete entities (`touches` candidates) this plan affects.
-- Find prior decisions and discussions touching those entities or sharing the same `primary_scope` — see `gates.md` Pre-Implementation Gate Step 3, which uses `search_memory` with `touches_filter` / `scope_filter` when MCP is available and falls back to a direct `decisions/index.md` + `discussions/index.md` scan otherwise.
+- Find prior decisions and discussions touching those entities or sharing the same `primary_scope` — see `gates/implementation.md` Pre-Implementation Gate Step 3, which uses `search_memory` with `touches_filter` / `scope_filter` when MCP is available and falls back to a direct `decisions/index.md` + `discussions/index.md` scan otherwise.
 - Apply the Decision Resolution Rules from `conventions.md` to candidates.
 - Has something similar been attempted and abandoned before?
 - Do any active tensions constrain this approach?
@@ -59,8 +59,16 @@ The session-start work happens in this order. Each step may be a no-op depending
 1. **MCP availability check** — set the session-level flag (see MCP Companion Integration → Availability check).
 2. **Proactive DB sync** — `check_consistency` + index any missing entries. MCP-only; skipped when unavailable.
 3. **Memory Loading Strategy** — execute steps 1–14 below. Summary files first, then phase/decision/discussion indexes.
-4. **Instruction re-injection** — load active instructions for the current user (idempotent — same content re-asserted at each gate per `gates.md` Step 0).
-5. **Assignment notifications** — emit passive single-line summary per `conventions-records.md` (Assignment lifecycle).
+4. **Instruction re-injection** — load and prepend active instructions for the current user:
+   - MCP available: `search_memory(type_filter="instruction", created_by_email="<run: git config user.email>")` — use `body` field directly as binding content.
+   - MCP unavailable: scan `.project-memory/instructions/` INSTRUCTION-*.md files, filter by `created_by.email`, read `# Prompt` section.
+   - Same content is re-asserted at each gate per `gates/implementation.md` GATE 0.
+   - This step is idempotent — if instructions are already loaded, skip.
+5. **Assignment load** — load pending/ongoing/rejected assignments for the current user:
+   - Pending/ongoing: `search_memory(type_filter="assignment", assigned_to_email="<run: git config user.email>")`
+   - Rejected: `search_memory(type_filter="assignment", assigned_by_email="<run: git config user.email>")`
+   - Emit passive single-line summaries per `conventions-records.md` (Assignment lifecycle — Session-start UX).
+   - MCP unavailable fallback: scan `.project-memory/assignments/` ASSIGNMENT-*.md files, filter by frontmatter email fields.
 6. **Era prompt** — if ≥ 10 phases have accumulated since the last era AND session role = maintainer, ask whether to create the next era file.
 7. **Header emission** — output `🧠 PROJECT MEMORY LOADED` (memory loaded indicator only).
 8. **Post-First-Response Drift Audit** — deferred to after the LLM answers the user's first message. Run the drift audit (Cat 1–14, raise_cat4: false) via `audit.md` (MCP fast path if available, otherwise file-based detection). Emit the drift report as a follow-up block. Exceptions (audit runs synchronously): (a) explicit `Skill project-memory audit` or natural-language trigger per `DECISION-2026-06-17-audit-implicit-triggers`; (b) first user message is itself an audit trigger — run synchronously; (c) `minimal` profile — no audit, no deferral.
@@ -73,7 +81,7 @@ Items 2, 6, and 8 are MCP-conditional but always sit at the same position when t
 
 At session start (see `Session-start Ordering` above for the surrounding sequence):
 
-**On context compaction:** Memory Loading Strategy is *not* re-run on compaction. The model has no reliable in-band signal that compaction occurred, and re-inflating context immediately after compaction defeats the purpose of compaction itself. Active instructions survive compaction via gate re-injection (`gates.md` → Step 0). The rest of the loaded memory is best-effort — a future gate will pull in whatever is needed.
+**On context compaction:** Memory Loading Strategy is *not* re-run on compaction. The model has no reliable in-band signal that compaction occurred, and re-inflating context immediately after compaction defeats the purpose of compaction itself. Active instructions survive compaction via gate re-injection (`gates/implementation.md` → GATE 0). The rest of the loaded memory is best-effort — a future gate will pull in whatever is needed.
 
 ```
 1. .project-memory/summaries/project-memory.md
@@ -87,9 +95,9 @@ At session start (see `Session-start Ordering` above for the surrounding sequenc
    - **Instructions / Assignments (global):**
      - MCP available: `search_memory(query="instructions applies globally", type="instruction", top_k=10)` — filter `applies_globally: true` from results.
      - MCP unavailable: scan `.project-memory/instructions/` for `INSTRUCTION-*.md` files; read frontmatter, filter `applies_globally: true`.
-   - Active instructions — `search_memory` with `created_by_email` filter and `type_filter: "instruction"` (directory scan fallback when MCP unavailable)
-   - Pending/ongoing assignments — `search_memory` with `assigned_to_email` filter and `type_filter: "assignment"` (directory scan fallback when MCP unavailable)
-   - Rejected assignments created by the user — `search_memory` with `assigned_by_email` filter and `type_filter: "assignment"`
+   - Active instructions (EXECUTE — see Step 4 above)
+   - Pending/ongoing assignments (EXECUTE — see Step 5 above)
+   - Rejected assignments created by the user (EXECUTE — see Step 5 above)
    - Completed assignment notifications — same filter as rejected; shown once, non-persistent
 
    Notification format, "passive single line" rule, and interaction model are defined in `conventions-records.md` (Assignment lifecycle — Session-start UX). Do not duplicate those rules here.

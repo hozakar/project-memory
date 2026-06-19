@@ -106,13 +106,13 @@ The optional `mcp-server/` subdirectory provides semantic search and determinist
 
 ```
 BEFORE IMPLEMENTATION → phase must exist (full/lite) → create it first
-                      → instruction re-inject (all profiles)
+                      → EXECUTE search_memory(type="instruction") — verify compliance per gates/implementation.md GATE 0 (all profiles)
 BEFORE MERGE/CLOSE    → Pre-Close Gate (full: 3-file verify + roadmap transfer; lite: sanity + TODO warn)
-BEFORE COMMIT         → classify → update phase files if significant (see Pre-Commit Gate in gates.md)
+BEFORE COMMIT         → classify → update phase files if significant (see gates/commit.md)
 PIPELINE SUBMISSION   → counts as implementation → phase must exist before submit (full/lite)
 ```
 
-For detailed gate procedures, commit significance, topic shift → read `<profile>/gates.md`.
+For detailed gate procedures, commit significance, topic shift → read gates/commit.md, gates/implementation.md, gates/close.md, gates/lifecycle.md.
 For agent thinking protocol and memory loading → read `<profile>/protocol.md`.
 For quick reference cheatsheet → read `<profile>/cheatsheet.md`.
 
@@ -160,7 +160,6 @@ Records carry author attribution via `created_by` and `contributors` frontmatter
 ├── profiles.md                ← Tier matrix, init UX, migration semantics
 │
 ├── full/                      ← Files used when profile=full
-│   ├── gates.md
 │   ├── protocol.md
 │   ├── audit-fs.md
 │   ├── audit-mcp.md
@@ -169,8 +168,21 @@ Records carry author attribution via `created_by` and `contributors` frontmatter
 │   ├── init.md
 │   └── cheatsheet.md
 │
-├── lite/                      ← Files used when profile=lite (same names as full/)
-│   └── (same 8 files, lite-specific content)
+├── lite/                      ← Files used when profile=lite
+│   ├── protocol.md
+│   ├── audit-fs.md
+│   ├── audit-mcp.md
+│   ├── templates-phase.md
+│   ├── templates-config.md
+│   ├── init.md
+│   └── cheatsheet.md
+│
+├── gates/                     ← Gate procedures shared across profiles
+│   ├── commit.md              ← Commit significance + Pre-Commit Gate
+│   ├── implementation.md      ← Pre-Implementation Gate (Step 0–5)
+│   ├── close.md               ← Pre-Close Gate + End-of-Phase Maintenance
+│   ├── lifecycle.md           ← Phase lifecycle + Creation + Topic Shift
+│   └── mcp-triggers.md        ← MCP index triggers for decisions/discussions/phases
 │
 ├── minimal/                   ← Files used when profile=minimal
 │   └── minimal.md             ← Single-file spec (covers everything)
@@ -206,10 +218,10 @@ Work unit complete → Phase closes (status: completed)
 ```
 
 **Key rules:**
-- Phase created BEFORE first significant commit → see `<profile>/gates.md` for commit significance.
+- Phase created BEFORE first significant commit → see `gates/commit.md` for commit significance.
 - Required files (full): `phase.yml`, `plan.md`, `implementation.md`, `review-and-fixes.md`, `followup.md`.
 - Required files (lite): `phase.yml`. `plan.md` is optional.
-- Phase status transitions and close criteria in `<profile>/gates.md`.
+- Phase status transitions and close criteria in `gates/lifecycle.md` and `gates/close.md`.
 - Phases sorted newest first in `index.yml`. Prepend on creation.
 
 Minimal has no phase concept — work is logged as rows in `MEMORY.md`.
@@ -235,7 +247,7 @@ About to open a phase?    → phase.yml + plan.md (lite: plan optional) + index.
 About to close a phase?   → full: verify 3 files; lite: commits sanity + TODO warn
 About to close discussion?→ Determine outcome, write file, update index (all profiles)
 About to assign work?     → Create ASSIGNMENT-YYYY-MM-DD-slug.md + index entry (all profiles)
-About to implement?       → Pre-Implementation Gate (gates.md per profile)
+About to implement?       → Pre-Implementation Gate (gates/implementation.md)
 About to receive assignment?→ Accept / Reject / Remind at session start
 About to change profile?  → "change profile to X" intent — appends profile_history entry
 ```

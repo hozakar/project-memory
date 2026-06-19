@@ -37,7 +37,7 @@ Lite does not split "significant" vs "ambiguous". Anything non-trivial triggers 
 → Set `status: abandoned` in `phase.yml`, add `abandoned_reason`.
 
 **About to implement something non-trivial?**
-→ Step 0: instruction re-inject (lite re-injects here only, not at every gate).
+→ GATE 0: load active instructions (EXECUTE search_memory — lite re-injects here only, not at every gate).
 → Step 1: phase open? If not, create it (yml + optional plan).
 → Step 2: trivial vs everything-else.
 → Step 3: scan `decisions/index.md` (and `discussions/index.md` if discussions feature is used) for `touches` overlap or `scope` match; batch directional conflicts into one `AskUserQuestion`.
