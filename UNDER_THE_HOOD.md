@@ -226,7 +226,7 @@ at any time via `.project-memory/config.yml`.
 
 ## Drift audit
 
-I run a 14-category drift audit at every session start. With the MCP companion server, all 14 categories are fully deterministic — no LLM judgment involved. Without MCP, the same categories run via file-system detection with the same deterministic logic.
+I run a 14-category drift audit each session, deferred to after the first user response so it doesn't add latency to session start. Three exceptions run synchronously: explicit `Skill project-memory audit` invocation, a first message that is itself an audit trigger, and the `minimal` profile (no audit at all). With the MCP companion server, all 14 categories are fully deterministic — no LLM judgment involved. Without MCP, the same categories run via file-system detection with the same deterministic logic.
 
 | Category | Description | Resolution |
 |---|---|---|

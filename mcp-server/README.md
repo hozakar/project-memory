@@ -17,7 +17,7 @@ Optional MCP companion server for the [project-memory](../) skill. Provides sema
 - `run_audit(project_memory_dir, profile?)` — execute all 14 audit categories; returns {auto_fixed, pending_fixes, escalations} with pre-computed interactive flags; accepts `profile` parameter (`full` | `lite` | `minimal`)
 - `apply_audit_fixes(project_memory_dir, pending_fixes[])` — deterministically execute `PendingFix` variants returned by `run_audit`; source-of-truth-safe (reads `.project-memory/` files only, no LanceDB reads, no prose synthesis); idempotent; returns {applied, partial, failed, rerun_audit_recommended}
 
-**Version:** 0.0.5
+**Version:** 0.0.8
 
 **Record types indexed:** phases, decisions, discussions, eras, instructions, and assignments (all six project-memory record types).
 

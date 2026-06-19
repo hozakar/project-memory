@@ -2,6 +2,73 @@
 
 All notable changes to the project-memory skill and MCP companion server.
 
+## [0.0.8] — 2026-06-19 — MCP: security hardening, search integrity, audit robustness
+
+### search_memory — superseded decision exclusion
+
+`search_memory` now deterministically excludes `status: superseded` decisions
+from results by default via an unconditional WHERE clause on the `status` column.
+A new `include_superseded` opt-in flag surfaces them when explicitly needed (e.g.,
+historical lookup, "why did we stop doing X?"). The `status` field is added to
+`SearchResult` and `LanceRecord`; 131 records were re-indexed. End-to-end verified:
+a superseded decision at 0.89 similarity is excluded by default and included with
+the flag. 91 tests pass.
+
+Five alternatives were evaluated and rejected — all probabilistic; see
+DECISION-2026-06-19-search-memory-superseded-exclusion and
+`summaries/project-memory.md → Rejected Decisions` for the full analysis.
+
+### search_memory — instruction body injection (binding enforcement)
+
+`search_memory` results for instruction-type records now include the full
+instruction body, not just metadata. This closes a failure mode where the LLM
+received an instruction's title but not the content — making the instruction
+advisory in practice regardless of how it was written. The fix is structural:
+the body is injected at the MCP layer so it cannot be skipped by a missing
+file-read step.
+
+### run_audit — Cat 10 per-phase profile_history inference
+
+`cat10PhaseCompleteness` now infers the active profile at the time each phase
+was created, rather than applying the current project profile uniformly. New
+helpers `readProfileHistory()` and `resolveProfileAtDate()` reconstruct the
+profile timeline from `config.yml`; `runAudit()` reads profile history once and
+passes it per-phase to Cat 10. Closes ISSUE-2026-06-16-mcp-cat10-profile-history-uniform.
+5 new unit tests (85 total, all pass).
+
+### db.ts — path validation hardening
+
+`dbPath()` now rejects bad `PROJECT_MEMORY_DIR` values before the vector index
+directory is created: garbage / non-string input is blocked, relative paths are
+rejected, and the target directory must contain a `.project-memory/` subdirectory.
+Prevents orphan vector-index directories from being created on misconfigured or
+wrong-CWD invocations. Closes ISSUE-2026-06-19-db-ts-path-validation-orphan-dirs.
+5 new unit tests (80 total, all pass).
+
+### apply_audit_fixes — hardening
+
+Whitespace tolerance (leading/trailing spaces around YAML values), truthy status
+variants (`Active`, `ACTIVE`, `active`), hyphenated statuses (`in-progress`), path
+traversal guard on `phaseId` / ADR file paths, and ADR status map extended.
+Idempotency and source-of-truth invariants unchanged.
+
+### validateMemoryId — allow-list regex, extraction to validation.ts
+
+`validateMemoryId` migrated from a deny-list (blocked `..`, `/`, `\`) to an
+allow-list regex (`/^[a-zA-Z0-9_-]+$/`). Extracted from `apply_audit_fixes.ts`
+and `run_audit.ts` into a shared `src/validation.ts` module — single source of
+truth for ID validation across all MCP tools. 40-assertion unit test added.
+
+### readProfileHistory — cross-pairing robustness
+
+`readProfileHistory` in `run_audit.ts` rewritten to parse profile_history items
+individually (accumulate per-item object fields, push on complete triple) rather
+than line-by-line. Eliminates a cross-pairing bug where `profile` from one entry
+could pair with `effective_date` from the next under varying YAML shapes.
+Edge-case tests added.
+
+---
+
 ## [0.0.5] — 2026-06-18 — SKILL: async on-load drift audit
 
 ### Async on-load drift audit
