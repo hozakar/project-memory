@@ -139,6 +139,26 @@ Open VS Code → Cline extension panel → **MCP Servers** tab →
 - **Command:** `node`
 - **Args:** `/absolute/path/to/mcp-server/dist/index.js`
 
+Alternatively, add directly to Cline's MCP config file (path varies by OS):
+- **macOS/Linux:** `~/.cline/mcp_settings.json`
+- **Windows:** `%APPDATA%\Cline\mcp_settings.json`
+
+```json
+{
+  "mcpServers": {
+    "project-memory": {
+      "command": "node",
+      "args": ["<absolute-path-to-repo>/mcp-server/dist/server.js"],
+      "env": {
+        "PROJECT_MEMORY_DIR": "<absolute-path-to-project>/.project-memory"
+      }
+    }
+  }
+}
+```
+
+> **Note:** Cline MCP UI steps written from general knowledge; verify against official Cline docs if the UI differs.
+
 ---
 
 ## Step 3 — Restart

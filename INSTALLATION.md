@@ -158,6 +158,8 @@ At the start of every session, read the file at
 Cline's global configuration directory is `~/.cline/` — custom instructions
 defined there apply to all sessions.
 
+> **Note:** These steps were written from general knowledge. Verify against official Cline documentation if the UI has changed.
+
 ---
 
 ## MCP Companion Server
