@@ -26,7 +26,7 @@ function extractSearchMemoryParams(serverTs: string): string[] {
   if (endIdx === -1) throw new Error("Could not find async handler in search_memory block");
   const block = serverTs.slice(startIdx, endIdx);
   // Extract lines like `    query: z.` or `    include_superseded: z.`
-  const matches = [...block.matchAll(/^\s{4}(\w+):\s*z\./gm)];
+  const matches = Array.from(block.matchAll(/^\s{4}(\w+):\s*z\./gm));
   return matches.map(m => m[1]);
 }
 
@@ -37,8 +37,13 @@ const readme = read("mcp-server/README.md");
 let params: string[];
 try {
   params = extractSearchMemoryParams(serverTs);
-} catch (e) {
+} catch (e: unknown) {
   console.error("Parse error:", e);
+  process.exit(1);
+}
+
+if (params.length === 0) {
+  console.error("ERROR: No search_memory params extracted — check server.ts structure.");
   process.exit(1);
 }
 
