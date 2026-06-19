@@ -83,3 +83,36 @@ def test_phase_id_format(generated):
     pattern = re.compile(r"^phase-\d{8}-.+$")
     for p in data["phases"]:
         assert pattern.match(p["id"]), f"Phase ID bad format: {p['id']!r}"
+
+
+def test_decisions_files(generated):
+    decisions_dir = pm(generated) / "decisions"
+    files = list(decisions_dir.glob("DECISION-*.md"))
+    assert len(files) >= 1, "No DECISION-*.md files found in decisions/"
+
+
+def test_decision_frontmatter(generated):
+    decisions_dir = pm(generated) / "decisions"
+    required = ("id", "title", "date", "status", "provenance", "touches")
+    for f in decisions_dir.glob("DECISION-*.md"):
+        fm = parse_frontmatter(f.read_text())
+        for field in required:
+            assert field in fm, f"{f.name}: frontmatter missing '{field}'"
+        assert fm["status"] == "active", (
+            f"{f.name}: expected status 'active', got {fm['status']!r}"
+        )
+
+
+def test_decision_id_format(generated):
+    decisions_dir = pm(generated) / "decisions"
+    pattern = re.compile(r"^DECISION-\d{4}-\d{2}-\d{2}-.+$")
+    for f in decisions_dir.glob("DECISION-*.md"):
+        fm = parse_frontmatter(f.read_text())
+        assert "id" in fm, f"{f.name}: no 'id' in frontmatter"
+        assert pattern.match(fm["id"]), f"Decision ID bad format: {fm['id']!r}"
+
+
+def test_decisions_index(generated):
+    index = pm(generated) / "decisions" / "index.md"
+    assert index.exists(), "decisions/index.md missing"
+    assert "| Date |" in index.read_text(), "decisions/index.md missing header row"
