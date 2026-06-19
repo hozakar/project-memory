@@ -1831,11 +1831,11 @@ title: "{tmpl['title']}"
 date: {dt.strftime('%Y-%m-%d')}
 status: concluded
 provenance: collaborative
-summary: {tmpl['summary']}
+summary: "{tmpl['summary']}"
 outcome:
   type: none
   id: null
-  summary: {tmpl['outcome_summary']}
+  summary: "{tmpl['outcome_summary']}"
 tags: [{tags_str}]
 ---
 

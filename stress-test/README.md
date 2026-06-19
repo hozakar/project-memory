@@ -94,11 +94,17 @@ content type. Precision@1 (correct document ranked #1) is the primary quality me
 | `generate.py` | Pure Python (stdlib only) fixture generator |
 | `index.ts` | TypeScript indexer — calls `rebuildIndex` from MCP server src |
 | `queries.md` | 15 hand-crafted test questions |
+| `tests/test_generate.py` | pytest schema validation for `generate.py` output |
 | `generated/` | Output directory (gitignored) |
 
-## Tech debt
+## Testing
 
-`generate.py` has no automated tests. If the `.project-memory/` schema evolves (new required
-fields, renamed files, changed YAML shape), the generator will silently produce stale fixtures.
-It should eventually be covered by a test suite that validates the generated output against the
-schema before indexing.
+```bash
+cd stress-test
+pip install pytest pyyaml
+pytest tests/
+```
+
+Tests validate the generated `.project-memory/` schema: directory structure,
+required YAML/frontmatter fields, ID format, and index files. Run after any
+`generate.py` template change.
