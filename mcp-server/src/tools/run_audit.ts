@@ -872,7 +872,7 @@ function cat12TagInconsistency(phases: PhaseEntry[], ignored: AuditIgnoreSet): A
         const dist = levenshtein(tag, other);
         if (dist > 0 && dist <= 2 && (!best || dist < best.dist)) best = { other, dist };
       }
-      if (best && !ignored.has(`${phaseId}:${tag}`)) {
+      if (best && !ignored.has(`tag-typo:${phaseId}:${tag}`)) {
         findings.push({
           category: 12, severity: "low", interactive: false,
           description: `Tag "${tag}" in ${phaseId} resembles "${best.other}" (distance ${best.dist})`,
