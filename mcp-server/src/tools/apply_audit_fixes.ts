@@ -255,7 +255,14 @@ function applyAddDecisionIndexRow(
   const decisionPath = path.join(projectMemoryDir, "decisions", `${decisionId}.md`);
   const fm = parseFrontmatter(readFile(decisionPath));
   const scope = fm["primary_scope"] || "unknown";
-  const global = fm["applies_globally"] === "true" ? "Yes" : "-";
+  const appliesToAll =
+    fm["applies_globally"] === true ||
+    fm["applies_globally"] === "true" ||
+    fm["applies_globally"] === "True" ||
+    fm["applies_globally"] === "yes" ||
+    fm["applies_globally"] === "Yes" ||
+    fm["applies_globally"] === "YES";
+  const global = appliesToAll ? "Yes" : "-";
 
   const newRow = `| ${date} | ${decisionId} | ${scope} | ${status} | ${global} | ${touches} | ${CLAIM_PLACEHOLDER} |`;
 

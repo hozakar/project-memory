@@ -115,6 +115,40 @@ describe("apply_audit_fixes — add_decision_index_row", () => {
     expect(result.partial).toHaveLength(1);
     expect(result.partial[0].context.already_present).toBe(true);
   });
+
+  it.each([
+    ["boolean true", "true"],
+    ["string true", '"true"'],
+    ["string True", "True"],
+    ["string yes", "yes"],
+    ["string Yes", "Yes"],
+    ["string YES", "YES"],
+  ])("applies_globally %s → Global column = Yes", async (_label, yamlValue) => {
+    w(
+      "decisions/DECISION-2026-06-17-foo.md",
+      `---\nid: DECISION-2026-06-17-foo\nstatus: active\nprimary_scope: workflow\napplies_globally: ${yamlValue}\n---\n# Foo\n`
+    );
+    w("decisions/index.md", `| Date | ID | Scope | Status | Global | Touches | Claim |\n|---|---|---|---|---|---|---|\n`);
+    const fix: PendingFix = { type: "add_decision_index_row", decisionId: "DECISION-2026-06-17-foo", status: "active", touches: [], date: "2026-06-17" };
+    await applyAuditFixes(pmDir, [fix]);
+    expect(r("decisions/index.md")).toMatch(/\| Yes \|/);
+  });
+
+  it.each([
+    ["boolean false", "false"],
+    ["string false", '"false"'],
+  ])("applies_globally %s → Global column = -", async (_label, yamlValue) => {
+    w(
+      "decisions/DECISION-2026-06-17-foo.md",
+      `---\nid: DECISION-2026-06-17-foo\nstatus: active\nprimary_scope: workflow\napplies_globally: ${yamlValue}\n---\n# Foo\n`
+    );
+    w("decisions/index.md", `| Date | ID | Scope | Status | Global | Touches | Claim |\n|---|---|---|---|---|---|---|\n`);
+    const fix: PendingFix = { type: "add_decision_index_row", decisionId: "DECISION-2026-06-17-foo", status: "active", touches: [], date: "2026-06-17" };
+    await applyAuditFixes(pmDir, [fix]);
+    const content = r("decisions/index.md");
+    expect(content).toMatch(/\| - \|/);
+    expect(content).not.toMatch(/\| Yes \|/);
+  });
 });
 
 describe("apply_audit_fixes — fix_decision_index_status", () => {
