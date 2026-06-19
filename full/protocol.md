@@ -11,6 +11,12 @@ description: Agent thinking protocol, memory loading strategy with token budgets
 - Are summary files current? Compare each file's `Last Updated:` date against recent git commits. If any summary is older than the most recent memory commit, update it before proceeding.
 - Do any sections contain stale placeholders (`"None recorded yet"`, `"TBD"`, `"system just initialized"`)? Clear them if real data exists.
 
+**Before committing:**
+- Classify significance (trivial / significant / ambiguous) per `gates.md` commit significance table.
+- If significant: update phase files (`implementation.md`, `followup.md`, `review-and-fixes.md`) before the commit lands. Capture reasoning, not just the what — the phase files are the structured counterpart to the commit message. Append incrementally.
+- Trivial and ambiguous commits: attach to phase silently, no file updates.
+- This is the Pre-Commit Gate — the enforcement mechanism for the Knowledge Preservation Rule ("without reconstructing history from source code").
+
 **Before writing any plan:**
 - List the concrete entities (`touches` candidates) this plan affects.
 - Find prior decisions and discussions touching those entities or sharing the same `primary_scope` — see `gates.md` Pre-Implementation Gate Step 3, which uses `search_memory` with `touches_filter` / `scope_filter` when MCP is available and falls back to a direct `decisions/index.md` + `discussions/index.md` scan otherwise.

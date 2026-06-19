@@ -9,15 +9,20 @@ description: Quick reference cheatsheet and event-based trigger table for projec
 
 **About to commit?**
 ```
-Trivial (typo, formatting, import cleanup)
+Trivial (typo, formatting, import cleanup, single-line bugfix, comment edit)
   → open phase exists? attach silently : skip entirely
-
-Significant (feature, bugfix, refactor, schema change, config with runtime effect)
-  → open phase exists? update phase.yml commits list
-  → no open phase? CREATE PHASE FIRST, then commit
+  → NO phase file updates
 
 Ambiguous (test additions, dep upgrades, doc updates)
-  → ask the user
+  → same as trivial (per frictionless UX — no user question)
+
+Significant (feature, bugfix, refactor, schema change, config with runtime effect)
+  → open phase exists? update phase.yml.commits, THEN update phase files:
+      - implementation.md  — what and why (not just commit message)
+      - followup.md        — new debt, open questions, next phases
+      - review-and-fixes.md — self-review findings for this commit
+  → no open phase? CREATE PHASE FIRST, then do the above
+  → THEN commit
 ```
 
 **About to open a phase?**

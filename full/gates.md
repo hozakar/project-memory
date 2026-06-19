@@ -7,8 +7,8 @@ description: Implementation gates, commit significance rules, topic shift criter
 
 ```
 BEFORE IMPLEMENTATION → phase must exist → create it first
+BEFORE COMMIT         → classify significance → update phase files if significant (see Pre-Commit Gate)
 BEFORE MERGE/CLOSE    → Pre-Close Gate must pass (3 files complete)
-BEFORE SESSION END    → if significant commits landed, phase must be updated
 PIPELINE SUBMISSION   → counts as implementation → phase must exist before submit
 ```
 
@@ -101,6 +101,37 @@ For file formats and templates, read `templates.md`.
 After writing `phase.yml` and `plan.md`, if `index_phase` is in available tools (see `mcp-integration.md`):
 - Call `index_phase({ id, title, tags, planText: plan.md content truncated to 2000 chars, implementationText: "", commitDiffs: [], status: "planning", created_by, contributors })` (pass the `created_by` + `contributors` from `phase.yml`)
 - Best-effort: if the call fails, continue — file writes already completed.
+
+---
+
+---
+
+# Pre-Commit Gate — MANDATORY
+
+Before executing ANY commit, classify significance and update phase files accordingly. The commit boundary is the natural decision point where you already answer "what changed and why?" — the phase files capture the structured version of that same reasoning.
+
+**Step 1 — Classify significance:**
+Use the commit significance table above. Trivial → skip Steps 2–3. Significant → continue.
+
+**Step 2 — Update phase.yml:**
+Append the commit hash to `phase.yml.commits`.
+
+**Step 3 — Update phase files (significant commits only):**
+Write or append to these files before the commit lands:
+
+| File | What to record |
+|---|---|
+| `implementation.md` | What this commit does and why. Not a copy of the commit message — capture the reasoning, the alternatives considered at this step, the constraints that shaped this decision. Append; do not overwrite. |
+| `followup.md` | Any newly discovered debt, open questions, or recommended next phases. Incremental — add to whatever is already there. |
+| `review-and-fixes.md` | Self-review findings for this commit: edge cases noticed, potential issues, things to revisit. |
+
+**Rules:**
+- **No instruction injection at this gate.** This is an operational gate, not a strategic one. Instruction re-injection happens at Pre-Implementation and Pre-Close only.
+- **Trivial commits** (typo, formatting, import cleanup, single-line bugfix, comment edit) → attach to phase silently, skip all file updates.
+- **Ambiguous commits** → treat as trivial (no user question, per frictionless UX decision).
+- **Incremental, not replacement.** Append to existing files. Do not rewrite. Each commit adds a paragraph or bullet; the file grows as the phase progresses.
+- **Multi-session safe.** When a phase spans sessions, each session appends its own context. The next session reads what was written before and continues.
+- **Profile-aware.** This is the full-profile version. Lite has its own simplified version in `lite/gates.md`.
 
 ---
 

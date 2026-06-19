@@ -7,8 +7,8 @@ description: Lite-profile gates — Pre-Implementation Gate steps 0+1+2+3+4 (Ste
 
 ```
 BEFORE IMPLEMENTATION → phase must exist → create it first
+BEFORE COMMIT         → classify → update phase.yml if non-trivial (see Pre-Commit Gate)
 BEFORE MERGE/CLOSE    → Pre-Close Gate (sanity + TODO warn + status update)
-BEFORE SESSION END    → if significant commits landed, phase must be updated
 PIPELINE SUBMISSION   → counts as implementation → phase must exist before submit
 ```
 
@@ -34,6 +34,26 @@ The `Ambiguous` category from `full` collapses into "everything else" — lite o
 Lite does NOT do automatic topic-shift detection. If you start a new topic mid-conversation, **manually** open a new phase. The gate still enforces "phase must exist before significant commit" — you just don't get a proactive prompt.
 
 If a single phase ends up scoping two unrelated topics, that's an accepted tradeoff in lite. Upgrade to `full` if topic discipline matters for your project.
+
+---
+
+# Pre-Commit Gate (lite) — MANDATORY
+
+Before executing ANY commit, classify using the lite binary check and update `phase.yml` if non-trivial.
+
+**Lite collapses full's Pre-Commit Gate into one action: update `phase.yml`.**
+
+| Class | Action |
+|---|---|
+| **Trivial** (typo, formatting, import cleanup, single-line comment edit) | Attach to open phase silently. No file updates. |
+| **Everything else** (features, bugfixes, refactors, schema/type changes, dependency upgrades, test additions, config tweaks) | 1) Append commit hash to `phase.yml.commits`. 2) If `plan.md` exists and the plan evolved during this commit, update it. 3) Then commit. |
+
+**Rules:**
+- **No instruction injection at this gate.** This is an operational gate. Lite re-injects instructions only at Pre-Impl Gate Step 0 — not here.
+- **No user questions.** The lite binary check is deterministic; there is no ambiguous category to escalate.
+- **Incremental.** `plan.md` updates are append-only when the plan evolves. `phase.yml.commits` grows by one hash per significant commit.
+- **Multi-session safe.** When a phase spans sessions, each session appends its own commit hashes and plan updates.
+- **Full profile has more ceremony** — see `full/gates.md` Pre-Commit Gate for the 5-file version.
 
 ---
 

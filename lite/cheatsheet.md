@@ -11,13 +11,16 @@ description: Lite-profile quick reference and event-based triggers. Reflects the
 ```
 Trivial (typo, formatting, import cleanup, single-line bugfix)
   → open phase exists? attach silently : skip entirely
+  → NO phase.yml update needed
 
 Everything else (feature, bugfix, refactor, schema change, dep upgrade, test, doc)
-  → open phase exists? update phase.yml.commits
-  → no open phase? CREATE PHASE FIRST, then commit
+  → open phase exists? update phase.yml.commits (append hash)
+  → if plan.md exists and plan evolved: update plan.md
+  → no open phase? CREATE PHASE FIRST, then do the above
+  → THEN commit
 ```
 
-Lite does not split "significant" vs "ambiguous". Anything non-trivial is just "everything else" and runs Pre-Impl Gate Step 3.
+Lite does not split "significant" vs "ambiguous". Anything non-trivial triggers phase.yml update.
 
 **About to open a phase?**
 → Minimum required: `phase.yml` + `phases/index.yml` entry. `plan.md` is optional.

@@ -10,6 +10,12 @@ description: Lite-profile agent thinking protocol, reduced memory loading strate
 - What commits have landed since the last recorded commit in the active phase?
 - Is `summaries/roadmap.md` or `summaries/current-state.md` stale relative to recent git commits?
 
+**Before committing:**
+- If the work is non-trivial (anything beyond typo/formatting/import cleanup): update `phase.yml.commits` with the commit hash before the commit lands.
+- If `plan.md` exists and the plan evolved during this work, update it incrementally.
+- Trivial commits (typo, formatting): attach silently, no updates.
+- This is the lite Pre-Commit Gate — commit boundaries are the natural checkpoint for recording what changed and why.
+
 **Before writing any plan:**
 - List the concrete entities (`touches` candidates) this plan affects.
 - Find prior decisions and discussions touching those entities or sharing the same `primary_scope` — see `lite/gates.md` Pre-Implementation Gate Step 3.

@@ -108,7 +108,7 @@ The optional `mcp-server/` subdirectory provides semantic search and determinist
 BEFORE IMPLEMENTATION → phase must exist (full/lite) → create it first
                       → instruction re-inject (all profiles)
 BEFORE MERGE/CLOSE    → Pre-Close Gate (full: 3-file verify + roadmap transfer; lite: sanity + TODO warn)
-BEFORE SESSION END    → if significant commits landed, phase must be updated (full/lite)
+BEFORE COMMIT         → classify → update phase files if significant (see Pre-Commit Gate in gates.md)
 PIPELINE SUBMISSION   → counts as implementation → phase must exist before submit (full/lite)
 ```
 
