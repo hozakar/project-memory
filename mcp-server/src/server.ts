@@ -12,6 +12,7 @@ import { indexInstruction } from "./tools/index_instruction";
 import { indexAssignment } from "./tools/index_assignment";
 import { runAudit } from "./tools/run_audit";
 import { applyAuditFixes } from "./tools/apply_audit_fixes";
+import { listContributors } from "./tools/list_contributors";
 import type { IndexEntry, PendingFix } from "./types";
 import { version } from "../package.json";
 
@@ -31,6 +32,7 @@ srv.tool(
     top_k: z.number().int().min(1).max(20).optional().default(8).describe("Number of results"),
     include_commits: z.boolean().optional().default(false).describe("Include per-commit vector records in results (default: false)"),
     created_by_email: z.string().optional().describe("Filter results to a specific creator email. Default: no filter. Use to scope instruction searches to current user."),
+    created_by_name: z.string().optional().describe("Filter results to a specific creator name (partial match via LIKE %...%). Default: no filter."),
     assigned_to_email: z.string().optional(),
     assigned_by_email: z.string().optional(),
     type_filter: z.string().optional().describe("Filter results to a specific type (phase, decision, discussion, era, instruction). Default: no filter."),
@@ -43,7 +45,7 @@ srv.tool(
   },
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async (args: any) => {
-    const results = await searchMemory(args.query, args.top_k, args.include_commits, args.created_by_email, args.type_filter, args.touches_filter, args.tags_filter, args.assigned_to_email, args.assigned_by_email, args.scope_filter, args.outcome_type_filter, args.diversify, args.include_superseded);
+    const results = await searchMemory(args.query, args.top_k, args.include_commits, args.created_by_email, args.created_by_name, args.type_filter, args.touches_filter, args.tags_filter, args.assigned_to_email, args.assigned_by_email, args.scope_filter, args.outcome_type_filter, args.diversify, args.include_superseded);
     return { content: [{ type: "text" as const, text: JSON.stringify(results) }] };
   }
 );
@@ -275,6 +277,16 @@ srv.tool(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async (args: any) => {
     const result = await indexEra(args);
+    return { content: [{ type: "text" as const, text: JSON.stringify(result) }] };
+  }
+);
+
+srv.tool(
+  "list_contributors",
+  "List all contributors across project-memory records. Walks phase, decision, discussion, issue, and assignment files, extracts created_by and contributors from frontmatter, deduplicates by email, and returns sorted by name. Useful for understanding who has touched the project memory.",
+  {},
+  async () => {
+    const result = await listContributors();
     return { content: [{ type: "text" as const, text: JSON.stringify(result) }] };
   }
 );

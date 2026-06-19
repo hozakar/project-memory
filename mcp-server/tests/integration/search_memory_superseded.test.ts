@@ -68,7 +68,7 @@ describe("searchMemory superseded exclusion", () => {
 
     // Default search — should return active + amended, NOT superseded
     const defaultResults = await searchMemory(
-      "auth token decision", 10, false, undefined, "decision",
+      "auth token decision", 10, false, undefined, undefined, "decision",
       undefined, undefined, undefined, undefined, undefined, undefined, false, false
     );
     const defaultIds = defaultResults.map(r => r.id);
@@ -78,7 +78,7 @@ describe("searchMemory superseded exclusion", () => {
 
     // Opt-in search — should return all 3 including superseded
     const optInResults = await searchMemory(
-      "auth token decision", 10, false, undefined, "decision",
+      "auth token decision", 10, false, undefined, undefined, "decision",
       undefined, undefined, undefined, undefined, undefined, undefined, false, true
     );
     const optInIds = optInResults.map(r => r.id);

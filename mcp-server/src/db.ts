@@ -110,6 +110,7 @@ export async function search(
   typeFilter?: string,
   excludeCommits: boolean = true,
   createdByEmail?: string,
+  createdByName?: string,
   touchesFilter?: string[],
   tagsFilter?: string[],
   assignedToEmail?: string,
@@ -130,7 +131,10 @@ export async function search(
       whereClauses.push(`type = '${typeFilter}'`);
     }
     if (createdByEmail) {
-      whereClauses.push(`createdByEmail = '${createdByEmail}'`);
+      whereClauses.push(`createdByEmail = '${escapeLike(createdByEmail)}'`);
+    }
+    if (createdByName) {
+      whereClauses.push(`createdByName LIKE '%${escapeLike(createdByName)}%'`);
     }
     if (assignedToEmail) {
       whereClauses.push(`assignedToEmail = '${assignedToEmail.replace(/'/g, "''")}'`);

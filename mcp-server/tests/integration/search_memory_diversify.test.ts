@@ -92,7 +92,7 @@ describe("searchMemory diversify flag", () => {
 
     // Without diversify — top-3 should cluster on connection-pooling decisions
     const noDiversifyResults = await searchMemory(
-      "connection pooling", 5, false, undefined, "decision",
+      "connection pooling", 5, false, undefined, undefined, "decision",
       undefined, undefined, undefined, undefined, undefined, undefined, false
     );
     expect(noDiversifyResults.length).toBeGreaterThanOrEqual(3);
@@ -107,7 +107,7 @@ describe("searchMemory diversify flag", () => {
     // With diversify — top-1 should still be a connection-pooling decision (P@1 preserved),
     // but the top-5 should include the diverse decisions (not all 3 near-duplicates in top-3).
     const diversifyResults = await searchMemory(
-      "connection pooling", 5, false, undefined, "decision",
+      "connection pooling", 5, false, undefined, undefined, "decision",
       undefined, undefined, undefined, undefined, undefined, undefined, true
     );
     expect(diversifyResults.length).toBe(5);
@@ -123,7 +123,7 @@ describe("searchMemory diversify flag", () => {
 
   it("P@1 preserved: top-1 with diversify matches highest-similarity pooling decision", async () => {
     const results = await searchMemory(
-      "connection pooling", 5, false, undefined, "decision",
+      "connection pooling", 5, false, undefined, undefined, "decision",
       undefined, undefined, undefined, undefined, undefined, undefined, true
     );
     expect(results[0].id).toMatch(/^DECISION-pooling-/);

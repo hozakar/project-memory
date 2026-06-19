@@ -67,7 +67,7 @@ describe("searchMemory outcomeTypeFilter", () => {
 
     // Filter by outcomeType=none — should return only the "none" discussion
     const noneResults = await searchMemory(
-      "test", 10, false, undefined, "discussion",
+      "test", 10, false, undefined, undefined, "discussion",
       undefined, undefined, undefined, undefined, undefined, "none"
     );
     expect(noneResults.length).toBeGreaterThanOrEqual(1);
@@ -75,7 +75,7 @@ describe("searchMemory outcomeTypeFilter", () => {
 
     // Filter by outcomeType=phase — should return only the phase discussion
     const phaseResults = await searchMemory(
-      "test", 10, false, undefined, "discussion",
+      "test", 10, false, undefined, undefined, "discussion",
       undefined, undefined, undefined, undefined, undefined, "phase"
     );
     expect(phaseResults.length).toBeGreaterThanOrEqual(1);
@@ -83,7 +83,7 @@ describe("searchMemory outcomeTypeFilter", () => {
 
     // Filter by outcomeType=decision — should return only the decision discussion
     const decisionResults = await searchMemory(
-      "test", 10, false, undefined, "discussion",
+      "test", 10, false, undefined, undefined, "discussion",
       undefined, undefined, undefined, undefined, undefined, "decision"
     );
     expect(decisionResults.length).toBeGreaterThanOrEqual(1);
@@ -91,7 +91,7 @@ describe("searchMemory outcomeTypeFilter", () => {
 
     // No outcomeTypeFilter — should return all 3 discussions
     const allResults = await searchMemory(
-      "test", 10, false, undefined, "discussion"
+      "test", 10, false, undefined, undefined, "discussion"
     );
     expect(allResults.length).toBe(3);
   });
