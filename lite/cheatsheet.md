@@ -77,6 +77,7 @@ Lite does not split "significant" vs "ambiguous". Anything non-trivial is just "
 | User mentions lost commits after squash/rebase | `find_similar_commit` per `mcp-integration.md`. |
 | ~10 phases accumulated since last era | Maintainer-only prompt. Rare in lite. |
 | Assignment created / status changed | Same as full. Update `assignments/index.yml`, re-call `index_assignment` if MCP. |
+| Session start — load open phases | MCP → `search_memory(type="phase", status="in_progress")`; else scan `phases/` index |
 | Session start — pending/rejected/completed assignment notifications | Same as full. |
 | User says "switch project-memory to &lt;profile&gt;" | SKILL.md → change-profile flow: append `profile_history` entry, switch active `profile`, handle minimal ↔ structured shape transitions per `profiles.md` → Migration mechanism. |
 

@@ -78,6 +78,7 @@ Ambiguous (test additions, dep upgrades, doc updates)
 | ~10 phases accumulated since last era | Prompt maintainer to create era (developers: silent), then create `era-NNN.md`, add entry to `eras/index.yml`, call `index_era` per `mcp-integration.md` |
 | Assignment created | Add row to `assignments/index.yml` (newest first); if MCP available, call `index_assignment` per `mcp-integration.md` |
 | Assignment status changed (accepted, rejected, ongoing, completed) | Update `assignments/index.yml` row; append current git identity to ASSIGNMENT file `contributors` (dedup by email); if MCP available: re-call `index_assignment` per `mcp-integration.md` |
+| Session start — load open phases | MCP → `search_memory(type="phase", status="in_progress")`; else scan `phases/` index |
 | Session start — pending assignments exist for current user | Present interactively: `[Show Details] [Accept] [Reject] [Remind Me Later]`. After 3rd reminder: ask "Auto-reject?" |
 | Session start — rejected assignments created by current user | Present interactively: `[Show Details] [Assign to Another] [Do It Yourself] [Remind Me Later]` |
 | Session start — completed assignment notifications for current user | Present once: `[View Details] [Dismiss]`. Do NOT re-present on subsequent sessions |
