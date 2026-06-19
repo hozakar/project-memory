@@ -2,7 +2,6 @@ import re
 import pathlib
 from datetime import date
 import yaml
-import pytest
 
 
 def parse_frontmatter(text: str) -> dict:
@@ -131,8 +130,12 @@ def test_discussion_frontmatter(generated):
         fm = parse_frontmatter(f.read_text())
         for field in required:
             assert field in fm, f"{f.name}: frontmatter missing '{field}'"
+        assert fm["status"] == "concluded", (
+            f"{f.name}: expected status 'concluded', got {fm['status']!r}"
+        )
 
 
 def test_discussions_index(generated):
     index = pm(generated) / "discussions" / "index.md"
     assert index.exists(), "discussions/index.md missing"
+    assert "| Date |" in index.read_text(), "discussions/index.md missing header row"
