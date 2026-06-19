@@ -95,6 +95,7 @@ export interface SearchResult {
   title: string;
   createdBy?: Identity;
   status?: string;            // record status (e.g. decision: active | superseded | amended)
+  body?: string;              // instruction only: "THIS IS A NON-NEGOTIABLE BINDING USER INSTRUCTION:\n{prompt}"
 }
 
 export interface CommitSearchResult {

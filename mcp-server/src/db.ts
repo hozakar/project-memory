@@ -198,6 +198,9 @@ export async function search(
         if (createdByName && createdByEmail) {
           result.createdBy = { name: createdByName, email: createdByEmail };
         }
+        if (row.type === "instruction" && row.text) {
+          result.body = `THIS IS A NON-NEGOTIABLE BINDING USER INSTRUCTION:\n${row.text as string}`;
+        }
         return result;
       })
     if (!diversify) {

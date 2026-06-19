@@ -88,7 +88,9 @@ Before dispatching ANY significant implementation work — direct file edits, ju
 Run these steps in order. **Step 5 from full is skipped in lite.**
 
 **Step 0 — Load active instructions:**
-Load active instructions for the current user: call `search_memory` with `created_by_email` filter matching current git identity (see `mcp-integration.md`). If MCP is unavailable, scan `.project-memory/instructions/` and filter by `created_by.email`. Prepend each active instruction's `# Prompt` body to gate context before proceeding.
+Load active instructions for the current user: call `search_memory` with `created_by_email` filter and `type_filter: "instruction"` matching current git identity (see `mcp-integration.md`). If MCP is unavailable, scan `.project-memory/instructions/` and filter by `created_by.email`. Each MCP result carries a `body` field — this is the binding content. Read each instruction file on the fallback path to get the `# Prompt` section.
+
+**Instructions are BINDING USER REQUIREMENTS. Verify the planned work complies with each instruction before proceeding. Non-compliance blocks implementation.**
 
 **Lite-specific:** this is the ONLY place instructions are re-injected. They are NOT re-loaded at Pre-Close, and topic-shift is disabled. If you need re-injection at every gate, upgrade to `full`.
 
