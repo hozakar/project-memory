@@ -50,6 +50,9 @@ The session-start work happens in this order. Each step may be a no-op depending
 3. .project-memory/phases/index.yml
 4. Active phase directory (if open) — phase.yml (always); plan.md (if present)
 5. User-scoped session items (current user — derived from git identity):
+   - **Instructions (global):**
+     - MCP available: `search_memory(query="instructions applies globally", type="instruction", top_k=10)` — filter `applies_globally: true`.
+     - MCP unavailable: scan `.project-memory/instructions/` for `INSTRUCTION-*.md`; filter `applies_globally: true`.
    - Active instructions — search_memory with created_by_email filter, type_filter "instruction"
      (directory scan fallback when MCP unavailable)
    - Pending/ongoing assignments — search_memory with assigned_to_email filter, type_filter "assignment"

@@ -78,6 +78,9 @@ At session start (see `Session-start Ordering` above for the surrounding sequenc
 6. .project-memory/phases/index.yml
 7. Active phase directory (if open)
 8. User-scoped session items (current user — derived from git identity):
+   - **Instructions / Assignments (global):**
+     - MCP available: `search_memory(query="instructions applies globally", type="instruction", top_k=10)` — filter `applies_globally: true` from results.
+     - MCP unavailable: scan `.project-memory/instructions/` for `INSTRUCTION-*.md` files; read frontmatter, filter `applies_globally: true`.
    - Active instructions — `search_memory` with `created_by_email` filter and `type_filter: "instruction"` (directory scan fallback when MCP unavailable)
    - Pending/ongoing assignments — `search_memory` with `assigned_to_email` filter and `type_filter: "assignment"` (directory scan fallback when MCP unavailable)
    - Rejected assignments created by the user — `search_memory` with `assigned_by_email` filter and `type_filter: "assignment"`

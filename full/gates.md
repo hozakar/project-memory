@@ -114,7 +114,7 @@ Before dispatching ANY significant implementation work — including:
 Run these steps in order. None may be skipped.
 
 **Step 0 — Load active instructions:**
-Load active instructions for the current user: call `search_memory` with `created_by_email` filter and `type_filter: "instruction"` matching current git identity (see `mcp-integration.md`). If MCP is unavailable, scan `.project-memory/instructions/` and filter by `created_by.email`. Each MCP result carries a `body` field — this is the binding content. Read each instruction file on the fallback path to get the `# Prompt` section.
+Load active instructions for the current user: call `search_memory` with `created_by_email` filter and `type_filter: "instruction"` matching current git identity (see `mcp-integration.md`). Each MCP result carries a `body` field — this is the binding content. **MCP unavailable fallback:** scan `.project-memory/instructions/` and filter by `created_by.email`; read each instruction file to get the `# Prompt` section.
 
 **Instructions are BINDING USER REQUIREMENTS. Verify the planned work complies with each instruction before proceeding. Non-compliance blocks implementation.**
 
