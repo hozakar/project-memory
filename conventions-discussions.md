@@ -34,11 +34,14 @@ Trigger (explicit or implicit)
           vague / no loss      -> silent drop; proceed to phase/decision if applicable
           razor-thin           -> ask user: "Worth saving? (yes/no)"
       -> If saving: determine outcome type:
-          phase -> offer to create phase
-          decision -> offer to create DECISION file
-          issue -> offer to create ISSUE file
-          roadmap -> add entry to roadmap.md
-          none -> just save the discussion
+          phase    -> offer to create phase; set `implements_decision: null` (or the relevant decision ID if the discussion also resolved a decision)
+          decision -> offer to create DECISION file; set `spawned_from_discussion: <this-discussion-id>` in the DECISION frontmatter;
+                      then ask once: "Does this decision also require a phase? (open now / add to roadmap / skip)" —
+                      if "open now": create phase with `implements_decision: <decision-id>`;
+                      if "add to roadmap": add roadmap entry pointing to the decision ID
+          issue    -> offer to create ISSUE file
+          roadmap  -> add entry to roadmap.md
+          none     -> just save the discussion
       -> Write DISCUSSION-YYYY-MM-DD-slug.md
       -> Add row to discussions/index.md
 ```
@@ -76,12 +79,19 @@ Evaluate the answer:
 **Outcome chain** (when a discussion is saved, it must link to its downstream artifact):
 
 ```
-discussion → decision (if conclusion without immediate implementation)
-                └→ phase    (when decision is implemented later)
-                └→ roadmap  (if decision is pending / no phase yet)
+discussion → decision (outcome.type: decision, outcome.id: DECISION-slug)
+    DECISION.spawned_from_discussion = this discussion's id
+                └→ phase    (phase.implements_decision = DECISION-slug)
+                └→ roadmap  (roadmap entry points to DECISION-slug; phase opened later)
 
-discussion → phase (if conversation leads directly to implementation)
+discussion → phase (outcome.type: phase, outcome.id: phase-slug)
+    phase.implements_decision = null (unless a decision was also resolved)
 ```
+
+Traceability rules:
+- `discussion.outcome.id` → always points forward to the artifact the discussion spawned.
+- `DECISION.spawned_from_discussion` → points back to the discussion that created it; null if decision was opened standalone.
+- `phase.implements_decision` → points back to the decision the phase implements; null if phase is not decision-driven.
 
 **Resume:**
 User says "continue discussion X" -> load the full DISCUSSION file -> continue conversation -> UPDATE the same file at close. Status remains `open` until conclusively finished. If the outcome changes on resume, update the frontmatter accordingly. On every resume update AND on close, append the current git identity to `contributors` (dedup by email).

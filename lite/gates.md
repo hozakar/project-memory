@@ -138,6 +138,8 @@ Same as full. When a `DECISION-*.md` is created or status changes:
 
 **Author attribution:** set `created_by` (lite does not track `contributors`).
 
+**ADR file creation:** if `adr_enabled: true` in `config.yml`, create the `adr/` file — same procedure as full. ADR mirror is orthogonal to profile; `adr_enabled` governs it, not the profile setting.
+
 **If `index_decision` is in available tools:** call `index_decision({ id, title, status, context, decisionBody, touches, created_by })`. Best-effort.
 
 Re-call on every status change.

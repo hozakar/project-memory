@@ -44,7 +44,7 @@ Profile metadata (`profile`, `profile_history`) lives in `config.yml` — same a
 ## Record-append behavior
 
 - **Roadmap edit:** open `.project-memory/MEMORY.md`, edit the `## Roadmap` section directly.
-- **Decision append:** when a decision is made, append a single row to `## Decisions`: `- YYYY-MM-DD: chose X over Y because Z`. No DECISION file, no index, no ADR.
+- **Decision append:** when a decision is made, append a single row to `## Decisions`: `- YYYY-MM-DD: chose X over Y because Z`. No DECISION file, no index. ADR mirror does not apply (no DECISION files are created to mirror).
 - **Log append:** when significant work happens, append a single row to `## Log`: `- YYYY-MM-DD: topic-name — what happened (1 line)`. "Significant" is a judgment call — no classification ceremony. A reasonable rule of thumb: if you'd want a future session to know it happened, log it.
 
 ## Discussions / issues / instructions / assignments (orthogonal)

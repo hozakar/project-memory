@@ -26,7 +26,7 @@ The right axis for choosing a profile is **longevity × revisit frequency × rea
 | 7 | Topic shift → auto new phase | on | off (user opens manually) | n/a |
 | 8 | Commit significance classification | trivial / significant / ambiguous | trivial-filter only | none |
 | 9 | Author attribution | `created_by` + `contributors` | `created_by` only | none |
-| 10 | Decisions | DECISION files + `index.md` + ADR mirror | DECISION files + `index.md` (no ADR) | append rows in `MEMORY.md` |
+| 10 | Decisions | DECISION files + `index.md` | DECISION files + `index.md` | append rows in `MEMORY.md` |
 
 ## Cat 10 (lite modification)
 

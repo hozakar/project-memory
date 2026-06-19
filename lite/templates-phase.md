@@ -22,6 +22,7 @@ abandoned_reason: null
 issues_created: []
 issues_resolved: []
 decisions_referenced: []
+implements_decision: null    # DECISION-YYYY-MM-DD-slug this phase directly implements; null if not decision-driven
 tags: []
 created_by:                  # required — see conventions-maintainer.md (Author Attribution → lite scope)
   name: "Hakan Ozakar"
