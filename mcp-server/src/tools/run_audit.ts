@@ -8,6 +8,20 @@ import type { AuditReport, AuditFinding, PendingFix } from "../types";
 // Helpers
 // ---------------------------------------------------------------------------
 
+function validateMemoryId(id: string, label: string): void {
+  const normalized = path.normalize(id);
+  if (
+    normalized.includes("..") ||
+    path.isAbsolute(normalized) ||
+    normalized.includes("/") ||
+    normalized.includes("\\")
+  ) {
+    throw new Error(
+      `Invalid ${label}: "${id}" — must be a plain slug with no path separators or traversal sequences.`
+    );
+  }
+}
+
 function today(): string {
   return new Date().toISOString().slice(0, 10);
 }
@@ -241,6 +255,7 @@ function cat1CommitOrphans(
     const matchedPhases: string[] = [];
     for (const file of entry.files) {
       for (const p of phases) {
+        validateMemoryId(p.phaseId, "phaseId");
         const phaseDir = path.join(projectRoot, ".project-memory", "phases", p.phaseId).replace(/\\/g, "/");
         if (file.startsWith("phases/" + p.phaseId + "/") || file.includes(phaseDir)) {
           if (!matchedPhases.includes(p.phaseId)) matchedPhases.push(p.phaseId);
@@ -760,6 +775,7 @@ function cat10PhaseCompleteness(
       ? ["phase.yml"]
       : ["phase.yml", "plan.md", "implementation.md", "review-and-fixes.md", "followup.md"];
 
+    validateMemoryId(p.phaseId, "phaseId");
     const phaseDir = path.join(projectMemoryDir, "phases", p.phaseId);
     for (const file of required) {
       if (!fs.existsSync(path.join(phaseDir, file))) {

@@ -23,6 +23,20 @@ import { parseFrontmatter } from "./run_audit";
 
 const CLAIM_PLACEHOLDER = "<!-- TODO: claim -->";
 
+function validateMemoryId(id: string, label: string): void {
+  const normalized = path.normalize(id);
+  if (
+    normalized.includes("..") ||
+    path.isAbsolute(normalized) ||
+    normalized.includes("/") ||
+    normalized.includes("\\")
+  ) {
+    throw new Error(
+      `Invalid ${label}: "${id}" — must be a plain slug with no path separators or traversal sequences.`
+    );
+  }
+}
+
 function readFile(p: string): string {
   try { return fs.readFileSync(p, "utf-8"); } catch { return ""; }
 }
@@ -54,6 +68,7 @@ function applyAnnotateOrphan(
     return { fix_type: "annotate_orphan", reason: "schema_mismatch", details: "missing phase_id/hash/date" };
   }
 
+  validateMemoryId(phaseId, "phaseId");
   const indexPath = path.join(projectMemoryDir, "phases", "index.yml");
   const phasePath = path.join(projectMemoryDir, "phases", phaseId, "phase.yml");
   if (!fileExists(indexPath) || !fileExists(phasePath)) {
@@ -110,7 +125,7 @@ function applyAssignCommit(
   if (!phaseId || !hash) {
     return { fix_type: "assign_commit", reason: "schema_mismatch", details: "missing phaseId/commitHash" };
   }
-
+  validateMemoryId(phaseId, "phaseId");
   const phasePath = path.join(projectMemoryDir, "phases", phaseId, "phase.yml");
   const indexPath = path.join(projectMemoryDir, "phases", "index.yml");
   if (!fileExists(phasePath)) {
@@ -235,7 +250,7 @@ function applyAddDecisionIndexRow(
   if (!decisionId) {
     return { fix_type: "add_decision_index_row", reason: "schema_mismatch", details: "missing decisionId" };
   }
-
+  validateMemoryId(decisionId, "decisionId");
   const indexPath = path.join(projectMemoryDir, "decisions", "index.md");
   if (!fileExists(indexPath)) {
     return { fix_type: "add_decision_index_row", reason: "file_not_found", details: indexPath };
@@ -344,6 +359,7 @@ function applyAssignAdrId(
   if (!decisionId || !adrId) {
     return { fix_type: "assign_adr_id", reason: "schema_mismatch", details: "missing decisionId/adrId" };
   }
+  validateMemoryId(decisionId, "decisionId");
   const decisionPath = path.join(projectMemoryDir, "decisions", `${decisionId}.md`);
   if (!fileExists(decisionPath)) {
     return { fix_type: "assign_adr_id", reason: "file_not_found", details: decisionPath };
@@ -395,6 +411,7 @@ function applyCreateAdrFile(
   if (!decisionId || !adrId) {
     return { fix_type: "create_adr_file", reason: "schema_mismatch", details: "missing decisionId/adrId" };
   }
+  validateMemoryId(decisionId, "decisionId");
   const adrDir = readConfigField(projectMemoryDir, "adr_dir");
   if (!adrDir) {
     return { fix_type: "create_adr_file", reason: "schema_mismatch", details: "adr_dir not configured" };
@@ -495,6 +512,7 @@ function applyCreatePhaseStub(
   if (!(missingFile in PHASE_STUBS)) {
     return { fix_type: "create_phase_stub", reason: "schema_mismatch", details: `no stub template for ${missingFile}` };
   }
+  validateMemoryId(phaseId, "phaseId");
   const phaseDir = path.join(projectMemoryDir, "phases", phaseId);
   if (!fs.existsSync(phaseDir)) {
     return { fix_type: "create_phase_stub", reason: "file_not_found", details: phaseDir };

@@ -373,3 +373,49 @@ describe("apply_audit_fixes — batch + flags", () => {
     expect(result.rerun_audit_recommended).toBe(false);
   });
 });
+
+describe("apply_audit_fixes — path traversal hardening", () => {
+  it("annotate_orphan: rejects phaseId with traversal sequence", async () => {
+    w("phases/index.yml", `phases: []\n`);
+    const fix: PendingFix = { type: "annotate_orphan", phase_id: "../../etc/passwd", hash: "deadbee", location: "commits", date: "2026-06-17" };
+    await expect(applyAuditFixes(pmDir, [fix])).rejects.toThrow("Invalid phaseId");
+  });
+
+  it("assign_commit: rejects phaseId with traversal sequence", async () => {
+    const fix: PendingFix = { type: "assign_commit", phaseId: "../../etc/passwd", commitHash: "abc1234", files: [] };
+    await expect(applyAuditFixes(pmDir, [fix])).rejects.toThrow("Invalid phaseId");
+  });
+
+  it("add_decision_index_row: rejects decisionId with traversal sequence", async () => {
+    const fix: PendingFix = { type: "add_decision_index_row", decisionId: "../../etc/passwd", status: "active", touches: [], date: "2026-06-17" };
+    await expect(applyAuditFixes(pmDir, [fix])).rejects.toThrow("Invalid decisionId");
+  });
+
+  it("assign_adr_id: rejects decisionId with traversal sequence", async () => {
+    const fix: PendingFix = { type: "assign_adr_id", decisionId: "../../etc/passwd", adrId: "1" };
+    await expect(applyAuditFixes(pmDir, [fix])).rejects.toThrow("Invalid decisionId");
+  });
+
+  it("create_adr_file: rejects decisionId with traversal sequence", async () => {
+    w("config.yml", `adr_dir: adr\n`);
+    const fix: PendingFix = { type: "create_adr_file", decisionId: "../../etc/passwd", adrId: "1" };
+    await expect(applyAuditFixes(pmDir, [fix])).rejects.toThrow("Invalid decisionId");
+  });
+
+  it("create_phase_stub: rejects phaseId with traversal sequence", async () => {
+    const fix: PendingFix = { type: "create_phase_stub", phaseId: "../../etc/passwd", missingFile: "plan.md" };
+    await expect(applyAuditFixes(pmDir, [fix])).rejects.toThrow("Invalid phaseId");
+  });
+
+  it("annotate_orphan: rejects phaseId with forward slash", async () => {
+    const fix: PendingFix = { type: "annotate_orphan", phase_id: "foo/bar", hash: "deadbee", location: "commits", date: "2026-06-17" };
+    await expect(applyAuditFixes(pmDir, [fix])).rejects.toThrow("Invalid phaseId");
+  });
+
+  it("assign_commit: accepts a plain slug phaseId without throwing", async () => {
+    w("phases/index.yml", `phases:\n  - id: phase-x\n    commits: []\n`);
+    w("phases/phase-x/phase.yml", `id: phase-x\ncommits: []\n`);
+    const fix: PendingFix = { type: "assign_commit", phaseId: "phase-x", commitHash: "abc1234", files: [] };
+    await expect(applyAuditFixes(pmDir, [fix])).resolves.not.toThrow();
+  });
+});
