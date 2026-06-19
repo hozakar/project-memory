@@ -1,5 +1,7 @@
 // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-explicit-any
 const lancedb: any = require("@lancedb/lancedb");
+import * as fs from "fs";
+import * as path from "path";
 import type { LanceRecord, SearchResult } from "./types";
 import { mmrRerank } from "./utils";
 
@@ -9,9 +11,29 @@ let _conn: any = null;
 // changes between calls in the same process (rare), the wrong DB is reused.
 // For test teardown, restart the process or add a resetConnection() export.
 
-function dbPath(): string {
-  const root = process.env.PROJECT_MEMORY_DIR ?? process.cwd();
-  return `${root}/.project-memory/vector-index`;
+export function dbPath(): string {
+  const envVal = process.env.PROJECT_MEMORY_DIR;
+  const GARBAGE = new Set(["undefined", "null", ""]);
+  const raw = envVal !== undefined && !GARBAGE.has(envVal) ? envVal : null;
+
+  if (raw !== null && !path.isAbsolute(raw)) {
+    throw new Error(
+      `PROJECT_MEMORY_DIR must be an absolute path; got: "${raw}"`
+    );
+  }
+
+  const root = raw ?? process.cwd();
+  const projectMemoryDir = path.join(root, ".project-memory");
+
+  if (!fs.existsSync(projectMemoryDir)) {
+    throw new Error(
+      `No .project-memory/ directory found at "${root}". ` +
+      `Ensure PROJECT_MEMORY_DIR points to the project root where the skill was initialized. ` +
+      `Expected: ${projectMemoryDir}`
+    );
+  }
+
+  return path.join(projectMemoryDir, "vector-index");
 }
 
 export async function getConnection(): Promise<unknown> {

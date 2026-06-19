@@ -76,8 +76,12 @@ When the user says "switch project-memory to <full|lite|minimal>" or similar phr
 1. Read current `config.yml` (or detect `MEMORY.md` for minimal).
 2. Append a new entry to `profile_history`: `{profile: <new>, effective_date: today, reason: <user's stated motivation or "user request">}`.
 3. Update top-level `profile` field.
-4. For `full → minimal` or `lite → minimal`: existing `.project-memory/` stays in place; new behavior follows minimal rules going forward. Roadmap content from `summaries/roadmap.md` is appended to a freshly created `MEMORY.md`.
-5. For `minimal → lite` or `minimal → full`: create `.project-memory/` skeleton; migrate `MEMORY.md` sections into seed `roadmap.md` and `decisions/index.md`.
+4. For `full → minimal` or `lite → minimal`:
+   - **Validation (non-blocking):** Read `summaries/roadmap.md` — if no `### Short-term` or `### Later` sections exist, warn: `"summaries/roadmap.md appears empty — ## Roadmap section in MEMORY.md will be seeded empty."` Read `decisions/index.md` — if no Active section entries exist, warn: `"decisions/index.md has no active entries — ## Decisions section in MEMORY.md will be seeded empty."` Emit warnings as a single batched block. User may Ctrl-C to clean up first, or proceed.
+   - Existing `.project-memory/` stays in place; new behavior follows minimal rules going forward. Roadmap content from `summaries/roadmap.md` is appended to a freshly created `MEMORY.md`.
+5. For `minimal → lite` or `minimal → full`:
+   - **Validation (non-blocking):** Read `MEMORY.md` — if `## Roadmap` section is missing or empty, warn: `"MEMORY.md → ## Roadmap is empty; summaries/roadmap.md will be seeded empty."` If `## Decisions` section is missing or empty, warn: `"MEMORY.md → ## Decisions is empty; decisions/index.md will be seeded empty."` Emit warnings as a single batched block. User may Ctrl-C to clean up first, or proceed.
+   - Create `.project-memory/` skeleton; migrate `MEMORY.md` sections into seed `roadmap.md` and `decisions/index.md`.
 6. Inform the user what becomes active / inactive from this point. No existing artifacts are deleted.
 
 ---
