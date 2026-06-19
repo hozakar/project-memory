@@ -132,6 +132,32 @@ describe("apply_audit_fixes — fix_decision_index_status", () => {
     const result = await applyAuditFixes(pmDir, [fix]);
     expect(result.applied[0].summary).toMatch(/already/);
   });
+
+  it("recognizes and preserves a hyphenated status (e.g. on-hold)", async () => {
+    w("decisions/index.md", `| Date | ID | Scope | Status | Global | Touches | Claim |\n|---|---|---|---|---|---|---|\n| 2026-06-17 | DECISION-2026-06-17-foo | s | on-hold | - | t | c |\n`);
+    const fix: PendingFix = { type: "fix_decision_index_status", decisionId: "DECISION-2026-06-17-foo", correctStatus: "active" };
+    const result = await applyAuditFixes(pmDir, [fix]);
+    expect(result.applied).toHaveLength(1);
+    expect(result.applied[0].summary).toMatch(/on-hold.*active|active/);
+    expect(r("decisions/index.md")).toMatch(/\| active \|/);
+  });
+
+  it("is no-op when existing hyphenated status matches correctStatus", async () => {
+    w("decisions/index.md", `| Date | ID | Scope | Status | Global | Touches | Claim |\n|---|---|---|---|---|---|---|\n| 2026-06-17 | DECISION-2026-06-17-foo | s | in-progress | - | t | c |\n`);
+    const fix: PendingFix = { type: "fix_decision_index_status", decisionId: "DECISION-2026-06-17-foo", correctStatus: "in-progress" };
+    const result = await applyAuditFixes(pmDir, [fix]);
+    expect(result.applied[0].summary).toMatch(/already/);
+    expect(r("decisions/index.md")).toMatch(/\| in-progress \|/);
+  });
+
+  it("matches row with trailing whitespace after section header (whitespace tolerance)", async () => {
+    // Section header has trailing spaces — the table header is still found and row is still updated
+    w("decisions/index.md", `## Active   \n\n| Date | ID | Scope | Status | Global | Touches | Claim |\n|---|---|---|---|---|---|---|\n| 2026-06-17 | DECISION-2026-06-17-foo | s | active | - | t | c |\n`);
+    const fix: PendingFix = { type: "fix_decision_index_status", decisionId: "DECISION-2026-06-17-foo", correctStatus: "superseded" };
+    const result = await applyAuditFixes(pmDir, [fix]);
+    expect(result.applied).toHaveLength(1);
+    expect(r("decisions/index.md")).toMatch(/\| superseded \|/);
+  });
 });
 
 describe("apply_audit_fixes — assign_adr_id", () => {

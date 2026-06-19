@@ -302,7 +302,7 @@ function applyFixDecisionIndexStatus(
   }
   const content = readFile(indexPath);
   // Row pattern: | Date | ID | Scope | Status | ...
-  const rowRe = new RegExp(`^(\\|\\s*\\d{4}-\\d{2}-\\d{2}\\s*\\|\\s*${decisionId}\\s*\\|\\s*[^|]+\\|\\s*)(\\w+)(\\s*\\|)`, "m");
+  const rowRe = new RegExp(`^(\\|\\s*\\d{4}-\\d{2}-\\d{2}\\s*\\|\\s*${decisionId}\\s*\\|\\s*[^|]+\\|\\s*)([\\w-]+)(\\s*\\|)`, "m");
   const m = content.match(rowRe);
   if (!m) {
     return { fix_type: "fix_decision_index_status", reason: "ambiguous_target", details: `row for ${decisionId} not found` };
