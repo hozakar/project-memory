@@ -104,6 +104,8 @@ At the start of every session, read the file at
 
 Global rules in Windsurf apply across all workspaces.
 
+> **Manual config path (if Cascade UI is unavailable):** `~/.codeium/windsurf/mcp_config.json`
+
 > **Enterprise/system-wide installation:**
 > - macOS: `/Library/Application Support/Windsurf/rules/project-memory.md`
 > - Linux/WSL: `/etc/windsurf/rules/project-memory.md`

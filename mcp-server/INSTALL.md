@@ -107,6 +107,8 @@ Or add directly to `~/.codeium/windsurf/mcp_config.json`:
 }
 ```
 
+<!-- Path verified against Context7 docs 2026-06-19; confirm against official Windsurf release notes if behavior changes. -->
+
 ---
 
 ### OpenCode
