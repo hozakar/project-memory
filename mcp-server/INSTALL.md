@@ -107,7 +107,7 @@ Or add directly to `~/.codeium/windsurf/mcp_config.json`:
 }
 ```
 
-<!-- Path verified against Context7 docs 2026-06-19; confirm against official Windsurf release notes if behavior changes. -->
+<!-- Path verified against official Windsurf docs (now at docs.devin.ai/desktop/cascade/mcp) 2026-06-19. -->
 
 ---
 
@@ -132,16 +132,13 @@ Add to `~/.config/opencode/opencode.json` (global) or `opencode.json`
 
 ### Cline
 
-Open VS Code → Cline extension panel → **MCP Servers** tab →
-**Add MCP Server**, then enter:
+Open VS Code → Cline extension panel → click the **MCP Servers** icon
+(stacked servers) in the top toolbar → **Configure** tab →
+**Configure MCP Servers** button. This opens the raw JSON settings file.
 
-- **Name:** `project-memory`
-- **Command:** `node`
-- **Args:** `/absolute/path/to/mcp-server/dist/index.js`
-
-Alternatively, add directly to Cline's MCP config file (path varies by OS):
-- **macOS/Linux:** `~/.cline/mcp_settings.json`
-- **Windows:** `%APPDATA%\Cline\mcp_settings.json`
+Alternatively, edit the config file directly:
+- **macOS/Linux:** `~/.cline/data/settings/cline_mcp_settings.json`
+- **Windows:** `%APPDATA%\Cline\data\settings\cline_mcp_settings.json`
 
 ```json
 {
@@ -151,13 +148,17 @@ Alternatively, add directly to Cline's MCP config file (path varies by OS):
       "args": ["<absolute-path-to-repo>/mcp-server/dist/server.js"],
       "env": {
         "PROJECT_MEMORY_DIR": "<absolute-path-to-project>/.project-memory"
-      }
+      },
+      "disabled": false,
+      "autoApprove": []
     }
   }
 }
 ```
 
-> **Note:** Cline MCP UI steps written from general knowledge; verify against official Cline docs if the UI differs.
+- **`disabled`:** Set to `false` (enabled). Omit or set `true` to toggle off without deleting the entry.
+- **`autoApprove`:** Optional. Set to `["*"]` to auto-approve all tool calls, or list specific tool names. An empty array `[]` means every call requires manual approval.
+- Restart the Cline panel after editing for changes to take effect.
 
 ---
 

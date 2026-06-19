@@ -104,7 +104,7 @@ At the start of every session, read the file at
 
 Global rules in Windsurf apply across all workspaces.
 
-> **Manual config path (if Cascade UI is unavailable):** `~/.codeium/windsurf/mcp_config.json`
+> **Manual MCP config path (if Cascade UI is unavailable):** `~/.codeium/windsurf/mcp_config.json` *(verified against official docs at docs.devin.ai/desktop/cascade/mcp)*
 
 > **Enterprise/system-wide installation:**
 > - macOS: `/Library/Application Support/Windsurf/rules/project-memory.md`
@@ -158,7 +158,7 @@ At the start of every session, read the file at
 Cline's global configuration directory is `~/.cline/` — custom instructions
 defined there apply to all sessions.
 
-> **Note:** These steps were written from general knowledge. Verify against official Cline documentation if the UI has changed.
+> **Note:** Steps verified against official Cline MCP documentation (docs.cline.bot/mcp/mcp-overview).
 
 ---
 
