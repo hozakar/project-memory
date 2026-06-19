@@ -402,43 +402,43 @@ describe("apply_audit_fixes — path traversal hardening", () => {
   it("annotate_orphan: rejects phaseId with traversal sequence", async () => {
     w("phases/index.yml", `phases: []\n`);
     const fix: PendingFix = { type: "annotate_orphan", phase_id: "../../etc/passwd", hash: "deadbee", location: "commits", date: "2026-06-17" };
-    await expect(applyAuditFixes(pmDir, [fix])).rejects.toThrow("Invalid phaseId");
+    await expect(applyAuditFixes(pmDir, [fix])).rejects.toThrow("Invalid memory ID");
   });
 
   it("assign_commit: rejects phaseId with traversal sequence", async () => {
     const fix: PendingFix = { type: "assign_commit", phaseId: "../../etc/passwd", commitHash: "abc1234", files: [] };
-    await expect(applyAuditFixes(pmDir, [fix])).rejects.toThrow("Invalid phaseId");
+    await expect(applyAuditFixes(pmDir, [fix])).rejects.toThrow("Invalid memory ID");
   });
 
   it("add_decision_index_row: rejects decisionId with traversal sequence", async () => {
     const fix: PendingFix = { type: "add_decision_index_row", decisionId: "../../etc/passwd", status: "active", touches: [], date: "2026-06-17" };
-    await expect(applyAuditFixes(pmDir, [fix])).rejects.toThrow("Invalid decisionId");
+    await expect(applyAuditFixes(pmDir, [fix])).rejects.toThrow("Invalid memory ID");
   });
 
   it("assign_adr_id: rejects decisionId with traversal sequence", async () => {
     const fix: PendingFix = { type: "assign_adr_id", decisionId: "../../etc/passwd", adrId: "1" };
-    await expect(applyAuditFixes(pmDir, [fix])).rejects.toThrow("Invalid decisionId");
+    await expect(applyAuditFixes(pmDir, [fix])).rejects.toThrow("Invalid memory ID");
   });
 
   it("create_adr_file: rejects decisionId with traversal sequence", async () => {
     w("config.yml", `adr_dir: adr\n`);
     const fix: PendingFix = { type: "create_adr_file", decisionId: "../../etc/passwd", adrId: "1" };
-    await expect(applyAuditFixes(pmDir, [fix])).rejects.toThrow("Invalid decisionId");
+    await expect(applyAuditFixes(pmDir, [fix])).rejects.toThrow("Invalid memory ID");
   });
 
   it("create_phase_stub: rejects phaseId with traversal sequence", async () => {
     const fix: PendingFix = { type: "create_phase_stub", phaseId: "../../etc/passwd", missingFile: "plan.md" };
-    await expect(applyAuditFixes(pmDir, [fix])).rejects.toThrow("Invalid phaseId");
+    await expect(applyAuditFixes(pmDir, [fix])).rejects.toThrow("Invalid memory ID");
   });
 
   it("fix_decision_index_status: rejects decisionId with traversal sequence", async () => {
     const fix: PendingFix = { type: "fix_decision_index_status", decisionId: "../../etc/passwd", correctStatus: "active" };
-    await expect(applyAuditFixes(pmDir, [fix])).rejects.toThrow("Invalid decisionId");
+    await expect(applyAuditFixes(pmDir, [fix])).rejects.toThrow("Invalid memory ID");
   });
 
   it("annotate_orphan: rejects phaseId with forward slash", async () => {
     const fix: PendingFix = { type: "annotate_orphan", phase_id: "foo/bar", hash: "deadbee", location: "commits", date: "2026-06-17" };
-    await expect(applyAuditFixes(pmDir, [fix])).rejects.toThrow("Invalid phaseId");
+    await expect(applyAuditFixes(pmDir, [fix])).rejects.toThrow("Invalid memory ID");
   });
 
   it("assign_commit: accepts a plain slug phaseId without throwing", async () => {

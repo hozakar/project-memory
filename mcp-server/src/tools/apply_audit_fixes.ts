@@ -8,6 +8,7 @@ import type {
   FailedFix,
 } from "../types";
 import { parseFrontmatter } from "./run_audit";
+import { validateMemoryId } from "../validation.js";
 
 // ---------------------------------------------------------------------------
 // apply_audit_fixes — deterministic execution of run_audit pending_fixes.
@@ -22,20 +23,6 @@ import { parseFrontmatter } from "./run_audit";
 // ---------------------------------------------------------------------------
 
 const CLAIM_PLACEHOLDER = "<!-- TODO: claim -->";
-
-function validateMemoryId(id: string, label: string): void {
-  const normalized = path.normalize(id);
-  if (
-    normalized.includes("..") ||
-    path.isAbsolute(normalized) ||
-    normalized.includes("/") ||
-    normalized.includes("\\")
-  ) {
-    throw new Error(
-      `Invalid ${label}: "${id}" — must be a plain slug with no path separators or traversal sequences.`
-    );
-  }
-}
 
 function readFile(p: string): string {
   try { return fs.readFileSync(p, "utf-8"); } catch { return ""; }

@@ -3,24 +3,11 @@ import * as path from "path";
 import { execSync, spawnSync } from "child_process";
 // execSync used by git() helper; spawnSync used by cat7 for stdin piping
 import type { AuditReport, AuditFinding, PendingFix } from "../types";
+import { validateMemoryId } from "../validation.js";
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-
-function validateMemoryId(id: string, label: string): void {
-  const normalized = path.normalize(id);
-  if (
-    normalized.includes("..") ||
-    path.isAbsolute(normalized) ||
-    normalized.includes("/") ||
-    normalized.includes("\\")
-  ) {
-    throw new Error(
-      `Invalid ${label}: "${id}" — must be a plain slug with no path separators or traversal sequences.`
-    );
-  }
-}
 
 function today(): string {
   return new Date().toISOString().slice(0, 10);
