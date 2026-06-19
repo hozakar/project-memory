@@ -53,7 +53,7 @@ The session-start work happens in this order. Each step may be a no-op depending
 1. **MCP availability check** — set the session-level flag (see MCP Companion Integration → Availability check).
 2. **Proactive DB sync** — `check_consistency` + index any missing entries. MCP-only; skipped when unavailable.
 3. **Memory Loading Strategy** — execute steps 1–14 below. Summary files first, then phase/decision/discussion indexes.
-4. **Instruction re-injection** — load active instructions for the current user (idempotent if already loaded in step 4 step 8; the same content is re-asserted before each gate per `gates.md` Step 0).
+4. **Instruction re-injection** — load active instructions for the current user (idempotent — same content re-asserted at each gate per `gates.md` Step 0).
 5. **Assignment notifications** — emit passive single-line summary per `conventions-records.md` (Assignment lifecycle).
 6. **Era prompt** — if ≥ 10 phases have accumulated since the last era AND session role = maintainer, ask whether to create the next era file.
 7. **Header emission** — output `🧠 PROJECT MEMORY LOADED` (memory loaded indicator only).

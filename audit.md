@@ -35,7 +35,7 @@ Exceptions (audit runs synchronously):
 
 1. Read the active `profile` from `.project-memory/config.yml`. If `profile=minimal`, exit (no audit).
 2. Check if `run_audit` is in available MCP tools.
-3. **If yes:** read `<profile>/audit-mcp.md` and follow its MCP Fast Path. Pass `raise_cat4: false` when running on-load (SKILL.md step 5); pass `raise_cat4: true` when running from `Skill project-memory audit`. Skip `<profile>/audit-fs.md`.
+3. **If yes:** read `<profile>/audit-mcp.md` and follow its MCP Fast Path. Pass `raise_cat4: false` when running as post-first-response audit (SKILL.md step 5); pass `raise_cat4: true` when running from `Skill project-memory audit`. Skip `<profile>/audit-fs.md`.
 4. **If no:** read `<profile>/audit-fs.md` and follow its file-based Detection Procedure.
 
 `<profile>` is `full` or `lite`. The lite versions enumerate a reduced category set (Cat 1, 2, 3, 4, 5, 6, 7, 8 (conditional), 10 (modified), 12, 13 (conditional), 14 — Cat 9 and 11 omitted).
