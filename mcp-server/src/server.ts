@@ -13,6 +13,7 @@ import { indexAssignment } from "./tools/index_assignment";
 import { runAudit } from "./tools/run_audit";
 import { applyAuditFixes } from "./tools/apply_audit_fixes";
 import { listContributors } from "./tools/list_contributors";
+import { findTouchingPhases } from "./tools/find_touching_phases";
 import type { IndexEntry, PendingFix } from "./types";
 import { version } from "../package.json";
 
@@ -287,6 +288,18 @@ srv.tool(
   {},
   async () => {
     const result = await listContributors();
+    return { content: [{ type: "text" as const, text: JSON.stringify(result) }] };
+  }
+);
+
+srv.tool(
+  "find_touching_phases",
+  "Find which phases touched a given file. Runs git log on the file, then matches commit hashes against phase.yml commit lists. Returns phases sorted by most recent touch. Unmatched commits (not in any phase) are returned separately. Useful for reverse lookup: 'which phase last changed this file?'",
+  {
+    file_path: z.string().describe("File path relative to the project root (e.g. 'mcp-server/src/db.ts')."),
+  },
+  async (args: any) => {
+    const result = await findTouchingPhases(args.file_path);
     return { content: [{ type: "text" as const, text: JSON.stringify(result) }] };
   }
 );

@@ -200,3 +200,25 @@ export interface LanceRecord {
   outcomeType?: string;      // derived discussion outcome category (none, phase, decision, roadmap) — supports exact WHERE filter via outcomeTypeFilter
   status?: string;            // record status (e.g. decision: active | superseded | amended)
 }
+
+export interface PhaseCommitMatch {
+  hash: string;          // full git commit hash (40 chars)
+  shortHash: string;     // 7-char short hash
+  message: string;       // commit message subject line
+  date: string;          // ISO date string from git
+}
+
+export interface TouchingPhase {
+  phaseId: string;
+  title: string;
+  status: string;
+  startedAt: string;
+  closedAt?: string;
+  matchingCommits: PhaseCommitMatch[];
+}
+
+export interface TouchingPhasesResult {
+  file: string;
+  phases: TouchingPhase[];
+  unmatchedCommits: PhaseCommitMatch[];  // commits not in any phase
+}
