@@ -89,6 +89,46 @@ interface PhaseEntry {
   startedAt: string | null;
 }
 
+export interface ProfileHistoryEntry {
+  profile: "full" | "lite" | "minimal";
+  effective_date: string;
+}
+
+export function readProfileHistory(projectMemoryDir: string): ProfileHistoryEntry[] {
+  const configPath = path.join(projectMemoryDir, "config.yml");
+  const content = readFile(configPath);
+
+  const history: ProfileHistoryEntry[] = [];
+  // Match profile_history block: pairs of profile + effective_date within each list item
+  const itemRe = /-\s+profile:\s+(\S+)[\s\S]*?effective_date:\s+(\d{4}-\d{2}-\d{2})/g;
+  const sectionMatch = content.match(/profile_history:\s*([\s\S]*?)(?=\n\w|$)/);
+  if (!sectionMatch) return history;
+
+  let m: RegExpExecArray | null;
+  while ((m = itemRe.exec(sectionMatch[1])) !== null) {
+    const p = m[1].replace(/^['"]|['"]$/g, "") as "full" | "lite" | "minimal";
+    history.push({ profile: p, effective_date: m[2] });
+  }
+  return history.sort((a, b) => a.effective_date.localeCompare(b.effective_date));
+}
+
+export function resolveProfileAtDate(
+  date: string,
+  profileHistory: ProfileHistoryEntry[],
+  fallback: "full" | "lite" | "minimal",
+): "full" | "lite" | "minimal" {
+  if (profileHistory.length === 0) return fallback;
+  let resolved = fallback;
+  for (const entry of profileHistory) {
+    if (entry.effective_date <= date) {
+      resolved = entry.profile;
+    } else {
+      break;
+    }
+  }
+  return resolved;
+}
+
 function parsePhasesFromIndex(indexContent: string): PhaseEntry[] {
   const entries: PhaseEntry[] = [];
   const phaseBlockRe = /^\s{2}-\s+id:\s+(.+)$/gm;
@@ -695,21 +735,26 @@ function cat10PhaseCompleteness(
   phases: PhaseEntry[],
   ignored: AuditIgnoreSet,
   profile: "full" | "lite" | "minimal" = "full",
+  profileHistory: ProfileHistoryEntry[] = [],
 ): PendingFix[] {
-  // In lite, only `phase.yml` is required. `plan.md` is optional, and impl/review/followup
-  // are not part of the lite phase shape at all. Per-phase profile-history-based shape
-  // inference (mixed-profile projects) is currently handled by the LLM layer; this MCP-side
-  // check uses the uniform current profile passed in.
-  const required = profile === "lite"
-    ? ["phase.yml"]
-    : ["phase.yml", "plan.md", "implementation.md", "review-and-fixes.md", "followup.md"];
   const pendingFixes: PendingFix[] = [];
 
   for (const phase of phases) {
     const p = phase;
     if (p.status !== "completed") continue;
-    const phaseDir = path.join(projectMemoryDir, "phases", p.phaseId);
 
+    // Resolve the profile in effect when this phase was created.
+    // Falls back to the passed profile param when startedAt is absent or
+    // profileHistory is empty (backward-compatible for legacy projects).
+    const phaseProfile = p.startedAt
+      ? resolveProfileAtDate(p.startedAt, profileHistory, profile)
+      : profile;
+
+    const required = phaseProfile === "lite"
+      ? ["phase.yml"]
+      : ["phase.yml", "plan.md", "implementation.md", "review-and-fixes.md", "followup.md"];
+
+    const phaseDir = path.join(projectMemoryDir, "phases", p.phaseId);
     for (const file of required) {
       if (!fs.existsSync(path.join(phaseDir, file))) {
         if (!ignored.has(`phase-completeness:${p.phaseId}:${file}`)) {
@@ -943,8 +988,9 @@ export async function runAudit(
   autoFixed.push(...cat8Result.autoFixed);
   pendingFixes.push(...cat8Result.pendingFixes);
 
-  // Cat 10: profile-aware required file list (lite expects phase.yml only)
-  pendingFixes.push(...cat10PhaseCompleteness(projectMemoryDir, phases, ignored, profile));
+  // Cat 10: per-phase profile-history-aware required file list
+  const profileHistory = readProfileHistory(projectMemoryDir);
+  pendingFixes.push(...cat10PhaseCompleteness(projectMemoryDir, phases, ignored, profile, profileHistory));
 
   // Cat 7: pending fixes (YAML annotations — LLM applies these)
   pendingFixes.push(...cat7OrphanCommitRefs(projectRoot, phases));

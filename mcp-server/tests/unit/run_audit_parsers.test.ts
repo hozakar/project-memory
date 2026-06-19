@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { parseFrontmatter, matchesIgnorePattern, AuditIgnoreSet } from "../../src/tools/run_audit";
+import { parseFrontmatter, matchesIgnorePattern, AuditIgnoreSet, resolveProfileAtDate } from "../../src/tools/run_audit";
+import type { ProfileHistoryEntry } from "../../src/tools/run_audit";
 
 describe("parseFrontmatter", () => {
   it("parses basic key-value pairs", () => {
@@ -109,5 +110,54 @@ describe("AuditIgnoreSet", () => {
     expect(s.has("tag-typo:any-phase:decisions")).toBe(true);
     expect(s.has("tag-typo:any-phase:discussions")).toBe(true);
     expect(s.has("tag-typo:any-phase:security")).toBe(false);
+  });
+});
+
+describe("resolveProfileAtDate", () => {
+  it("returns fallback when profileHistory is empty", () => {
+    expect(resolveProfileAtDate("2026-06-10", [], "full")).toBe("full");
+    expect(resolveProfileAtDate("2026-06-10", [], "lite")).toBe("lite");
+  });
+
+  it("single profile, no transition — returns that profile for any date", () => {
+    const history: ProfileHistoryEntry[] = [
+      { profile: "full", effective_date: "2026-06-08" },
+    ];
+    expect(resolveProfileAtDate("2026-06-08", history, "full")).toBe("full");
+    expect(resolveProfileAtDate("2026-06-20", history, "full")).toBe("full");
+  });
+
+  it("full → lite downgrade: phases before downgrade date resolve as full", () => {
+    const history: ProfileHistoryEntry[] = [
+      { profile: "full", effective_date: "2026-06-08" },
+      { profile: "lite", effective_date: "2026-06-15" },
+    ];
+    // Phase created before downgrade → full
+    expect(resolveProfileAtDate("2026-06-10", history, "lite")).toBe("full");
+    // Phase created on downgrade date → lite
+    expect(resolveProfileAtDate("2026-06-15", history, "lite")).toBe("lite");
+    // Phase created after downgrade → lite
+    expect(resolveProfileAtDate("2026-06-20", history, "lite")).toBe("lite");
+  });
+
+  it("lite → full upgrade: phases before upgrade date resolve as lite", () => {
+    const history: ProfileHistoryEntry[] = [
+      { profile: "lite", effective_date: "2026-06-08" },
+      { profile: "full", effective_date: "2026-06-15" },
+    ];
+    // Phase created before upgrade → lite (no false-positive missing-file reports)
+    expect(resolveProfileAtDate("2026-06-10", history, "full")).toBe("lite");
+    // Phase created on upgrade date → full
+    expect(resolveProfileAtDate("2026-06-15", history, "full")).toBe("full");
+    // Phase created after upgrade → full
+    expect(resolveProfileAtDate("2026-06-20", history, "full")).toBe("full");
+  });
+
+  it("returns fallback when date is before all history entries", () => {
+    const history: ProfileHistoryEntry[] = [
+      { profile: "full", effective_date: "2026-06-08" },
+    ];
+    // Phase date before the only history entry → fallback
+    expect(resolveProfileAtDate("2026-06-01", history, "lite")).toBe("lite");
   });
 });
