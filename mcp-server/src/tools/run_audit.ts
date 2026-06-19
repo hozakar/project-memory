@@ -3,24 +3,11 @@ import * as path from "path";
 import { execSync, spawnSync } from "child_process";
 // execSync used by git() helper; spawnSync used by cat7 for stdin piping
 import type { AuditReport, AuditFinding, PendingFix } from "../types";
+import { validateMemoryId } from "../validation.js";
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-
-function validateMemoryId(id: string, label: string): void {
-  const normalized = path.normalize(id);
-  if (
-    normalized.includes("..") ||
-    path.isAbsolute(normalized) ||
-    normalized.includes("/") ||
-    normalized.includes("\\")
-  ) {
-    throw new Error(
-      `Invalid ${label}: "${id}" — must be a plain slug with no path separators or traversal sequences.`
-    );
-  }
-}
 
 function today(): string {
   return new Date().toISOString().slice(0, 10);
@@ -110,22 +97,47 @@ export interface ProfileHistoryEntry {
 
 export function readProfileHistory(projectMemoryDir: string): ProfileHistoryEntry[] {
   const configPath = path.join(projectMemoryDir, "config.yml");
-  const content = readFile(configPath);
+  const configYml = readFile(configPath);
 
-  const history: ProfileHistoryEntry[] = [];
-  // Match profile_history block: pairs of profile + effective_date within each list item
-  const itemRe = /-\s+profile:\s+(\S+)[\s\S]*?effective_date:\s+(\d{4}-\d{2}-\d{2})/g;
-  const sectionMatch = content.match(/profile_history:\s*([\s\S]*?)(?=\n\w|$)/);
-  if (!sectionMatch) return history;
+  // Extract the profile_history block
+  const blockMatch = configYml.match(/^profile_history:\s*\n((?:[ \t].+\n?)*)/m);
+  if (!blockMatch) return [];
 
-  const VALID_PROFILES = new Set(["full", "lite", "minimal"]);
-  let m: RegExpExecArray | null;
-  while ((m = itemRe.exec(sectionMatch[1])) !== null) {
-    const p = m[1].replace(/^['"]|['"]$/g, "");
-    if (!VALID_PROFILES.has(p)) continue;
-    history.push({ profile: p as "full" | "lite" | "minimal", effective_date: m[2] });
+  const block = blockMatch[1];
+
+  // Split into individual list items — each starts with optional whitespace then "- "
+  const itemStartRe = /^[ \t]*-[ \t]+/m;
+  const lines = block.split("\n");
+  const itemTexts: string[] = [];
+  let current: string[] = [];
+
+  for (const line of lines) {
+    if (itemStartRe.test(line) && current.length > 0) {
+      itemTexts.push(current.join("\n"));
+      current = [line];
+    } else {
+      current.push(line);
+    }
   }
-  return history.sort((a, b) => a.effective_date.localeCompare(b.effective_date));
+  if (current.length > 0) itemTexts.push(current.join("\n"));
+
+  const validProfiles = ["full", "lite", "minimal"];
+  const entries: ProfileHistoryEntry[] = [];
+  for (const item of itemTexts) {
+    const profileMatch = item.match(/profile:\s*(\S+)/);
+    const dateMatch = item.match(/effective_date:\s*(\d{4}-\d{2}-\d{2})/);
+    if (!profileMatch || !dateMatch) continue;
+
+    const profileValue = profileMatch[1].replace(/^['"]|['"]$/g, "") as ProfileHistoryEntry["profile"];
+    if (!validProfiles.includes(profileValue)) continue;
+
+    entries.push({
+      profile: profileValue,
+      effective_date: dateMatch[1],
+    });
+  }
+
+  return entries.sort((a, b) => a.effective_date.localeCompare(b.effective_date));
 }
 
 /**

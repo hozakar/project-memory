@@ -231,4 +231,37 @@ describe("readProfileHistory", () => {
     expect(result).toHaveLength(1);
     expect(result[0].profile).toBe("full");
   });
+
+  it("does not cross-pair profile and effective_date across items", () => {
+    writeConfig([
+      "profile: lite",
+      "profile_history:",
+      "  - profile: full",
+      "    effective_date: 2026-06-01",
+      "    reason: initial",
+      "  - profile: lite",
+      "    effective_date: 2026-06-15",
+      "    reason: switched",
+    ].join("\n"));
+    const result = readProfileHistory(path.join(tmpDir, ".project-memory"));
+    expect(result).toHaveLength(2);
+    expect(result[0]).toEqual({ profile: "full", effective_date: "2026-06-01" });
+    expect(result[1]).toEqual({ profile: "lite", effective_date: "2026-06-15" });
+  });
+
+  it("handles item missing effective_date without cross-pairing", () => {
+    writeConfig([
+      "profile: lite",
+      "profile_history:",
+      "  - profile: full",
+      "    reason: initial",
+      "  - profile: lite",
+      "    effective_date: 2026-06-15",
+      "    reason: switched",
+    ].join("\n"));
+    const result = readProfileHistory(path.join(tmpDir, ".project-memory"));
+    // First item has no effective_date — should be skipped, not cross-paired
+    expect(result).toHaveLength(1);
+    expect(result[0]).toEqual({ profile: "lite", effective_date: "2026-06-15" });
+  });
 });
