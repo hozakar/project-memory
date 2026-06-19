@@ -17,7 +17,7 @@ description: MCP-driven drift audit fast path. Called by audit.md dispatcher whe
      - `partial`: the tool wrote a skeleton, but a prose-bearing cell is left as a TODO marker. Each entry carries `llm_must_do` (instruction) and `context` (the data you need). Resolve each one sequentially with `Edit`:
        - `add_decision_index_row` → fill the `<!-- TODO: claim -->` placeholder in `decisions/index.md` with a one-sentence Claim derived from the DECISION's `# Decision` section.
        - `create_adr_file` → fill the `<!-- TODO -->` blocks in the new ADR by extracting the corresponding sections from the source `DECISION-*.md` file.
-       - `create_phase_stub` → fill the `<!-- TODO -->` blocks in the new phase file using session memory + git history.
+       - `create_phase_stub` → fill the `<!-- TODO -->` blocks in the new phase stub using: (1) the `commits` list in `phase.yml` — run `git show <hash>` on each to reconstruct implementation intent; (2) `git log <branch>` (or `git log --since=<started_at>` if `branch` is null) to identify any commits not yet listed in `phase.yml`; (3) current session context if the phase was opened in this session and the plan is still in working memory.
      - `failed`: fix could not be applied (file missing, schema mismatch). Surface each failure in the audit report; if persistent, escalate to interactive triage.
      - If `rerun_audit_recommended: true`, optionally re-call `run_audit` once after applying to confirm no residual drift.
    - `escalations`: all other findings, each with `category`, `severity`, `description`, `interactive` (bool), and `data`. When `raise_cat4: false`, Cat 4 findings do NOT appear here — they are suppressed server-side and reflected in `cat4_gap_count` instead.
