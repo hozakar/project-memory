@@ -1,5 +1,6 @@
 import re
 import pathlib
+from datetime import date
 import yaml
 import pytest
 
@@ -45,6 +46,7 @@ def test_phases_index(generated):
     assert isinstance(data, dict), "phases/index.yml must be a YAML mapping"
     assert "phases" in data, "phases/index.yml missing 'phases' key"
     phases = data["phases"]
+    assert isinstance(phases, list), "phases must be a list"
     assert len(phases) >= 1, "phases list is empty"
     for p in phases:
         for field in ("id", "title", "status", "started_at"):
@@ -62,7 +64,6 @@ def test_phase_dirs(generated):
 
 
 def test_phase_yml_fields(generated):
-    from datetime import date
     index = pm(generated) / "phases" / "index.yml"
     data = yaml.safe_load(index.read_text())
     phases_root = pm(generated) / "phases"
