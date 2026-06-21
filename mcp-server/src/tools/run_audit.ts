@@ -7,6 +7,7 @@ import { validateMemoryId } from "../validation.js";
 import { checkConsistency } from "./check_consistency";
 import { indexNote } from "./index_note";
 import { deleteNote } from "./delete_note";
+import { deleteRecord } from "../db";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -1053,39 +1054,28 @@ export async function runAudit(
   if (profile !== "lite") {
     escalations.push(...cat9DiscussionDrift(projectMemoryDir, ignored));
   }
-  // Cat 13: handle note consistency (FS is source of truth).
-  // Other record types handled separately by proactive sync + check_consistency.
+  // Cat 13: FS is source of truth.
+  // Missing (FS has file, DB doesn't) → re-index from FS.
+  // Orphaned (DB has record, FS doesn't) → delete from DB. Never modify FS.
   const consistency = await checkConsistency(projectMemoryDir);
   for (const id of consistency.missing) {
     if (id.startsWith("NOTE-")) {
       const notePath = path.join(projectMemoryDir, "notes", `${id}.md`);
       if (fs.existsSync(notePath)) {
         const content = readFile(notePath);
-        // Extract body (everything after second ---)
         const parts = content.split("---\n");
         const body = parts.length >= 3 ? parts.slice(2).join("---\n").trim() : "";
-        // Extract frontmatter fields with simple line-by-line parsing
         const fmLines = parts.length >= 2 ? parts[1].split("\n") : [];
         const fm: Record<string, string> = {};
-        let currentKey = "";
         for (const line of fmLines) {
           const kv = line.match(/^\s*(\w+):\s*(.+)$/);
-          if (kv) {
-            currentKey = kv[1];
-            fm[currentKey] = kv[2].trim().replace(/^['"]|['"]$/g, "");
-          } else if (currentKey) {
-            // Continuation of previous nested value
-            fm[currentKey] += " " + line.trim();
-          }
+          if (kv) { fm[kv[1]] = kv[2].trim().replace(/^['"]|['"]$/g, ""); }
         }
         await indexNote({
           id,
           title: fm.title || id,
           tags: fm.tags ? fm.tags.replace(/[\[\]]/g, "").split(",").map(t => t.trim()).filter(Boolean) : [],
-          createdBy: {
-            name: fm.name || "unknown",
-            email: fm.email || "unknown",
-          },
+          createdBy: { name: fm.name || "unknown", email: fm.email || "unknown" },
           body: body.slice(0, 3000),
           createdAt: fm.created_at || today(),
           updatedAt: fm.updated_at || today(),
@@ -1093,12 +1083,19 @@ export async function runAudit(
         autoFixed.push(`Cat 13: indexed missing note ${id}`);
       }
     }
+    // Other missing types (phase, decision, discussion, era, instruction, assignment)
+    // are handled by proactive sync at session start.
   }
   for (const id of consistency.orphaned) {
+    // FS is source of truth — if file is gone, DB record must go.
+    // Covers branch-delete scenarios: records indexed during feature branch
+    // become orphaned when branch is deleted and main is restored.
     if (id.startsWith("NOTE-")) {
       await deleteNote(id);
-      autoFixed.push(`Cat 13: deleted orphaned note ${id} from DB`);
+    } else {
+      await deleteRecord(id);
     }
+    autoFixed.push(`Cat 13: deleted orphaned ${id} from DB`);
   }
 
   // Cat 14: Assignment integrity

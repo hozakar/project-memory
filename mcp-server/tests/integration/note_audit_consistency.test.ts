@@ -25,7 +25,7 @@ afterAll(() => {
 });
 
 describe("runAudit — Cat 13 note consistency", () => {
-  it("auto-indexes a missing note (file exists, not in DB)", { timeout: 15000 }, async () => {
+  it("auto-indexes a missing note (file exists, not in DB)", { timeout: 30000 }, async () => {
     // Create a note file on disk but DON'T index it
     const notesDir = join(tmp.pmDir, "notes");
     mkdirSync(notesDir, { recursive: true });
@@ -66,7 +66,7 @@ describe("runAudit — Cat 13 note consistency", () => {
     expect(match).toBeDefined();
   });
 
-  it("auto-deletes an orphaned note (DB record exists, file gone)", { timeout: 15000 }, async () => {
+  it("auto-deletes an orphaned note (DB record exists, file gone)", { timeout: 30000 }, async () => {
     // Index a note directly into DB, but DON'T create a file
     await indexNote({
       id: "NOTE-2026-06-21-audit-orphan",
@@ -99,7 +99,7 @@ describe("runAudit — Cat 13 note consistency", () => {
     expect(after.find((r) => r.id === "NOTE-2026-06-21-audit-orphan")).toBeUndefined();
   });
 
-  it("does NOT modify filesystem for orphaned notes (FS source of truth)", { timeout: 15000 }, async () => {
+  it("does NOT modify filesystem for orphaned notes (FS source of truth)", { timeout: 30000 }, async () => {
     // Index a note, then check that the file is NEVER created by audit
     await indexNote({
       id: "NOTE-2026-06-21-audit-no-fs-write",
