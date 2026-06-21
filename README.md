@@ -24,7 +24,7 @@ our minds. I just want to make sure it's a conscious choice, not an accident.
 
 ## Remembering your preferences
 
-You can also tell me how you like to work:
+You can also tell me how I like to work:
 
 > *"From now on, always create a dedicated branch before I start coding."*
 > *"Remind me to write tests before touching any existing feature."*
@@ -32,6 +32,15 @@ You can also tell me how you like to work:
 I'll follow these automatically, every session, without reminders. And your
 preferences stay personal — they're scoped to you and won't affect the rest of
 the team.
+
+## Private notes
+
+Need to jot something down mid-session? Just tell me:
+
+> *"Take a note: the staging deploy is flaky on Tuesdays."*
+
+I'll save it privately — only you can search your own notes. No status workflows,
+no ceremony, no audit noise. Pure personal scratchpad that persists across sessions.
 
 ---
 

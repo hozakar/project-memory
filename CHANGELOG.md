@@ -2,6 +2,104 @@
 
 All notable changes to the project-memory skill and MCP companion server.
 
+## [0.0.9] — 2026-06-21 — NOTE records, Pre-Commit Gate, dependency graph tools
+
+### NOTE record type — 6th project-memory record type
+
+Personal, private, deletable notes — a lightweight scratchpad that persists across
+sessions. Three-layer privacy: LanceDB excludes notes from broad (unscoped) queries;
+`search_memory` auto-applies `created_by_email` when `type_filter="note"`; the skill
+layer adds a second email guard. No status workflow, no audit category, no session-start
+loading. ~17 files across skill templates, conventions, init guides, dispatchers, and
+MCP server. `index_note` MCP tool + `delete_note` for full lifecycle CRUD.
+Discussion: DISCUSSION-2026-06-21-note-taking-feature.
+Phase: phase-20260621-note-taking-feature.
+
+### delete_note MCP tool — NOTE lifecycle completion
+
+New `delete_note` MCP tool deletes a note from both LanceDB and filesystem, returning
+per-store deletion details. `deleteRecord(id)` extracted as a general LanceDB
+`table.delete()` wrapper in `db.ts`. Cat 13 (MCP consistency) now auto-deletes
+orphaned notes from the DB when their FS file is gone.
+Phase: phase-20260621-delete-note-mcp.
+
+### Cat 13 orphaned cleanup — all 7 record types
+
+Orphaned-record handling in Cat 13 extended from NOTE-only to ALL seven record types.
+FS is source of truth: if a phase, decision, discussion, era, instruction, or
+assignment file disappears from disk, the DB record is auto-deleted. Closes the
+"branch delete → stale DB" gap for the entire record ecosystem.
+Phase: phase-20260621-orphaned-record-cleanup.
+
+### Pre-Commit Gate — phase tracking at commit boundaries
+
+Replaced the "Before Session End" gate (easy to forget) with a Pre-Commit Gate that
+updates phase files deterministically at every `git commit` boundary. Significant-only
+filtering prevents trivial-chore flooding. Profile-aware: `full` updates 3 core files,
+`lite` updates `phase.yml` only. Seven skill files modified.
+Phase: phase-20260619-pre-commit-gate.
+
+### Roadmap sprint — 6 Later items cleared
+
+- **`created_by_name` filter** — new `search_memory` parameter: partial-match (`LIKE %...%`)
+  filter complementing the existing `created_by_email` exact filter.
+- **`list_contributors`** — new MCP tool: walks all project-memory records, deduplicates
+  contributors by email, returns sorted list.
+- **`find_touching_phases`** — new MCP tool: runs `git log` on a file, matches commit
+  hashes against phase lists, answers "which phase last changed this file?"
+- **`find_phase_dependencies`** / **`get_all_dependencies`** — new MCP tools: single-phase
+  BFS traversal (upstream, downstream, conflicts, transitive closure) and whole-graph
+  analysis (blocked/unblocked phases, cycle detection).
+- **Cat 14 snake_case fix** — assignment parser now reads `assignedTo`/`assignedBy`
+  (camelCase) instead of `assigned_to`/`assigned_by` (snake_case).
+- **Windsurf/Cline MCP path verification** — confirmed MCP server works with both IDEs.
+
+Phase: phase-20260619-roadmap-run.
+
+### search_memory — instruction body injection (binding enforcement)
+
+`search_memory` results for instruction-type records now include the full instruction
+`body`, not just metadata. The body is injected at the MCP layer so the instruction
+content cannot be skipped by a missing file-read step — making instructions binding
+rather than advisory. Phase: phase-20260619-instruction-body-enforcement.
+
+### MCP server hardening
+
+- **`dbPath()` validation:** rejects garbage/relative paths, verifies `.project-memory/`
+  exists before opening LanceDB. Prevents orphan vector-index directories.
+- **Profile-aware Cat 10:** `cat10PhaseCompleteness` uses `resolveProfileAtDate()` to
+  infer the active profile at each phase's `started_at` date from `config.yml.profile_history`,
+  instead of applying the current profile uniformly. Phases opened during a `lite` window
+  are only expected to have `phase.yml` + optional `plan.md`.
+- **`validateMemoryId`** migrated from deny-list to allow-list regex, extracted to shared
+  `validation.ts`, 40-assertion unit test.
+- **`readProfileHistory`** rewritten to parse entries individually, eliminating a
+  cross-pairing bug.
+
+Phases: phase-20260619-mcp-db-hardening-and-profile-validation, phase-20260619-mcp-profile-history,
+phase-20260619-post-era6-review-fixes.
+
+### Skill hardening — docs, specs, validation
+
+- **13-task docs sweep:** documentation fixes, `apply_audit_fixes` hardening, profile smoke
+  harness, MCP-first sweep, roadmap deferrals. Phase: phase-20260619-docs-hardening-sweep.
+- **6 repair tasks:** YAML frontmatter repair, README search_memory drift fix,
+  `check_tool_signatures.ts`, `validate_schema.py`, `eval.ts` CI harness, evaluation
+  protocol docs. Phase: phase-20260619-spec-and-tooling-bundle.
+- **13-test pytest suite** for stress-test `generate.py` output schema validation.
+  Phase: phase-20260619-stress-test-generate-tests.
+- **2 audit issues closed** (false positives, fixes already in source).
+  Phase: phase-20260619-close-false-positive-issues.
+
+### Era 007 — Quality Hardening, NOTE Records & Roadmap Sprint
+
+Era 007 written and indexed, covering phases 70–83 (2026-06-19 to 2026-06-21).
+7 eras covering all 82 phases.
+
+MCP server version bumped to `0.0.9`.
+
+---
+
 ## [0.0.8] — 2026-06-19 — MCP: security hardening, search integrity, audit robustness
 
 ### search_memory — superseded decision exclusion
