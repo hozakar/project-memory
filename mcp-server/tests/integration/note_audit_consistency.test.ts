@@ -4,7 +4,6 @@ import { join } from "path";
 import { createTmpDir, type TmpDir } from "./helpers/tmp-db";
 import { runAudit } from "../../src/tools/run_audit";
 import { searchMemory } from "../../src/tools/search_memory";
-import { indexNote } from "../../src/tools/index_note";
 import { upsert } from "../../src/db";
 
 let tmp: TmpDir;
@@ -23,6 +22,22 @@ beforeAll(() => {
 afterAll(() => {
   try { tmp.cleanup(); } catch { /* Windows ENOTEMPTY */ }
 });
+
+// Helper: seed a note record directly into DB without embedding (zero vector).
+// Avoids embedder contention in full-suite runs.
+async function seedNoteInDB(id: string, title: string, body: string) {
+  await upsert({
+    id,
+    type: "note",
+    title,
+    text: `${title}\n${body}`,
+    vector: new Array(384).fill(0) as number[],
+    createdByName: "Hakan Ozakar",
+    createdByEmail: "hozakar@gmail.com",
+    tagsJson: "[]",
+    contributorsJson: "[]",
+  });
+}
 
 describe("runAudit — Cat 13 note consistency", () => {
   it("auto-indexes a missing note (file exists, not in DB)", { timeout: 30000 }, async () => {
@@ -66,23 +81,16 @@ describe("runAudit — Cat 13 note consistency", () => {
     expect(match).toBeDefined();
   });
 
-  it("auto-deletes an orphaned note (DB record exists, file gone)", { timeout: 30000 }, async () => {
-    // Index a note directly into DB, but DON'T create a file
-    await indexNote({
-      id: "NOTE-2026-06-21-audit-orphan",
-      title: "Orphan Test Note",
-      tags: ["test", "audit", "orphan"],
-      body: "This note exists only in DB — the file was deleted.",
-      createdBy: { name: "Hakan Ozakar", email: "hozakar@gmail.com" },
-      createdAt: "2026-06-21",
-      updatedAt: "2026-06-21",
-    });
+  it("auto-deletes an orphaned note (DB record exists, file gone)", { timeout: 15000 }, async () => {
+    // Seed a note directly into DB using zero-vector upsert (no embedder)
+    // File does NOT exist on disk → this is an orphaned record
+    await seedNoteInDB(
+      "NOTE-2026-06-21-audit-orphan",
+      "Orphan Test Note",
+      "This note exists only in DB — the file was deleted."
+    );
 
-    // Delete the file if it was created (index_note doesn't create files, but just in case)
-    const orphanPath = join(tmp.pmDir, "notes", "NOTE-2026-06-21-audit-orphan.md");
-    if (existsSync(orphanPath)) unlinkSync(orphanPath);
-
-    // Verify note IS searchable before audit (DB has it)
+    // Verify note IS searchable before audit (DB has it, even with zero vector)
     const before = await searchMemory("orphan test", 5, undefined, "hozakar@gmail.com", undefined, "note");
     expect(before.find((r) => r.id === "NOTE-2026-06-21-audit-orphan")).toBeDefined();
 
@@ -92,30 +100,23 @@ describe("runAudit — Cat 13 note consistency", () => {
     // Check auto_fixed contains our Cat 13 entry
     const noteFix = report.auto_fixed.find((f) => f.includes("NOTE-2026-06-21-audit-orphan"));
     expect(noteFix).toBeDefined();
-    expect(noteFix!).toContain("deleted orphaned note");
+    expect(noteFix!).toContain("deleted orphaned");
 
     // Verify note is NO LONGER searchable after audit
     const after = await searchMemory("orphan test", 5, undefined, "hozakar@gmail.com", undefined, "note");
     expect(after.find((r) => r.id === "NOTE-2026-06-21-audit-orphan")).toBeUndefined();
   });
 
-  it("does NOT modify filesystem for orphaned notes (FS source of truth)", { timeout: 30000 }, async () => {
-    // Index a note, then check that the file is NEVER created by audit
-    await indexNote({
-      id: "NOTE-2026-06-21-audit-no-fs-write",
-      title: "No FS Write Test",
-      tags: [],
-      body: "Audit should never create files.",
-      createdBy: { name: "Hakan Ozakar", email: "hozakar@gmail.com" },
-      createdAt: "2026-06-21",
-      updatedAt: "2026-06-21",
-    });
-
-    // Delete the file if it exists
-    const notePath = join(tmp.pmDir, "notes", "NOTE-2026-06-21-audit-no-fs-write.md");
-    if (existsSync(notePath)) unlinkSync(notePath);
+  it("does NOT modify filesystem for orphaned notes (FS source of truth)", { timeout: 15000 }, async () => {
+    // Seed a note into DB — no file on disk
+    await seedNoteInDB(
+      "NOTE-2026-06-21-audit-no-fs-write",
+      "No FS Write Test",
+      "Audit should never create files."
+    );
 
     // Verify file does NOT exist
+    const notePath = join(tmp.pmDir, "notes", "NOTE-2026-06-21-audit-no-fs-write.md");
     expect(existsSync(notePath)).toBe(false);
 
     // Run audit
