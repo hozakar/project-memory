@@ -159,3 +159,66 @@ On status change (accepted, rejected, ongoing, completed): append the current gi
 Assignments are NOT scanned during the Pre-Implementation Gate. They are user-scoped workflow artifacts, not architectural constraints.
 
 **Vector DB:** Assignments are indexed via `index_assignment` MCP tool. File system is source of truth; DB is derived read-optimized index.
+
+---
+
+# Notes
+
+Notes capture personal thoughts, drafts, ideas, and reminders. They are the simplest record type — no status workflow, no cross-references, no session-start loading, no audit. Fully private (user-scoped) and deletable by the owner.
+
+**Naming:** `NOTE-YYYY-MM-DD-<short-slug>.md`
+- Date first — chronological sort order
+- Slug describes the topic
+- Use kebab-case
+- Example: `NOTE-2026-06-21-note-taking-design.md`
+
+**Frontmatter (required):**
+```yaml
+---
+id: NOTE-YYYY-MM-DD-short-slug
+title: "Human-readable title"
+tags: [optional]
+created_by:
+  name: "Hakan Ozakar"
+  email: "hozakar@gmail.com"
+created_at: YYYY-MM-DD
+updated_at: YYYY-MM-DD
+---
+```
+
+**Lifecycle:**
+
+```
+create → (optional update) → (optional delete)
+```
+
+- **Create:** Set `created_by` from current git identity. Set `created_at` and `updated_at`.
+- **Update:** Update `updated_at`. Body or frontmatter fields may change.
+- **Delete:** Owner-triggered only. Remove file. Drop MCP index entry. No archive — permanent deletion.
+
+No state machine. No status field. Notes are either present (file exists) or gone (file deleted).
+
+**Search rules:**
+- Notes are user-scoped (private). Only owner's notes are returned.
+- `search_memory` with `type_filter="note"` automatically applies `created_by_email` filter from git config.
+- No index.yml — filesystem scan or MCP semantic search on demand.
+- Other users' notes are never visible.
+
+**Session loading:**
+- Notes are NOT loaded at session start. Passive, search-only.
+- No gate re-injection. No gate checking.
+
+**Author attribution:**
+- On creation: `created_by` from current git identity. No `contributors` field — notes are single-owner.
+- See Author Attribution section above.
+
+**Audit:**
+- No audit category for notes. They are private ephemera with no project-wide integrity contract.
+
+**What notes are NOT:**
+- NOT project decisions — no ADR counterpart, no Pre-Implementation Gate scanning
+- NOT collaborative — no sharing, no fork model, no assignment
+- NOT in discussions/index.md or decisions/index.md
+- NOT session-persistent — passive, search-only
+
+**Vector DB:** Notes are indexed via `index_note` MCP tool. File system is source of truth; DB is derived read-optimized index.

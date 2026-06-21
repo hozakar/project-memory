@@ -24,6 +24,7 @@ Create this directory structure:
 │   ├── active-issues.md
 │   └── roadmap.md
 ├── instructions/
+├── notes/
 ├── eras/
 ├── maintainers.md
 └── config.yml

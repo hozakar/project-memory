@@ -14,6 +14,7 @@ This file is a dispatcher. Phase and config templates live under `<profile>/` be
 | **Discussion** | `templates/discussions.md` | `DISCUSSION-*.md`, `discussions/index.md` |
 | **Instruction** | `templates/instructions.md` | `INSTRUCTION-*.md` |
 | **Assignment** | `templates/assignments.md` | `ASSIGNMENT-*.md`, `assignments/index.yml` |
+| **Note** | `templates/notes.md` | `NOTE-*.md` — personal, deletable, user-scoped |
 | **Author Attribution** | `templates/attribution.md` | `created_by` + `contributors` schema (lite omits `contributors`; minimal omits both) |
 | **Config** | `<profile>/templates-config.md` | `.project-memory/config.yml`, `maintainers.md`, summary scaffolding (count varies) |
 | **Summaries** | `<profile>/templates-config.md` | full: 5 files; lite: roadmap + current-state; minimal: inline `MEMORY.md` sections |
@@ -31,6 +32,7 @@ Creating a decision?        → read templates/decisions.md (DECISION + decision
 Creating a discussion?      → read templates/discussions.md (DISCUSSION + discussions/index.md)
 Creating an instruction?    → read templates/instructions.md
 Creating an assignment?     → read templates/assignments.md (ASSIGNMENT + assignments/index.yml)
+Creating a note?            → read templates/notes.md
 Setting up config?          → read <profile>/templates-config.md (config.yml + maintainers.md)
 Writing summaries?          → read <profile>/templates-config.md
 Need attribution fields?    → read templates/attribution.md (note profile-specific scope)

@@ -10,6 +10,7 @@ import { findSimilarCommit } from "./tools/find_similar_commit";
 import { indexEra } from "./tools/index_era";
 import { indexInstruction } from "./tools/index_instruction";
 import { indexAssignment } from "./tools/index_assignment";
+import { indexNote } from "./tools/index_note";
 import { runAudit } from "./tools/run_audit";
 import { applyAuditFixes } from "./tools/apply_audit_fixes";
 import { listContributors } from "./tools/list_contributors";
@@ -28,7 +29,7 @@ const srv = server as any;
 
 srv.tool(
   "search_memory",
-  "Semantic search over indexed project memory (phases, decisions, discussions, eras, instructions). Returns top-K results sorted by similarity. Use at Pre-Implementation Gate and when user asks about past work.",
+  "Semantic search over indexed project memory (phases, decisions, discussions, eras, instructions, notes). Returns top-K results sorted by similarity. Use at Pre-Implementation Gate and when user asks about past work.",
   {
     query: z.string().describe("Natural language search query"),
     top_k: z.number().int().min(1).max(20).optional().default(8).describe("Number of results"),
@@ -37,7 +38,7 @@ srv.tool(
     created_by_name: z.string().optional().describe("Filter results to a specific creator name (partial match via LIKE %...%). Default: no filter."),
     assigned_to_email: z.string().optional(),
     assigned_by_email: z.string().optional(),
-    type_filter: z.string().optional().describe("Filter results to a specific type (phase, decision, discussion, era, instruction). Default: no filter."),
+    type_filter: z.string().optional().describe("Filter results to a specific type (phase, decision, discussion, era, instruction, note). Default: no filter. When type is 'note', created_by_email is auto-applied if not provided — users can only search their own notes."),
     touches_filter: z.array(z.string()).optional().describe("Exact AND-filter on decision touches field. E.g. [\"conventions_md\"] returns only decisions that touch conventions_md. Multiple values narrow further (AND semantics). Only effective on type=decision records."),
     tags_filter: z.array(z.string()).optional().describe("Exact AND-filter on phase/discussion tags field. E.g. [\"mcp\", \"schema\"] returns records tagged with both. Only effective on type=phase and type=discussion records."),
     scope_filter: z.array(z.string()).optional().describe("Exact OR-filter on decision primary_scope field. E.g. [\"constraint\"] returns only decisions with primary_scope=constraint. Multiple values broaden (OR semantics). Only effective on type=decision records."),
@@ -191,8 +192,43 @@ srv.tool(
 );
 
 srv.tool(
+  "index_note",
+  "Index or update a note in the vector DB. Call when a NOTE file is created or updated. Notes are user-scoped (private) — only the owner can search their own notes. Upsert by ID.",
+  {
+    id: z.string().regex(/^[a-zA-Z0-9-]+$/).describe("Note ID, e.g. NOTE-2026-06-21-some-slug"),
+    title: z.string(),
+    tags: z.array(z.string()).optional(),
+    tagsJson: z.string().optional(),
+    created_by: z.object({
+      name: z.string(),
+      email: z.string(),
+    }).describe("Author identity from git config or explicit user override."),
+    body: z.string(),
+    created_at: z.string(),
+    updated_at: z.string(),
+  },
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  async (args: any) => {
+    if (!args.tags && args.tagsJson) {
+      try { args.tags = JSON.parse(args.tagsJson); } catch {}
+    }
+    const data = {
+      id: args.id,
+      title: args.title,
+      tags: args.tags,
+      createdBy: args.created_by,
+      body: args.body,
+      createdAt: args.created_at,
+      updatedAt: args.updated_at,
+    };
+    const result = await indexNote(data);
+    return { content: [{ type: "text" as const, text: JSON.stringify(result) }] };
+  }
+);
+
+srv.tool(
   "check_consistency",
-  "Compare vector DB index against .project-memory/ filesystem. Returns missing IDs (file exists, not in DB) and orphaned IDs (in DB, file gone). Covers phases, decisions, discussions, eras, and instructions.",
+  "Compare vector DB index against .project-memory/ filesystem. Returns missing IDs (file exists, not in DB) and orphaned IDs (in DB, file gone). Covers phases, decisions, discussions, eras, instructions, and notes.",
   {
     project_memory_dir: z.string().describe("Absolute path to the .project-memory/ directory"),
   },
@@ -208,7 +244,7 @@ srv.tool(
   "Atomically replace the entire vector DB index. The skill assembles all IndexEntry objects and passes them here. Drops existing index, embeds all entries (including per-commit records for phases), creates fresh index.",
   {
     entries: z.array(z.object({
-      type: z.enum(["phase", "decision", "discussion", "era", "instruction"]),
+      type: z.enum(["phase", "decision", "discussion", "era", "instruction", "note"]),
       data: z.record(z.unknown()),
     })).describe("All entries to index"),
   },

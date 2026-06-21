@@ -90,7 +90,7 @@ When the user says "switch project-memory to <full|lite|minimal>" or similar phr
 
 This skill supports three profiles (`full`, `lite`, `minimal`). Profiles gate ceremony-bearing features (phase ceremony, gate steps, audit categories, summaries, attribution depth, topic-shift detection, commit classification, instruction re-injection scope, decisions storage shape).
 
-User-triggered features (discussions, issues, assignments, instructions creation, eras, maintainer role, ADR mirror, MCP companion) are **NOT** tier-bound — they remain opt-in regardless of profile.
+User-triggered features (discussions, issues, assignments, instructions, notes creation, eras, maintainer role, ADR mirror, MCP companion) are **NOT** tier-bound — they remain opt-in regardless of profile.
 
 For the full tier matrix, init UX text, migration semantics, and orthogonal-feature list → read `profiles.md`.
 
@@ -143,6 +143,7 @@ Records carry author attribution via `created_by` and `contributors` frontmatter
 ├── discussions/      DISCUSSION-YYYY-MM-DD-slug.md + index.md
 ├── issues/           open/ + closed/
 ├── instructions/     INSTRUCTION-YYYY-MM-DD-slug.md
+├── notes/            NOTE-YYYY-MM-DD-slug.md
 ├── assignments/      ASSIGNMENT-YYYY-MM-DD-slug.md + index.yml
 ├── eras/             era-NNN.md + index.yml
 └── summaries/        full: 5 files; lite: roadmap.md + current-state.md
@@ -150,7 +151,7 @@ Records carry author attribution via `created_by` and `contributors` frontmatter
 
 ## `MEMORY.md` (minimal)
 
-`.project-memory/MEMORY.md` — single file inside the shared `.project-memory/` directory, with three fixed sections (`## Roadmap`, `## Decisions`, `## Log`). User-triggered features (discussions, instructions, issues) create their own subdirectories inside `.project-memory/` on first use.
+`.project-memory/MEMORY.md` — single file inside the shared `.project-memory/` directory, with four fixed sections (`## Roadmap`, `## Decisions`, `## Notes`, `## Log`). User-triggered features (discussions, instructions, issues, notes) create their own subdirectories inside `.project-memory/` on first use.
 
 ## Skill Files
 

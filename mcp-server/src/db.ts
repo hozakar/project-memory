@@ -174,6 +174,11 @@ export async function search(
     if (excludeCommits && !typeFilter) {
       candidateRows = candidateRows.filter((r: Record<string, unknown>) => r.type !== "commit");
     }
+    // Notes are user-scoped private records — excluded from all searches except
+    // when explicitly requested via type_filter="note".
+    if (!typeFilter || typeFilter !== "note") {
+      candidateRows = candidateRows.filter((r: Record<string, unknown>) => r.type !== "note");
+    }
     // MMR reranking for diversity (opt-in). First pick = max sim (P@1 preserved).
     if (diversify && candidateRows.length > topK) {
       const indices = mmrRerank(vector, candidateRows as Array<{ vector: number[]; _distance: number }>, 0.7, topK);

@@ -7,7 +7,7 @@ description: Tier matrix, init UX, migration semantics, and orthogonal-feature l
 
 Project-memory supports three profiles. They differ only in **ceremony-bearing features** — phase ceremony, gate procedures, audit categories, summaries, attribution depth, topic-shift detection, commit classification, instruction re-injection scope, and decision storage shape.
 
-**User-triggered features are NOT tier-bound.** Discussions, issues, assignments, instruction *creation*, eras, the maintainer role, the ADR mirror, and the MCP companion remain opt-in regardless of profile.
+**User-triggered features are NOT tier-bound.** Discussions, issues, assignments, instruction *creation*, notes, eras, the maintainer role, the ADR mirror, and the MCP companion remain opt-in regardless of profile.
 
 The right axis for choosing a profile is **longevity × revisit frequency × reasoning density** — will future-me (or someone else) need to ask "why?" in a way that git + code don't already answer?
 
@@ -38,7 +38,7 @@ Same behavior as full. MCP path uses `search_memory` with filters; non-MCP path 
 
 ## Minimal `MEMORY.md` schema
 
-`.project-memory/MEMORY.md` — single file inside the shared `.project-memory/` directory, with three fixed sections:
+`.project-memory/MEMORY.md` — single file inside the shared `.project-memory/` directory, with four fixed sections:
 
 ```markdown
 # Memory
@@ -49,6 +49,9 @@ Same behavior as full. MCP path uses `search_memory` with filters; non-MCP path 
 
 ## Decisions
 - 2026-06-20: chose X over Y because Z
+
+## Notes
+- 2026-06-21: note title — freeform content
 
 ## Log
 - 2026-06-20: topic-name — what happened (1 line)
@@ -67,6 +70,7 @@ These remain user-triggered or config-flagged regardless of profile. They cost n
 - **Discussions** — implicit/explicit trigger.
 - **Issues** — user creates; `issues/` directory created on first use.
 - **Assignments** — user delegates; `assignments/` created on first use.
+- **Notes** — user takes note; `notes/` created on first use.
 - **Instructions creation** — user gives instruction; file created on demand.
 - **Eras + maintainer role** — maintainer opt-in via `maintainers.md`.
 

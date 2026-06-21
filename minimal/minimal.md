@@ -12,10 +12,10 @@ Use this profile when project longevity, revisit frequency, and reasoning densit
 ```
 .project-memory/
 ├── config.yml       ← profile: minimal + profile_history
-└── MEMORY.md        ← three sections: ## Roadmap, ## Decisions, ## Log
+└── MEMORY.md        ← four sections: ## Roadmap, ## Decisions, ## Notes, ## Log
 ```
 
-Same detection as full and lite: `.project-memory/` exists → installed; absent → first-run. User-triggered features (discussions, issues, instructions, assignments) create their own subdirectories inside `.project-memory/` on first use, exactly as in other profiles.
+Same detection as full and lite: `.project-memory/` exists → installed; absent → first-run. User-triggered features (discussions, issues, instructions, assignments, notes) create their own subdirectories inside `.project-memory/` on first use, exactly as in other profiles.
 
 ## MEMORY.md template
 
@@ -28,6 +28,9 @@ Same detection as full and lite: `.project-memory/` exists → installed; absent
 
 ## Decisions
 - YYYY-MM-DD: chose X over Y because Z
+
+## Notes
+- YYYY-MM-DD: note title — freeform content
 
 ## Log
 - YYYY-MM-DD: topic-name — what happened (1 line)
@@ -45,9 +48,11 @@ Profile metadata (`profile`, `profile_history`) lives in `config.yml` — same a
 
 - **Roadmap edit:** open `.project-memory/MEMORY.md`, edit the `## Roadmap` section directly.
 - **Decision append:** when a decision is made, append a single row to `## Decisions`: `- YYYY-MM-DD: chose X over Y because Z`. No DECISION file, no index. ADR mirror does not apply (no DECISION files are created to mirror).
+- **Note append:** when a personal note is taken, append a single row to `## Notes`: `- YYYY-MM-DD: title — content (freeform)`. Or create a `notes/NOTE-YYYY-MM-DD-slug.md` file for longer notes with tags and frontmatter.
+
 - **Log append:** when significant work happens, append a single row to `## Log`: `- YYYY-MM-DD: topic-name — what happened (1 line)`. "Significant" is a judgment call — no classification ceremony. A reasonable rule of thumb: if you'd want a future session to know it happened, log it.
 
-## Discussions / issues / instructions / assignments (orthogonal)
+## Discussions / issues / instructions / assignments / notes (orthogonal)
 
 These features are user-triggered. When used in a minimal-profile project, the corresponding `.project-memory/<feature>/` directory is created on first use. Their lifecycles follow the shared `conventions/discussions.md`, `conventions/records.md` etc. — minimal does not change their behavior.
 

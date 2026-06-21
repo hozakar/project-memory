@@ -6,6 +6,7 @@ import {
   buildCommitText,
   buildEraText,
   buildInstructionText,
+  buildNoteText,
   buildAssignmentText,
   deriveOutcomeType,
   cosine,
@@ -143,6 +144,50 @@ describe("buildInstructionText", () => {
     expect(result).toContain("INSTRUCTION-2026-06-13-test");
     expect(result).toContain("always use TDD");
     expect(result).toContain("active");
+  });
+});
+
+describe("buildNoteText", () => {
+  it("joins title, tags, and body correctly", () => {
+    const result = buildNoteText({
+      id: "NOTE-2026-06-21-test",
+      title: "Test Note",
+      tags: ["personal", "reminder"],
+      body: "This is a personal reminder note.",
+      createdBy: { name: "Hakan Ozakar", email: "hozakar@gmail.com" },
+      createdAt: "2026-06-21",
+      updatedAt: "2026-06-21",
+    });
+    expect(result).toContain("Test Note");
+    expect(result).toContain("personal reminder");
+    expect(result).toContain("This is a personal reminder note.");
+  });
+
+  it("handles undefined tags without throwing (null-safe join)", () => {
+    const result = buildNoteText({
+      id: "NOTE-test",
+      title: "No Tags Note",
+      tags: undefined as unknown as string[],
+      body: "body content",
+      createdBy: { name: "Hakan Ozakar", email: "hozakar@gmail.com" },
+      createdAt: "2026-06-21",
+      updatedAt: "2026-06-21",
+    });
+    expect(result).toContain("No Tags Note");
+    expect(result).toContain("body content");
+  });
+
+  it("truncates output to 3000 characters", () => {
+    const result = buildNoteText({
+      id: "NOTE-test",
+      title: "T",
+      tags: [],
+      body: "x".repeat(4000),
+      createdBy: { name: "Hakan Ozakar", email: "hozakar@gmail.com" },
+      createdAt: "2026-06-21",
+      updatedAt: "2026-06-21",
+    });
+    expect(result.length).toBe(3000);
   });
 });
 

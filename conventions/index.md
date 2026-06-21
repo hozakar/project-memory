@@ -14,6 +14,7 @@ This file is a dispatcher. Read the appropriate sub-file:
 | **Issues** | `conventions/records.md` | Issue lifecycle (open → close), frontmatter schema, move-to-closed procedure |
 | **Instructions** | `conventions/records.md` | Instruction lifecycle (active ↔ dropped), session loading, cross-user fork model, scope limits |
 | **Assignments** | `conventions/records.md` | Assignment state machine (pending → accepted → ongoing → completed/rejected), session-start UX, completion rules, permission model |
+| **Notes** | `conventions/records.md` | Note lifecycle (create → update → delete), naming, search rules, deletion rules |
 | **Language** | `conventions/maintainer.md` | English-only rule for skill files, rationale |
 | **Author Attribution** | `conventions/maintainer.md` | `created_by` + `contributors` capture rules, soft-fail to `unknown`, dedup by email, growth triggers per record type, out-of-scope records |
 | **Maintainer Role** | `conventions/maintainer.md` | Two-role system (maintainer/developer), era creation gating, `maintainers.md` format, role determination |
@@ -29,6 +30,7 @@ Closing a discussion?       → read conventions/discussions.md (relevancy scori
 Opening/closing an issue?   → read conventions/records.md (Issues section)
 Creating an instruction?    → read conventions/records.md (Instructions section)
 Creating an assignment?     → read conventions/records.md (Assignments section)
+Creating a note?            → read conventions/records.md (Notes section)
 Need attribution fields?    → read conventions/maintainer.md (Author Attribution)
 Checking your role?         → read conventions/maintainer.md (Maintainer Role)
 ```

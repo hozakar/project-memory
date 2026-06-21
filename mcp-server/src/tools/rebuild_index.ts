@@ -1,7 +1,7 @@
 import { embed } from "../embedder";
 import { atomicRebuild } from "../db";
-import { buildPhaseText, buildDecisionText, buildDiscussionText, buildCommitText, buildEraText, buildInstructionText, buildAssignmentText, deriveOutcomeType } from "../utils";
-import type { IndexEntry, LanceRecord, PhaseIndexData, DecisionIndexData, DiscussionIndexData, EraIndexData, InstructionIndexData, AssignmentIndexData, Identity } from "../types";
+import { buildPhaseText, buildDecisionText, buildDiscussionText, buildCommitText, buildEraText, buildInstructionText, buildAssignmentText, buildNoteText, deriveOutcomeType } from "../utils";
+import type { IndexEntry, LanceRecord, PhaseIndexData, DecisionIndexData, DiscussionIndexData, EraIndexData, InstructionIndexData, AssignmentIndexData, NoteIndexData, Identity } from "../types";
 
 const UNKNOWN_IDENTITY: Identity = { name: "unknown", email: "unknown" };
 
@@ -37,6 +37,11 @@ export async function rebuildIndex(entries: IndexEntry[]): Promise<{ indexed: nu
         text = buildAssignmentText(d);
         createdBy = d.createdBy ?? UNKNOWN_IDENTITY;
         contributors = d.contributors ?? [];
+      } else if (entry.type === "note") {
+        const d = entry.data as NoteIndexData;
+        text = buildNoteText(d);
+        createdBy = d.createdBy;
+        contributors = [];
       } else {
         const d = entry.data as DiscussionIndexData;
         text = buildDiscussionText(d);
@@ -49,7 +54,7 @@ export async function rebuildIndex(entries: IndexEntry[]): Promise<{ indexed: nu
       }
 
       const vector = await embed(text);
-      const title = entry.type === "instruction" ? entry.data.id : (entry.data as PhaseIndexData | DecisionIndexData | DiscussionIndexData | EraIndexData).title;
+      const title = entry.type === "instruction" ? entry.data.id : (entry.data as PhaseIndexData | DecisionIndexData | DiscussionIndexData | EraIndexData | NoteIndexData).title;
       const record: LanceRecord = {
         id: entry.data.id,
         type: entry.type,
@@ -61,6 +66,9 @@ export async function rebuildIndex(entries: IndexEntry[]): Promise<{ indexed: nu
       if (entry.type === "phase") {
         const pData = entry.data as PhaseIndexData;
         record.tagsJson = JSON.stringify(pData.tags ?? []);
+      } else if (entry.type === "note") {
+        const nData = entry.data as NoteIndexData;
+        record.tagsJson = JSON.stringify(nData.tags ?? []);
       } else if (entry.type === "decision") {
         const dData = entry.data as DecisionIndexData;
         record.touchesJson = JSON.stringify(dData.touches ?? []);

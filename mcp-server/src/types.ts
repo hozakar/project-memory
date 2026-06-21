@@ -65,6 +65,16 @@ export interface InstructionIndexData {
   originUpdated?: boolean; // true when origin instruction has been modified since fork
 }
 
+export interface NoteIndexData {
+  id: string;              // e.g. "NOTE-2026-06-21-some-slug"
+  title: string;
+  tags?: string[];
+  createdBy: Identity;
+  body: string;            // free-form markdown body
+  createdAt: string;       // YYYY-MM-DD
+  updatedAt: string;       // YYYY-MM-DD
+}
+
 export interface AssignmentIndexData {
   id: string;
   status: string;              // pending | accepted | rejected | ongoing | completed
@@ -90,7 +100,7 @@ export interface AssignmentIndexData {
 
 export interface SearchResult {
   id: string;
-  type: "phase" | "decision" | "discussion" | "commit" | "era" | "instruction" | "assignment";
+  type: "phase" | "decision" | "discussion" | "commit" | "era" | "instruction" | "assignment" | "note";
   similarity: number;      // 0 to 1, higher = more similar
   title: string;
   createdBy?: Identity;
@@ -111,8 +121,8 @@ export interface ConsistencyReport {
 }
 
 export interface IndexEntry {
-  type: "phase" | "decision" | "discussion" | "era" | "instruction" | "assignment";
-  data: PhaseIndexData | DecisionIndexData | DiscussionIndexData | EraIndexData | InstructionIndexData | AssignmentIndexData;
+  type: "phase" | "decision" | "discussion" | "era" | "instruction" | "assignment" | "note";
+  data: PhaseIndexData | DecisionIndexData | DiscussionIndexData | EraIndexData | InstructionIndexData | AssignmentIndexData | NoteIndexData;
 }
 
 export interface AuditFinding {

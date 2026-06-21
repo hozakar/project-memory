@@ -1,4 +1,4 @@
-import type { PhaseIndexData, DecisionIndexData, DiscussionIndexData, CommitDiff, EraIndexData, InstructionIndexData, AssignmentIndexData } from "./types";
+import type { PhaseIndexData, DecisionIndexData, DiscussionIndexData, CommitDiff, EraIndexData, InstructionIndexData, AssignmentIndexData, NoteIndexData } from "./types";
 
 export function buildPhaseText(data: PhaseIndexData): string {
   const parts: string[] = [
@@ -72,6 +72,16 @@ export function buildInstructionText(data: InstructionIndexData): string {
   ]
     .join("\n")
     .slice(0, 2000);
+}
+
+export function buildNoteText(data: NoteIndexData): string {
+  return [
+    data.title,
+    (data.tags ?? []).join(" "),
+    data.body,
+  ]
+    .join("\n")
+    .slice(0, 3000);
 }
 
 export function buildAssignmentText(data: AssignmentIndexData): string {
