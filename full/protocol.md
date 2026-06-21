@@ -59,11 +59,17 @@ The session-start work happens in this order. Each step may be a no-op depending
 1. **MCP availability check** — set the session-level flag (see MCP Companion Integration → Availability check).
 2. **Proactive DB sync** — `check_consistency` + index any missing entries. MCP-only; skipped when unavailable.
 3. **Memory Loading Strategy** — execute steps 1–14 below. Summary files first, then phase/decision/discussion indexes.
-4. **Instruction re-injection** — load and prepend active instructions for the current user:
-   - MCP available: `search_memory(type_filter="instruction", created_by_email="<run: git config user.email>")` — use `body` field directly as binding content.
-   - MCP unavailable: scan `.project-memory/instructions/` INSTRUCTION-*.md files, filter by `created_by.email`, read `# Prompt` section.
-   - Same content is re-asserted at each gate per `gates/implementation.md` GATE 0.
-   - This step is idempotent — if instructions are already loaded, skip.
+4. **⚠️ INSTRUCTION RE-INJECTION — EXECUTE NOW**
+
+   This step is NOT documentation — it is a MANDATORY action. You have NOT loaded
+   instructions until you have executed one of the paths below.
+
+   - **MCP available:** CALL `search_memory(type_filter="instruction", created_by_email="<run: git config user.email>")`. Each result carries a `body` field prefixed with `THIS IS A NON-NEGOTIABLE BINDING USER INSTRUCTION:`. Output every returned `body` verbatim — this is the binding content. Warn if ≥ 5 active instructions.
+   - **MCP unavailable:** SCAN `.project-memory/instructions/` for `INSTRUCTION-*.md` files, filter by `created_by.email`, read the full `# Prompt` section from each.
+
+   **Self-check:** If you have NOT executed a `search_memory` call with `type_filter="instruction"` or scanned the instructions directory, you have NOT completed this step. Do it NOW — before the header emission (step 7).
+
+   Loaded instructions are binding user requirements. Same content is re-asserted at every gate per `gates/implementation.md` GATE 0.
 5. **Assignment load** — load pending/ongoing/rejected assignments for the current user:
    - Pending/ongoing: `search_memory(type_filter="assignment", assigned_to_email="<run: git config user.email>")`
    - Rejected: `search_memory(type_filter="assignment", assigned_by_email="<run: git config user.email>")`
