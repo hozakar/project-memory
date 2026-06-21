@@ -16,6 +16,7 @@ import { applyAuditFixes } from "./tools/apply_audit_fixes";
 import { listContributors } from "./tools/list_contributors";
 import { findTouchingPhases } from "./tools/find_touching_phases";
 import { findPhaseDependencies, getAllDependencies } from "./tools/find_phase_dependencies";
+import { deleteNote } from "./tools/delete_note";
 import type { IndexEntry, PendingFix } from "./types";
 import { version } from "../package.json";
 
@@ -222,6 +223,19 @@ srv.tool(
       updatedAt: args.updated_at,
     };
     const result = await indexNote(data);
+      return { content: [{ type: "text" as const, text: JSON.stringify(result) }] };
+  }
+);
+
+srv.tool(
+  "delete_note",
+  "Delete a note from the vector DB and filesystem. Accepts a note ID. Deletes the LanceDB record and the corresponding .project-memory/notes/NOTE-*.md file. Returns success/failure with per-store details. Notes are user-scoped (private) — deletion is owner-triggered only.",
+  {
+    id: z.string().regex(/^[a-zA-Z0-9-]+$/).describe("Note ID, e.g. NOTE-2026-06-21-some-slug"),
+  },
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  async (args: any) => {
+    const result = await deleteNote(args.id);
     return { content: [{ type: "text" as const, text: JSON.stringify(result) }] };
   }
 );

@@ -4,6 +4,9 @@ import { execSync, spawnSync } from "child_process";
 // execSync used by git() helper; spawnSync used by cat7 for stdin piping
 import type { AuditReport, AuditFinding, PendingFix } from "../types";
 import { validateMemoryId } from "../validation.js";
+import { checkConsistency } from "./check_consistency";
+import { indexNote } from "./index_note";
+import { deleteNote } from "./delete_note";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -1050,7 +1053,53 @@ export async function runAudit(
   if (profile !== "lite") {
     escalations.push(...cat9DiscussionDrift(projectMemoryDir, ignored));
   }
-  // Cat 13: handled separately by check_consistency
+  // Cat 13: handle note consistency (FS is source of truth).
+  // Other record types handled separately by proactive sync + check_consistency.
+  const consistency = await checkConsistency(projectMemoryDir);
+  for (const id of consistency.missing) {
+    if (id.startsWith("NOTE-")) {
+      const notePath = path.join(projectMemoryDir, "notes", `${id}.md`);
+      if (fs.existsSync(notePath)) {
+        const content = readFile(notePath);
+        // Extract body (everything after second ---)
+        const parts = content.split("---\n");
+        const body = parts.length >= 3 ? parts.slice(2).join("---\n").trim() : "";
+        // Extract frontmatter fields with simple line-by-line parsing
+        const fmLines = parts.length >= 2 ? parts[1].split("\n") : [];
+        const fm: Record<string, string> = {};
+        let currentKey = "";
+        for (const line of fmLines) {
+          const kv = line.match(/^\s*(\w+):\s*(.+)$/);
+          if (kv) {
+            currentKey = kv[1];
+            fm[currentKey] = kv[2].trim().replace(/^['"]|['"]$/g, "");
+          } else if (currentKey) {
+            // Continuation of previous nested value
+            fm[currentKey] += " " + line.trim();
+          }
+        }
+        await indexNote({
+          id,
+          title: fm.title || id,
+          tags: fm.tags ? fm.tags.replace(/[\[\]]/g, "").split(",").map(t => t.trim()).filter(Boolean) : [],
+          createdBy: {
+            name: fm.name || "unknown",
+            email: fm.email || "unknown",
+          },
+          body: body.slice(0, 3000),
+          createdAt: fm.created_at || today(),
+          updatedAt: fm.updated_at || today(),
+        });
+        autoFixed.push(`Cat 13: indexed missing note ${id}`);
+      }
+    }
+  }
+  for (const id of consistency.orphaned) {
+    if (id.startsWith("NOTE-")) {
+      await deleteNote(id);
+      autoFixed.push(`Cat 13: deleted orphaned note ${id} from DB`);
+    }
+  }
 
   // Cat 14: Assignment integrity
   const cat14 = cat14AssignmentIntegrity(projectMemoryDir, ignored);

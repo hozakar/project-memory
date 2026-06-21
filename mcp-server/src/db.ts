@@ -225,6 +225,16 @@ export async function search(
   }
 }
 
+export async function deleteRecord(id: string): Promise<{ success: boolean; error?: string }> {
+  try {
+    const table = await getTable();
+    await table.delete(`id = '${id}'`);
+    return { success: true };
+  } catch (err) {
+    return { success: false, error: (err as Error).message };
+  }
+}
+
 export async function listAllIds(): Promise<string[]> {
   try {
     const table = await getTable();

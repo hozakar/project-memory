@@ -122,8 +122,11 @@ All 14 categories are auto-fixed per the simplified severity model. Cat 4 uses a
    - If ID starts with `DECISION-`: read `decisions/<ID>.md`. Extract `id`, `title`, `status`, `touches` from frontmatter; extract `context` section body (truncate to 1000 chars) and `decision body` (combined # Decision + # Chosen Solution sections, truncate to 1000 chars). Call `index_decision`.
    - If ID starts with `DISCUSSION-`: read `discussions/<ID>.md`. Call `index_discussion` with id, title, status, outcome, tags, summary, and bodyText (first 2000 chars).
    - If ID starts with `era-`: read the era file. Extract `id` and `title` from frontmatter, `phases` list from frontmatter, `date_range` as `dateRange`, and body text after `---` as `narrative` (truncate to 3000 chars). Call `index_era({ id, title, phases, dateRange, narrative })`.
-3. Orphaned IDs: no action.
-4. Log: `MCP sync: N entries updated` (where N = missing.length)
+   - If ID starts with `NOTE-`: read `notes/<ID>.md`. Extract frontmatter (`id`, `title`, `tags`, `created_by`, `created_at`, `updated_at`) and body text after `---`. Call `index_note({ id, title, tags, createdBy, body, createdAt, updatedAt })`.
+3. For each ID in `orphaned`:
+   - If ID starts with `NOTE-`: call `delete_note(id)` — FS is source of truth; if note file is gone, DB record must be removed. No FS modification.
+   - All other orphaned IDs: no action (will be cleaned on next upsert cycle).
+4. Log: `MCP sync: N entries updated` (where N = missing.length + orphaned note deletions)
 
 **Category 14 auto-fix steps:**
 1. **14a — Direct assignment target orphan:**

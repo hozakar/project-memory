@@ -22,6 +22,7 @@ At session start, check if `search_memory`, `index_phase`, `index_decision`, and
 | `index_instruction(data)` | Upsert an instruction; called on creation and state change (active ↔ dropped). |
 | `index_assignment(data)` | Upsert an assignment; called on creation and status change. |
 | `index_note(data)` | Upsert a note; called on creation and update. |
+| `delete_note(id)` | Delete a note from vector DB and filesystem; called on user-initiated note deletion. |
 | `index_era(data)` | Upsert an era summary; called when a new era-NNN.md is written. |
 | `check_consistency(project_memory_dir)` | Returns `{missing, orphaned}` for DB/filesystem sync; used in drift audit Cat 13 and proactive sync at session start. |
 | `rebuild_index(entries[])` | Full atomic rebuild of the index; called when DB is empty or on user request. |
