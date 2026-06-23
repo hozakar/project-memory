@@ -125,6 +125,15 @@ MCP server version bumped to `0.0.9`.
 
 ## [0.0.8] — 2026-06-19 — MCP: security hardening, search integrity, audit robustness
 
+### Breaking change — `PROJECT_MEMORY_DIR` must now be an absolute path
+
+`mcp-server/src/db.ts` `dbPath()` now throws if `PROJECT_MEMORY_DIR` is set to a
+relative path. Previously a relative value was silently resolved against the
+process CWD, which made the resolved location depend on where the MCP server was
+launched from — a subtle source of "why is my data in a different `.project-memory/`?"
+bugs. Migration: set `PROJECT_MEMORY_DIR` to an absolute path (or unset it to fall
+back to `process.cwd()`). Commit `5f4d8e1`.
+
 ### search_memory — superseded decision exclusion
 
 `search_memory` now deterministically excludes `status: superseded` decisions

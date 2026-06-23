@@ -99,7 +99,7 @@ const EXPECTED: Expectation[] = [
   {
     id: 11, label: "Message broker replacement",
     query: "async message broker choice alternatives rejected dependent decisions",
-    keywords: ["broker", "message-queue", "rabbitmq", "kafka", "message"],
+    keywords: ["broker", "message-queue", "rabbitmq", "kafka"],
     typeFilter: "decision", diversify: true,
   },
   {
