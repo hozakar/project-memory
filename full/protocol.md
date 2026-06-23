@@ -75,7 +75,7 @@ The session-start work happens in this order. Each step may be a no-op depending
    - Rejected: `search_memory(type_filter="assignment", assigned_by_email="<run: git config user.email>")`
    - Emit passive single-line summaries per `conventions/records.md` (Assignment lifecycle — Session-start UX).
    - MCP unavailable fallback: scan `.project-memory/assignments/` ASSIGNMENT-*.md files, filter by frontmatter email fields.
-6. **Era prompt** — if ≥ 10 phases have accumulated since the last era AND session role = maintainer, ask whether to create the next era file.
+6. **Era prompt** — if ≥ 25 phases have accumulated since the last era AND session role = maintainer, ask whether to create the next era file.
 7. **Header emission** — output `🧠 PROJECT MEMORY LOADED` (memory loaded indicator only).
 8. **Post-First-Response Drift Audit** — deferred to after the LLM answers the user's first message. Run the drift audit (Cat 1–14, raise_cat4: false) via `audit.md` (MCP fast path if available, otherwise file-based detection). Emit the drift report as a follow-up block. Exceptions (audit runs synchronously): (a) explicit `Skill project-memory audit` or natural-language trigger per `DECISION-2026-06-17-audit-implicit-triggers`; (b) first user message is itself an audit trigger — run synchronously; (c) `minimal` profile — no audit, no deferral.
 
@@ -198,7 +198,7 @@ When Discussion Mode is engaged (explicit `Skill project-memory discuss` or impl
 This step supersedes the file-based missing-entry check in `audit.md` (Cat 13) when MCP is available at load time; Cat 13 remains the fallback when MCP is unavailable.
 
 **Era creation prompt (session start):**
-After proactive sync completes, count phases not yet covered by any era in `eras/index.yml`. If 10 or more have accumulated:
+After proactive sync completes, count phases not yet covered by any era in `eras/index.yml`. If 25 or more have accumulated:
 - If session role is maintainer: emit "📊 X phases accumulated since last era. Create era-NNN? I recommend running audit first." and wait for user confirmation.
 - If session role is developer: suppress. Do NOT prompt.
 

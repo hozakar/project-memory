@@ -68,7 +68,7 @@ The pair becomes the current identity. If either command fails or returns an emp
 Project-memory uses a lightweight two-role system for era creation gating only. All other operations are unrestricted.
 
 **Roles:**
-- **Maintainer** — receives era creation prompts when ~10 phases accumulate. Can decide to create an era.
+- **Maintainer** — receives era creation prompts when ~25 phases accumulate. Can decide to create an era.
 - **Developer** — default role. No era prompts. Everything else is identical to maintainer.
 
 **Source of truth:** `.project-memory/maintainers.md` — a flat YAML file:
