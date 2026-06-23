@@ -23,7 +23,7 @@ Optional MCP companion server for the [project-memory](../) skill. Provides sema
 - `find_phase_dependencies(phase_id)` — upstream/downstream/conflict/transitive-closure analysis for a single phase
 - `get_all_dependencies()` — full phase dependency graph with blocked/unblocked phases and cycle detection
 
-**Version:** 0.0.10
+**Version:** 0.1.0
 
 **Record types indexed:** phases, decisions, discussions, eras, instructions, assignments, and notes (all seven project-memory record types). Notes are user-scoped and private — broad searches exclude them; `search_memory` auto-applies `created_by_email` when `type_filter="note"`.
 

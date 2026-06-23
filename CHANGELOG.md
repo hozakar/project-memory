@@ -2,6 +2,16 @@
 
 All notable changes to the project-memory skill and MCP companion server.
 
+## [0.1.0] — 2026-06-23 — First minor release
+
+### Housekeeping & polish
+
+- **SKILL.md detection fix** — LLM now reads `.project-memory/config.yml` directly via Read tool instead of relying on glob or directory listing, which can silently miss hidden directories. Eliminates false first-run detection in consuming projects.
+- **Era cadence baked into skill** — ~10 → ~25 phases between eras, hardcoded into skill files so consuming projects inherit the correct cadence without a user-scoped INSTRUCTION. Updated in `full/protocol.md` (×2), `full/cheatsheet.md`, `lite/cheatsheet.md`, `conventions/maintainer.md`, `summaries/architecture.md`, `UNDER_THE_HOOD.md`. Roadmap item B1 closed; B4 (decision aging) dropped as superseded-exclusion already covers it.
+- **MIT License** — added to `README.md`.
+- **Security** — vitest + @vitest/coverage-v8 upgraded to v4.1.9 (resolves 6 esbuild-chain vulnerabilities, dev-only).
+- **MCP server v0.1.0** — version aligned with skill.
+
 ## [0.0.10] — 2026-06-23 — Legacy primaryScope nullability fix + index_* test coverage
 
 ### Defensive nullability remediation in `getTable()`
