@@ -257,9 +257,8 @@ function applyAddDecisionIndexRow(
   const decisionPath = path.join(projectMemoryDir, "decisions", `${decisionId}.md`);
   const fm = parseFrontmatter(readFile(decisionPath));
   const scope = fm["primary_scope"] || "unknown";
-  const agRaw: unknown = fm["applies_globally"];
+  const agRaw = fm["applies_globally"];
   const appliesToAll =
-    agRaw === true ||
     agRaw === "true" ||
     agRaw === "True" ||
     agRaw === "yes" ||
@@ -437,8 +436,7 @@ function applyCreateAdrFile(
   const dateMatch = decisionId.match(/^DECISION-(\d{4}-\d{2}-\d{2})/);
   const date = dateMatch ? dateMatch[1] : new Date().toISOString().slice(0, 10);
   const statusRaw = fm["status"] || "active";
-  const mappedStatus = ADR_STATUS_MAP[statusRaw.toLowerCase()] ?? (statusRaw.charAt(0).toUpperCase() + statusRaw.slice(1).toLowerCase());
-  const status = mappedStatus;
+  const status = ADR_STATUS_MAP[statusRaw.toLowerCase()] ?? (statusRaw.charAt(0).toUpperCase() + statusRaw.slice(1).toLowerCase());
 
   if (fileExists(adrPath)) {
     return {

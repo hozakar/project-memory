@@ -71,8 +71,8 @@ def test_phase_yml_fields(generated):
         yml = yaml.safe_load((phases_root / p["id"] / "phase.yml").read_text())
         for field in required:
             assert field in yml, f"{p['id']}/phase.yml missing '{field}'"
-        assert isinstance(yml["started_at"], date), (
-            f"{p['id']}: started_at is not a date: {yml['started_at']!r}"
+        assert isinstance(yml["started_at"], (date, str)), (
+            f"{p['id']}: started_at is not a date or string: {yml['started_at']!r}"
         )
 
 

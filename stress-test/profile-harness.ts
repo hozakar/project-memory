@@ -2,6 +2,13 @@
  * Smoke harness: verifies full and lite profile init creates the expected file shape,
  * and that a phase can be opened and closed within each profile's directory structure.
  * Run: npx tsx stress-test/profile-harness.ts
+ *
+ * Limitation: the skill-driven init is markdown-instructed (not callable from code),
+ * so this harness inlines its own model of the expected directory structure in
+ * `initFullProfile` / `initLiteProfile`. The tests therefore verify the harness's
+ * assumptions about init output, not the actual on-load behavior of the skill.
+ * If the skill's init instructions change, update this file in lockstep —
+ * a drift between the two is silent.
  */
 import * as fs from "fs";
 import * as path from "path";
