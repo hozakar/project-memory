@@ -166,7 +166,7 @@ export async function findTouchingPhases(
     const unmatchedCommits = gitCommits.filter(gc => !matchedHashes.has(gc.hash));
 
     return { file: filePath, phases, unmatchedCommits };
-  } catch (err) {
+  } catch {
     return { file: filePath, phases: [], unmatchedCommits: [] };
   }
 }

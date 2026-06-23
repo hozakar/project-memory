@@ -349,7 +349,7 @@ srv.tool(
   {
     file_path: z.string().describe("File path relative to the project root (e.g. 'mcp-server/src/db.ts')."),
   },
-  async (args: any) => {
+  async (args: { file_path: string }) => {
     const result = await findTouchingPhases(args.file_path);
     return { content: [{ type: "text" as const, text: JSON.stringify(result) }] };
   }
@@ -361,7 +361,7 @@ srv.tool(
   {
     phase_id: z.string().describe("Phase ID, e.g. 'phase-20260619-roadmap-run'."),
   },
-  async (args: any) => {
+  async (args: { phase_id: string }) => {
     const result = await findPhaseDependencies(args.phase_id);
     return { content: [{ type: "text" as const, text: JSON.stringify(result) }] };
   }

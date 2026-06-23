@@ -1,10 +1,11 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
-import { writeFileSync, mkdirSync, unlinkSync, existsSync } from "fs";
+import { writeFileSync, mkdirSync, existsSync } from "fs";
 import { join } from "path";
 import { createTmpDir, type TmpDir } from "./helpers/tmp-db";
 import { runAudit } from "../../src/tools/run_audit";
 import { searchMemory } from "../../src/tools/search_memory";
 import { upsert } from "../../src/db";
+import type { LanceRecord } from "../../src/types";
 
 let tmp: TmpDir;
 
@@ -25,7 +26,7 @@ afterAll(() => {
 describe("runAudit — Cat 13 orphaned record cleanup (branch-delete scenario)", () => {
   // Helper: create a DB record without a corresponding FS file
   async function seedOrphan(id: string, type: string, title: string, createdByEmail?: string) {
-    const record: Record<string, unknown> = {
+    const record: LanceRecord = {
       id,
       type,
       title,
@@ -36,7 +37,7 @@ describe("runAudit — Cat 13 orphaned record cleanup (branch-delete scenario)",
       record.createdByEmail = createdByEmail;
       record.createdByName = "Hakan Ozakar";
     }
-    await upsert(record as any);
+    await upsert(record);
   }
 
   it("cleans ALL orphaned record types from DB", { timeout: 30000 }, async () => {
@@ -137,16 +138,11 @@ describe("runAudit — Cat 13 orphaned record cleanup (branch-delete scenario)",
     expect(before.find(r => r.id === phaseId)).toBeUndefined();
 
     // Run audit — should index the missing phase
-    const report = await runAudit(tmp.pmDir);
+    await runAudit(tmp.pmDir);
 
-    // Proactive sync (missing → index) handled at session start, not by run_audit directly.
-    // run_audit only handles NOTE missing directly. Phase missing is handled by proactive sync.
-    // This test verifies: after branch restore, the FS files are present and
-    // check_consistency would report them as missing → proactive sync handles them.
-    // The key invariant: FS files exist → DB will eventually match.
-    const consistencyMsg = report.auto_fixed.find(f => f.includes(phaseId));
-    // run_audit doesn't directly index missing phases, but check_consistency within
-    // the audit detects the gap. The subsequent proactive sync would fix it.
-    // This is the designed split: run_audit cleans orphaned; proactive sync fixes missing.
+    // run_audit does not directly index missing phases; that is the responsibility
+    // of the proactive sync that fires at session start. This test asserts only
+    // the orphaned-cleanup invariant (covered above); the "missing → index" path
+    // is exercised in note_audit_consistency.test.ts.
   });
 });

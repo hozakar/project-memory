@@ -158,8 +158,6 @@ export async function findPhaseDependencies(phaseId: string): Promise<Dependency
     }
 
     const upstreamIds = bfsUpstream(phaseId, phases);
-    const downstreamIds = bfsDownstream(phaseId, phases);
-    const transitiveUpstreamIds = bfsUpstream(phaseId, phases).filter(id => id !== phaseId);
     const transitiveDownstreamIds = bfsDownstream(phaseId, phases);
 
     const resolve = (ids: string[]) => ids.map(id => phases.get(id)).filter(Boolean) as PhaseDependencyInfo[];
@@ -167,7 +165,7 @@ export async function findPhaseDependencies(phaseId: string): Promise<Dependency
     return {
       phase,
       upstream: phase.dependsOn.map(id => phases.get(id)).filter(Boolean) as PhaseDependencyInfo[],
-      downstream: resolve(downstreamIds),
+      downstream: resolve(transitiveDownstreamIds),
       conflicts: phase.conflictsWith.map(id => phases.get(id)).filter(Boolean) as PhaseDependencyInfo[],
       transitiveUpstream: resolve(upstreamIds),
       transitiveDownstream: resolve(transitiveDownstreamIds),
