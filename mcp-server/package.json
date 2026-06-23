@@ -4,15 +4,15 @@
   "description": "MCP companion server for project-memory skill — semantic search over phases and decisions",
   "main": "dist/index.js",
   "scripts": {
-    "build":      "node --max-old-space-size=8192 node_modules/typescript/bin/tsc",
-    "start":      "node dist/index.js",
-    "dev":        "npx ts-node src/index.ts",
-    "typecheck":  "tsc --noEmit",
-    "lint":       "eslint src tests --no-error-on-unmatched-pattern",
-    "test:unit":  "vitest run --config vitest.unit.config.ts",
-    "test:int":   "vitest run --config vitest.integration.config.ts",
-    "test":       "npm run test:unit && npm run test:int",
-    "coverage":   "vitest run --coverage --config vitest.unit.config.ts"
+    "build": "node --max-old-space-size=8192 node_modules/typescript/bin/tsc",
+    "start": "node dist/index.js",
+    "dev": "npx ts-node src/index.ts",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src tests --no-error-on-unmatched-pattern",
+    "test:unit": "vitest run --config vitest.unit.config.ts",
+    "test:int": "vitest run --config vitest.integration.config.ts",
+    "test": "npm run test:unit && npm run test:int",
+    "coverage": "vitest run --coverage --config vitest.unit.config.ts"
   },
   "dependencies": {
     "@huggingface/transformers": "^4.2.0",
@@ -22,13 +22,13 @@
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
-    "@vitest/coverage-v8": "^2.1.9",
+    "@vitest/coverage-v8": "^4.1.9",
     "eslint": "^9.39.4",
     "lint-staged": "^15.5.2",
     "ts-node": "^10.9.0",
     "typescript": "^5.4.0",
     "typescript-eslint": "^8.61.0",
-    "vitest": "^2.1.9"
+    "vitest": "^4.1.9"
   },
   "engines": {
     "node": ">=18.0.0"
