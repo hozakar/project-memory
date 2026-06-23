@@ -12,8 +12,9 @@ When this skill activates:
    🧠 PROJECT MEMORY LOADED
 
 2. **Determine active profile.**
-   - If `.project-memory/config.yml` exists → read the `profile` field. Route to `full`, `lite`, or `minimal` accordingly. If the `profile` field is absent (legacy project), treat as `full` and offer the user a one-time non-blocking profile choice after on-load completes.
-   - If `.project-memory/` does NOT exist → first-run (see step 3).
+   - **DO NOT use glob or directory listing to detect project memory.** Read `.project-memory/config.yml` directly using the Read tool. Do not infer existence from search results or file listings — they can miss hidden directories.
+   - If the Read succeeds → parse the `profile` field. Route to `full`, `lite`, or `minimal` accordingly. If the `profile` field is absent (legacy project), treat as `full` and offer the user a one-time non-blocking profile choice after on-load completes.
+   - If the Read fails (file not found) → first-run (see step 3).
 
 3. **First-run init UX (only when `.project-memory/` does not exist):**
 
