@@ -210,7 +210,7 @@ sentinel if identity cannot be determined — no escalation, no blocked workflow
 
 A lightweight two-role system controls who receives era creation prompts.
 **Maintainers** are listed in `.project-memory/maintainers.md` by email; they
-get prompted when ~10 phases accumulate since the last era. **Developers** work
+get prompted when ~25 phases accumulate since the last era. **Developers** work
 identically — they just don't see era maintenance prompts.
 
 ---
