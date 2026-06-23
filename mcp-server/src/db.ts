@@ -72,7 +72,23 @@ async function getTable(): Promise<any> {
     return table;
   }
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return (conn as any).openTable("memory");
+  const tbl = await (conn as any).openTable("memory");
+  // Defensive remediation for legacy non-nullable columns.
+  // Tables created during the 2026-06-14 drop-and-recreate migration window
+  // (commits f16be81 → 05525bf) inferred non-nullable string columns from
+  // populated rows. All record fields except id/vector are logically optional;
+  // alterColumns is idempotent and only fires when something is actually wrong.
+  // See ISSUE-2026-06-22-non-nullable-primaryScope-legacy-dbs.
+  const schema = await tbl.schema();
+  const toFix = schema.fields
+    .filter((f: { name: string; nullable: boolean }) =>
+      !f.nullable && f.name !== "id" && f.name !== "vector"
+    )
+    .map((f: { name: string }) => ({ path: f.name, nullable: true }));
+  if (toFix.length > 0) {
+    await tbl.alterColumns(toFix);
+  }
+  return tbl;
 }
 
 // WARNING: This upsert is non-atomic (delete then add). If the process crashes

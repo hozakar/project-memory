@@ -2,6 +2,29 @@
 
 All notable changes to the project-memory skill and MCP companion server.
 
+## [0.0.10] — 2026-06-23 — Legacy primaryScope nullability fix + index_* test coverage
+
+### Defensive nullability remediation in `getTable()`
+
+`mcp-server/src/db.ts` `getTable()` now relaxes any non-nullable string column
+(except `id` and `vector`) on every existing-table open via `alterColumns`.
+Fixes ISSUE-2026-06-22: legacy DBs created during the 2026-06-14 drop-and-recreate
+migration window (commits `f16be81` → `05525bf`) had `primaryScope` marked
+`nullable=false`, causing every non-decision `index_*` call to fail with
+"Append with different schema: missing=[primaryScope]". The remediation is
+idempotent and only fires when something is actually wrong, so healthy DBs see
+zero behavioral change. Rationale: `DECISION-2026-06-23-defensive-nullability-on-open`.
+
+### Integration test coverage for 5 `index_*` tools
+
+New round-trip tests for `index_discussion`, `index_decision`, `index_instruction`,
+`index_assignment`, `index_era` (each: write → `searchMemory` → assert id +
+similarity). Plus `db-nullability.test.ts` regression test that fabricates a
+legacy bad-schema table via explicit `apache-arrow` Schema and asserts the
+remediation runs on open. Closes the coverage gap that let ISSUE-2026-06-22 ship.
+
+Phase: `phase-20260623-primaryscope-fix-and-index-coverage`.
+
 ## [0.0.9] — 2026-06-21 — NOTE records, Pre-Commit Gate, dependency graph tools
 
 ### NOTE record type — 6th project-memory record type
