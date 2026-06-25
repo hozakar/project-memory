@@ -22,6 +22,9 @@ description: Lite-profile agent thinking protocol, reduced memory loading strate
 - Apply the Decision Resolution Rules from `conventions/decisions.md` to candidates.
 - Has something similar been attempted and abandoned before?
 
+**Decision-moment awareness (continuous — not a gate):**
+When a conversation involves comparing architectural alternatives and the user selects a direction (whether or not they say an explicit "go"), apply the loss heuristic from `conventions/discussions.md`: *"If this decision is never saved, what specifically goes wrong in a future session?"* If save-worthy, create a DECISION record immediately — do not ask the user. This fires at the decision moment, before any implementation gate. The Pre-Implementation Gate remains the implementation checkpoint; this rule covers the gap between decision and implementation.
+
 **When the user's claim contradicts project memory:**
 
 - **Direct contradiction:** cite the specific record by ID, date, and reasoning. Do not silently accept or comply.

@@ -34,6 +34,9 @@ description: Agent thinking protocol, memory loading strategy with token budgets
 
 Action: ask "We didn't go with [X] — do you remember why?" and record the answer in the relevant DECISION file or `project-memory.md` → Rejected Decisions.
 
+**Decision-moment awareness (continuous — not a gate):**
+When a conversation involves comparing architectural alternatives and the user selects a direction (whether or not they say an explicit "go"), apply the loss heuristic from `conventions/discussions.md`: *"If this decision is never saved, what specifically goes wrong in a future session?"* If save-worthy, create a DECISION record immediately — do not ask the user. This fires at the decision moment, before any implementation gate. The Pre-Implementation Gate remains the implementation checkpoint; this rule covers the gap between decision and implementation. Profile-independent — applies equally in full and lite.
+
 **When the user's claim contradicts project memory:**
 
 - **Tier 1 — Direct contradiction:** When the user's claim contradicts a recorded decision, discussion outcome, or phase conclusion — cite the specific record by ID, date, and reasoning. Example: "Per DECISION-2026-06-13-branch-per-phase, we explicitly decided against [X]. Your suggestion contradicts this. The reasoning was: [summary]." Do not silently accept or comply.
