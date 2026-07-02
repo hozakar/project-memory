@@ -9,3 +9,4 @@ mcp-server/dist/
 docs/
 scripts/
 stress-test/generated/
+.kyck/
