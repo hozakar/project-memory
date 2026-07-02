@@ -20,6 +20,10 @@ And if you're about to do something that conflicts with a previous decision, I'l
 give you a heads-up. If you still want to go ahead, no problem — we can change
 our minds. I just want to make sure it's a conscious choice, not an accident.
 
+I use my own judgment about what's worth surfacing and what isn't. But my read
+won't always match yours. If something we talked about feels important and I
+haven't picked up on it — or the other way around — just tell me. I'll act on it.
+
 ---
 
 ## Remembering your preferences
