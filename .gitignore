@@ -9,4 +9,6 @@ mcp-server/dist/
 docs/
 scripts/
 stress-test/generated/
-.kyck/
+.kyck/*
+!.kyck/sync.json
+!.kyck/events.*.enc
