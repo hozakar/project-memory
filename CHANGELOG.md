@@ -47,6 +47,16 @@ for the full rationale.
 
 MCP server version bumped to `0.1.1`.
 
+### Skill structure
+
+- Removed the legacy `gates/` directory (`implementation.md`, `commit.md`,
+  `close.md`, `lifecycle.md`, `mcp-triggers.md`). These files described the
+  pre-phase-removal gate system and were superseded by `standard/gates.md` but
+  never deleted, leaving stale cross-references throughout SKILL.md and the
+  conventions files. See deep-review report
+  `2026-07-06-phase-removal-deep-review-review.md` findings C2, C3, H1, M5 for
+  details.
+
 ## [0.1.0] — 2026-06-23 — First minor release
 
 ### Housekeeping & polish

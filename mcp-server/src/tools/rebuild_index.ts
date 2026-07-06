@@ -9,6 +9,7 @@ export async function rebuildIndex(entries: IndexEntry[]): Promise<{ indexed: nu
   const records: LanceRecord[] = [];
   let failCount = 0;
 
+  // Phase 1: Build main content records from all entry types
   for (const entry of entries) {
     try {
       let text: string;
@@ -98,26 +99,28 @@ export async function rebuildIndex(entries: IndexEntry[]): Promise<{ indexed: nu
         record.assignedByEmail = aData.assignedBy.email;
       }
       records.push(record);
+    } catch {
+      failCount++;
+    }
+  }
 
-      // For phase entries, also build per-commit records
-      if (entry.type === "phase") {
-        const phaseData = entry.data as PhaseIndexData;
-        for (const diff of phaseData.commitDiffs) {
-          try {
-            const commitText = buildCommitText(diff);
-            const commitVector = await embed(commitText);
-            records.push({
-              id: `${phaseData.id}__commit__${diff.hash}`,
-              type: "commit",
-              title: diff.message,
-              text: commitText,
-              vector: commitVector,
-              status: "",
-            });
-          } catch {
-            failCount++;
-          }
-        }
+  // Phase 2: Build per-commit records from any entry that carries commitDiffs
+  // (decoupled from phase guard so commit records survive rebuilds with zero phase entries)
+  for (const entry of entries) {
+    try {
+      const maybeDiffs: CommitDiff[] | undefined = (entry.data as { commitDiffs?: CommitDiff[] }).commitDiffs;
+      if (!maybeDiffs || maybeDiffs.length === 0) continue;
+      for (const diff of maybeDiffs) {
+        const commitText = buildCommitText(diff);
+        const commitVector = await embed(commitText);
+        records.push({
+          id: `${entry.data.id}__commit__${diff.hash}`,
+          type: "commit",
+          title: diff.message,
+          text: commitText,
+          vector: commitVector,
+          status: "",
+        });
       }
     } catch {
       failCount++;
