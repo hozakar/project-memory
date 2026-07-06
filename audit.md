@@ -9,10 +9,10 @@ description: Drift audit dispatcher for project-memory. Routes by active profile
 Emit `🧠 PROJECT MEMORY LOADED` as a synchronous indicator at session open. This is the memory-loaded header only — no audit results at this point.
 
 **Context A2 — Post-first-response drift audit (async):**
-After the LLM answers the user's first message, run the drift audit automatically (full and lite only — minimal skips audit entirely). Apply auto-fixes silently. Emit a single drift report block for all findings, headed by `[🧠] POST-RESPONSE DRIFT AUDIT — N auto-fixed`. If nothing found and nothing auto-fixed, emit the clean line. If any interactive-triage findings remain after auto-fix, immediately transition into Interactive Mode.
+After the LLM answers the user's first message, run the drift audit automatically (standard only — minimal skips audit entirely). Apply auto-fixes silently. Emit a single drift report block for all findings, headed by `[🧠] POST-RESPONSE DRIFT AUDIT — N auto-fixed`. If nothing found and nothing auto-fixed, emit the clean line. If any interactive-triage findings remain after auto-fix, immediately transition into Interactive Mode.
 
 **Context B — On-demand (interactive), via `Skill project-memory audit` or natural-language triggers:**
-Run when the skill is invoked with the `audit` argument OR when the user phrases a request that clearly asks for an audit / drift review of project memory (e.g. "let's audit", "review project memory", "run a drift check" — lenient detection in any language, full and lite only). Same detection logic, but prompt the user for each interactive finding via `AskUserQuestion`. Re-run detection after decisions; loop until clean. When the trigger phrase is ambiguous, ask a one-line clarification before entering audit mode. Governing rule: `DECISION-2026-06-17-audit-implicit-triggers`.
+Run when the skill is invoked with the `audit` argument OR when the user phrases a request that clearly asks for an audit / drift review of project memory (e.g. "let's audit", "review project memory", "run a drift check" — lenient detection in any language, standard only). Same detection logic, but prompt the user for each interactive finding via `AskUserQuestion`. Re-run detection after decisions; loop until clean. When the trigger phrase is ambiguous, ask a one-line clarification before entering audit mode. Governing rule: `DECISION-2026-06-17-audit-implicit-triggers`.
 
 **Minimal profile:** No audit. On-load skips it; `audit` argument prints a single-line notice and exits.
 
@@ -38,9 +38,9 @@ Exceptions (audit runs synchronously):
 3. **If yes:** read `<profile>/audit-mcp.md` and follow its MCP Fast Path. Pass `raise_cat4: false` when running as post-first-response audit (SKILL.md step 5); pass `raise_cat4: true` when running from `Skill project-memory audit`. Skip `<profile>/audit-fs.md`.
 4. **If no:** read `<profile>/audit-fs.md` and follow its file-based Detection Procedure.
 
-`<profile>` is `full` or `lite`. The lite versions enumerate a reduced category set (Cat 1, 2, 3, 4, 5, 6, 7, 8 (conditional), 10 (modified), 12, 13 (conditional), 14 — Cat 9 and 11 omitted).
+`<profile>` is `standard`. The standard profile uses a reduced category set (Cat 1, 2, 3, 4, 5, 6, 7, 8 (conditional), 10 (modified), 12, 13 (conditional), 14 — Cat 9 and 11 omitted).
 
-**Semantic Conflict Scan (`semantic-conflict-scan`)** is an optional final stage of interactive audit, separate from the numbered categories. It runs *only* when all four gates pass: (1) audit was triggered via `Skill project-memory audit` (not on-load), (2) MCP is available, (3) `profile=full`, (4) `decisions/index.md` Active section is non-empty. When gated out, it is silently skipped — no prompt is shown. Procedure lives in `full/audit-mcp.md`. Governing rules: `DECISION-2026-06-17-semantic-conflict-scan`.
+**Semantic Conflict Scan (`semantic-conflict-scan`)** was a legacy full-only optional stage. It is no longer available in the standard profile.
 
 The shared sections below (Severity, Permanent Skip, Era Auto-Clean, Output Format, Interactive Mode) apply to both paths and both profiles.
 
@@ -53,9 +53,9 @@ The model has 2 effective tiers:
 | Severity | Categories | Behavior |
 |----------|-----------|----------|
 | **high** | Cat 4 | Heuristic auto-resolves same-user commits. **On-load:** unresolved findings shown as `info` — non-blocking, no triage. **Manual audit:** escalates to interactive triage. |
-| **auto-fix** | Cat 1,2,3,5,6,7,8,9,10,11,12,13,14 | Applied silently; logged in drift report. |
+| **auto-fix** | Cat 1,2,3,5,6,7,8,10,12,13,14 | Applied silently; logged in drift report. |
 
-In lite, Cat 9 and 11 are not detected at all (not "auto-fixed silently" — simply absent).
+In standard, Cat 9 and 11 are not detected at all (not "auto-fixed silently" — simply absent).
 
 ---
 
@@ -179,7 +179,7 @@ Replace `N` with the count of auto-fixed items. Omit any bullet that has no find
 
 # Interactive Mode
 
-When the skill is invoked as `Skill project-memory audit` (full or lite only):
+When the skill is invoked as `Skill project-memory audit` (standard only):
 
 1. Run the full detection procedure for the active profile. Collect all findings — only Cat 4 findings that couldn't be auto-resolved enter interactive triage.
 2. Present the full drift report.
@@ -190,7 +190,7 @@ When the skill is invoked as `Skill project-memory audit` (full or lite only):
 
 **Question shapes per category:**
 
-Cat 4 is the only interactive category among the numbered set. All others (Cat 1,2,3,5,6,7,8,9,10,11,12,13,14) are auto-fixed silently. A second interactive surface — `semantic-conflict-scan` — runs *after* Cat 1–14 finish, only when all four gates pass (user-triggered + MCP + `profile=full` + non-empty active decisions). It is opt-in per audit (default `n`) and is not a category — see `full/audit-mcp.md` for the procedure.
+Cat 4 is the only interactive category among the numbered set. All others (Cat 1,2,3,5,6,7,8,10,12,13,14) are auto-fixed silently. The semantic-conflict-scan stage has been removed with the legacy full profile.
 
 - **Open-phase commit gap (simplified):** Only escalated when heuristic can't resolve.
   "Open phase <id> has <N> commit(s) by <author> that couldn't be auto-assigned. What should I do?"

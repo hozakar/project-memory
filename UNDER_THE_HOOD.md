@@ -16,17 +16,17 @@ assistants loading this skill.
 
 ## Profiles
 
-Project-memory supports three profiles. The profile controls ceremony — how much
+Project-memory supports two profiles. The profile controls ceremony — how much
 overhead I introduce automatically. Choose at first run; switch at any time.
 
-| | `full` | `lite` | `minimal` |
-|---|---|---|---|
-| Phase files | 5 per phase | `phase.yml` only | none |
-| Pre-Impl Gate | Steps 0–5 | Steps 0–4 | Step 0 only |
-| Drift audit | 14 categories | 12 categories | none |
-| Summaries | 5 files | `roadmap.md` + `current-state.md` | inline in `MEMORY.md` |
-| Author attribution | `created_by` + `contributors` | `created_by` only | none |
-| Topic-shift detection | on | off | n/a |
+| | `standard` | `minimal` |
+|---|---|---|
+| Phase files | `phase.yml` only (plan.md optional) | none |
+| Pre-Impl Gate | Steps 0–3 (GATE 0 + Steps 1–3) | Step 0 only |
+| Drift audit | 12 categories | none |
+| Summaries | `roadmap.md` + `current-state.md` | inline in `MEMORY.md` |
+| Author attribution | `created_by` only | none |
+| Topic-shift detection | off | n/a |
 
 Features you trigger explicitly — discussions, issues, assignments, instructions, eras,
 ADR, MCP — are available in all profiles regardless of which you choose.
@@ -39,7 +39,7 @@ ADR, MCP — are available in all profiles regardless of which you choose.
 > edit them manually, I may get confused — I trust what's in there. If something
 > looks wrong, just tell me; I can fix it.
 
-**Full and lite profiles** use a `.project-memory/` directory (lite scaffolds a
+**Standard profile** uses a `.project-memory/` directory (scaffolds a
 leaner tree at init — no `discussions/`, `issues/`, `assignments/`, `eras/`, or
 `instructions/` until you use those features for the first time):
 
@@ -48,11 +48,8 @@ leaner tree at init — no `discussions/`, `issues/`, `assignments/`, `eras/`, o
 ├── phases/
 │   ├── index.yml
 │   └── phase-YYYYMMDD-short-title/
-│       ├── phase.yml              ← required in both full and lite
-│       ├── plan.md                ← optional in lite; required in full
-│       ├── implementation.md      ← full only
-│       ├── review-and-fixes.md    ← full only
-│       └── followup.md            ← full only
+│       ├── phase.yml              ← required
+│       ├── plan.md                ← optional
 ├── decisions/
 │   ├── index.md
 │   └── DECISION-YYYY-MM-DD-slug.md
@@ -71,10 +68,7 @@ leaner tree at init — no `discussions/`, `issues/`, `assignments/`, `eras/`, o
 │   ├── open/
 │   └── closed/
 └── summaries/
-    ├── project-memory.md          ← full only
     ├── current-state.md
-    ├── architecture.md            ← full only
-    ├── active-issues.md           ← full only
     └── roadmap.md
 ```
 
@@ -97,39 +91,28 @@ A phase is a logical unit of work. It opens before significant implementation
 begins and closes when that unit is complete. I track which commits belong to
 which phase, flag gaps, and maintain the phase record.
 
-In the `full` profile, each phase directory holds five documents: a plan written
-before implementation, an implementation log updated as commits land, a
-review-and-fixes record, a followup for deferred items, and a `phase.yml` with
-metadata. In `lite`, only `phase.yml` is required (`plan.md` is optional).
+In the `standard` profile, each phase directory holds `phase.yml` (required)
+and optionally `plan.md`. There are no `implementation.md`, `review-and-fixes.md`,
+or `followup.md` files — keeping the ceremony light.
 In `minimal`, there is no phase concept — work is logged as rows in `MEMORY.md`.
 
 **Pre-Implementation Gate:** I cross-reference what you're about to build
 against active decisions before any code is written. If a conflict is detected,
-I surface a single batched question — not a stream of prompts. The gate has 6
-steps (Step 0–5) in `full`, 5 in `lite` (Step 0–4), and 1 (instruction re-injection only) in `minimal`.
+I surface a single batched question — not a stream of prompts. The gate has 4
+steps (GATE 0 + Steps 1–3) in `standard`, and 1 (instruction re-injection only) in `minimal`.
 
-**Pre-Close Gate:** In `full`, I verify all five phase documents are complete
-before a phase can close. In `lite`, I check that at least one commit is recorded
-and warn on unchecked plan TODOs — no file verification. `Minimal` has no gate.
+**Pre-Commit Gate:** In `standard`, I classify the significance of every commit.
+Significant commits trigger summary file updates; trivial commits skip silently.
+`Minimal` has no gate.
 
 ---
 
 ## Summaries
 
-`summaries/` contains living documents updated automatically at every phase close.
+`summaries/` contains living documents updated automatically at every commit.
 The set of files depends on the active profile:
 
-**Full profile** (5 files):
-
-| File | Purpose |
-|---|---|
-| `project-memory.md` | Core context: history, decisions, tensions, anti-patterns, priorities |
-| `current-state.md` | Features, components, debt, risks, next actions |
-| `architecture.md` | Module inventory, updated when structure changes |
-| `active-issues.md` | Open issues index |
-| `roadmap.md` | Upcoming work, fed from `followup.md` at phase close |
-
-**Lite profile** (2 files): `current-state.md` and `roadmap.md` only. Roadmap
+**Standard profile** (2 files): `current-state.md` and `roadmap.md`. Roadmap
 entries are added incrementally during work — no transfer step at phase close.
 
 **Minimal profile**: no `summaries/` directory. The `## Roadmap` section of
@@ -196,9 +179,7 @@ scanning everything. Era creation is gated to maintainers.
 
 Attribution depth depends on the active profile:
 
-- **Full:** all record types carry `created_by` and `contributors` frontmatter
-  with `{name, email}` identity pairs.
-- **Lite:** `created_by` only — `contributors` is omitted.
+- **Standard:** all record types carry `created_by` — `contributors` is omitted.
 - **Minimal:** no attribution — git already records authorship per commit.
 
 In all cases I capture git identity at write time and soft-fail to an `unknown`
@@ -226,7 +207,7 @@ at any time via `.project-memory/config.yml`.
 
 ## Drift audit
 
-I run a 14-category drift audit each session, deferred to after the first user response so it doesn't add latency to session start. Three exceptions run synchronously: explicit `Skill project-memory audit` invocation, a first message that is itself an audit trigger, and the `minimal` profile (no audit at all). With the MCP companion server, all 14 categories are fully deterministic — no LLM judgment involved. Without MCP, the same categories run via file-system detection with the same deterministic logic.
+I run a 12-category drift audit each session, deferred to after the first user response so it doesn't add latency to session start. Three exceptions run synchronously: explicit `Skill project-memory audit` invocation, a first message that is itself an audit trigger, and the `minimal` profile (no audit at all). With the MCP companion server, all 12 categories are fully deterministic — no LLM judgment involved. Without MCP, the same categories run via file-system detection with the same deterministic logic.
 
 | Category | Description | Resolution |
 |---|---|---|
@@ -238,9 +219,9 @@ I run a 14-category drift audit each session, deferred to after the first user r
 | 6 | Decision index drift | Auto-fix if aged >3d; escalate if fresh |
 | 7 | Orphan commit references in phase.yml | Auto-annotate |
 | 8 | ADR sync drift (when ADR enabled) | Auto-fix if aged >3d; escalate if fresh |
-| 9 | Discussion index drift | Auto-fix |
-| 10 | Completed phase missing required files | Escalate |
-| 11 | Expired discussions | Auto-archive |
+| 9 | **DISABLED in standard** | — |
+| 10 | Completed phase missing required files | Escalate (phase.yml only) |
+| 11 | **DISABLED in standard** | — |
 | 12 | Tag inconsistency | Auto-suppress or escalate |
 | 13 | DB/filesystem consistency | Auto-index missing entries |
 | 14 | Assignment orphans / stale pending | Escalate |
@@ -279,7 +260,7 @@ file-based operation without data loss.
 ## Skill files
 
 Skill files are organized into a shared root plus per-profile directories. Profile-
-specific behavior lives under `full/`, `lite/`, or `minimal/`; shared lifecycles
+specific behavior lives under `standard/` or `minimal/`; shared lifecycles
 that don't diverge across profiles stay at the root.
 
 **Entry point and profile routing:**
@@ -289,7 +270,7 @@ that don't diverge across profiles stay at the root.
 | `SKILL.md` | Profile router — on-load flow, profile detection, argument dispatch (`audit`, `discuss`, `change profile`), critical gates summary |
 | `profiles.md` | Tier matrix, init UX, migration mechanism, `profile_history` schema |
 
-**Per-profile files** (each profile has its own copy under `full/`, `lite/`, or `minimal/`):
+**Per-profile files** (each profile has its own copy under `standard/` or `minimal/`):
 
 | File | Purpose |
 |---|---|

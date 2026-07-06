@@ -1,11 +1,11 @@
 ---
 name: project-memory-profiles
-description: Tier matrix, init UX, migration semantics, and orthogonal-feature list for project-memory profiles (full / lite / minimal).
+description: Tier matrix, init UX, migration semantics, and orthogonal-feature list for project-memory profiles (standard / minimal).
 ---
 
-# Profiles — full / lite / minimal
+# Profiles — standard / minimal
 
-Project-memory supports three profiles. They differ only in **ceremony-bearing features** — phase ceremony, gate procedures, audit categories, summaries, attribution depth, topic-shift detection, commit classification, instruction re-injection scope, and decision storage shape.
+Project-memory supports two profiles. They differ only in ceremony-bearing features — audit categories, summaries, gate procedure depth.
 
 **User-triggered features are NOT tier-bound.** Discussions, issues, assignments, instruction *creation*, notes, eras, the maintainer role, the ADR mirror, and the MCP companion remain opt-in regardless of profile.
 
@@ -15,26 +15,19 @@ The right axis for choosing a profile is **longevity × revisit frequency × rea
 
 # Tier matrix
 
-| # | Feature | `full` | `lite` | `minimal` |
+| # | Feature | `standard` | `minimal` |
 |---|---|---|---|---|
-| 1 | Phase files | 5-file (yml + plan + impl + review + followup) | `phase.yml` required + `plan.md` optional | none |
-| 2 | Pre-Implementation Gate | Step 0–5 | Step 0 + 1 + 2 + 3 + 4 (Step 5 skipped) | Step 0 only (instruction inject, then continue) |
-| 3 | Pre-Close Gate | Step 0 + 3-file verify + followup→roadmap transfer | commits non-empty sanity + plan.md TODO warn (non-blocking) + status:completed | n/a |
-| 4 | Drift Audit | 14 categories | Cat 1,2,3,4,5,6,7,8(cond),10(modified),12,13(cond),14. **Off:** 9, 11 | none |
-| 5 | Summaries | 5 files | `roadmap.md` + `current-state.md` only | inline sections of `MEMORY.md` |
-| 6 | Gate instruction re-injection | every gate (Pre-Impl + Pre-Close + topic shift) | Pre-Impl Gate Step 0 only | Pre-Impl Gate Step 0 only (the only gate that exists) |
-| 7 | Topic shift → auto new phase | on | off (user opens manually) | n/a |
-| 8 | Commit significance classification | trivial / significant / ambiguous | trivial-filter only | none |
-| 9 | Author attribution | `created_by` + `contributors` | `created_by` only | none |
-| 10 | Decisions | DECISION files + `index.md` | DECISION files + `index.md` | append rows in `MEMORY.md` |
+| 1 | Pre-Implementation Gate | Step 0 + 1 + 2 + 3 (Step 4 skipped) | Step 0 only (instruction inject, then continue) |
+| 2 | Pre-Commit Gate | Step 0 + 2-file verify + scope-change→roadmap transfer | n/a |
+| 3 | Drift Audit | 12 categories (Cat 1,2,3,4,5,6,7,8,10,12,13,14). **Off:** 9, 11 | none |
+| 4 | Summaries | 2 files (`roadmap.md` + `current-state.md`) | inline sections of `MEMORY.md` |
+| 5 | Gate instruction re-injection | Pre-Impl Gate Step 0 only | Pre-Impl Gate Step 0 only (the only gate that exists) |
+| 6 | Author attribution | `created_by` only | none |
+| 7 | Decisions | DECISION files + `index.md` | append rows in `MEMORY.md` |
 
-## Cat 10 (lite modification)
+## Profile history and audit
 
-Default Cat 10 expects 5 files in completed phases. In `lite` it expects only `phase.yml` (required) and treats `plan.md` as optional (no finding if absent). All other files (impl / review / followup) are ignored in lite-mode phases.
-
-## Pre-Impl Gate Step 3 (lite)
-
-Same behavior as full. MCP path uses `search_memory` with filters; non-MCP path scans `decisions/index.md`. Step 5 (broad awareness load) is the only step skipped in lite.
+Cat 10 (phase file completeness) consults `profile_history` for per-phase shape inference. A phase whose `started_at` falls within a legacy `full` window is expected to have the 5-file shape; phases in `standard` or legacy `lite` windows expect only `phase.yml` (required) + `plan.md` (optional). This ensures historical phases are not retroactively flagged after a profile change.
 
 ## Minimal `MEMORY.md` schema
 
@@ -85,9 +78,8 @@ First-run init asks one question with inline guidance:
 ```
 How do you want to run project-memory in this project?
 
-  1) full     — full ceremony, for long-lived or multi-contributor projects
-  2) lite     — minimal ceremony, for most mid-sized work
-  3) minimal  — single MEMORY.md file, for short or throwaway work
+  1) standard — lean ceremony, 2 summaries, 12-category audit, for most projects
+  2) minimal  — single MEMORY.md file, for short or throwaway work
 
 Things to consider:
   • Will the project last 3+ months?
@@ -97,7 +89,7 @@ Things to consider:
 You can change this choice later — just say so.
 ```
 
-Default cursor: `lite`. No automatic recommendation logic — user reads guidance and chooses.
+Default cursor: `standard`. No automatic recommendation logic — user reads guidance and chooses.
 
 ---
 
@@ -106,25 +98,27 @@ Default cursor: `lite`. No automatic recommendation logic — user reads guidanc
 Profile history is recorded in `config.yml`:
 
 ```yaml
-profile: lite                    # current active profile
+profile: standard                    # current active profile
 
 profile_history:
-  - profile: lite
+  - profile: standard
     effective_date: 2026-06-16
     reason: initial
-  - profile: full
+  - profile: minimal
     effective_date: 2026-08-01
-    reason: "team grew, architectural complexity increased"
+    reason: "project scope reduced"
 ```
 
 **Migration rules:**
 
-- Audit and gates consult `profile_history` for any check whose correctness depends on the profile in force when an artifact was created. Example: Cat 10 lite-modification only applies to phases whose `started_at` falls within a lite-profile window.
-- **Downgrade** (e.g. `full → lite`): past artifacts stay as-is. No retroactive file deletion or schema simplification. Only future behavior changes.
-- **Upgrade** (e.g. `lite → full`): no backfill required. Past phases keep their 2-file shape; future phases get 5-file. Cat 10 differentiates by `started_at` against `profile_history`.
-- **Cross-shape transitions** (any ↔ `minimal`): existing artifacts are preserved. Going *to* `minimal` creates `.project-memory/MEMORY.md` seeded from `summaries/roadmap.md` (if any) and updates `config.yml` with `profile: minimal`; going *from* `minimal` expands the existing `.project-memory/` skeleton with the target profile's structure, seeding `roadmap.md` and `decisions/index.md` from `MEMORY.md` content.
+- Audit and gates consult `profile_history` for any check whose correctness depends on the profile in force when an artifact was created. Example: Cat 10 shape only applies to phases whose `started_at` falls within a `full` profile window.
+- **Downgrade** (e.g. `standard → minimal`): past artifacts stay as-is. No retroactive file deletion or schema simplification. Only future behavior changes.
+- **Upgrade** (e.g. `minimal → standard`): no backfill required. Past entries keep their minimal shape; future phases get full scaffolding. Cat 10 differentiates by `started_at` against `profile_history`.
+- **Cross-shape transitions:** existing artifacts are preserved. Going *to* `minimal` creates `.project-memory/MEMORY.md` seeded from `summaries/roadmap.md` (if any) and updates `config.yml` with `profile: minimal`; going *from* `minimal` expands the existing `.project-memory/` skeleton with the standard profile's structure, seeding `roadmap.md` and `decisions/index.md` from `MEMORY.md` content.
 
-User changes profile via natural language ("switch project-memory to full"). SKILL.md recognizes the intent, appends a new `profile_history` entry with `effective_date: <today>` and a `reason` field captured from the user's stated motivation (or `"user request"` if not stated).
+User changes profile via natural language ("switch project-memory to minimal"). SKILL.md recognizes the intent, appends a new `profile_history` entry with `effective_date: <today>` and a `reason` field captured from the user's stated motivation (or `"user request"` if not stated).
+
+**Backward compatibility:** Legacy config.yml files with `profile: full` or `profile: lite` continue to work. Both are treated as `profile: standard` at read time. `profile_history` entries retain their original values for audit-aware checks.
 
 ---
 
@@ -135,17 +129,15 @@ User changes profile via natural language ("switch project-memory to full"). SKI
 ├── SKILL.md                       ← profile-aware dispatcher (entry point)
 ├── profiles.md                    ← this file
 │
-├── full/                          ← used when profile=full
-│   ├── gates.md
+├── standard/                      ← used when profile=standard
 │   ├── protocol.md
+│   ├── gates.md
 │   ├── audit-fs.md
 │   ├── audit-mcp.md
 │   ├── templates-phase.md
 │   ├── templates-config.md
 │   ├── init.md
 │   └── cheatsheet.md
-│
-├── lite/                          ← used when profile=lite (same 8 files, lite-specific content)
 │
 ├── minimal/                       ← used when profile=minimal
 │   └── minimal.md                 ← single-file spec (~50-80 lines)
@@ -168,6 +160,6 @@ User changes profile via natural language ("switch project-memory to full"). SKI
 └── README.md
 ```
 
-**Why hybrid split (and not pure-split):** truly invariant lifecycles (decision file format, MCP integration, record templates) live in one place — duplicating them in `full/`, `lite/`, `minimal/` would create maintenance drift without LLM-side benefit. Divergent behavior (gate steps, audit category set, phase template shape) lives under profile dirs so the LLM reads only what applies; no conditional parsing of unified files.
+**Why hybrid split (and not pure-split):** truly invariant lifecycles (decision file format, MCP integration, record templates) live in one place — duplicating them in `standard/` and `minimal/` would create maintenance drift without LLM-side benefit. Divergent behavior (gate steps, audit category set, phase template shape) lives under profile dirs so the LLM reads only what applies; no conditional parsing of unified files.
 
 **Why minimal is one file:** total `minimal` behavior fits in ~50-80 lines — single `MEMORY.md` schema, Step 0 as the only gate, zero audit, zero summary auto-update. Splitting that across 6 files would obscure rather than clarify.

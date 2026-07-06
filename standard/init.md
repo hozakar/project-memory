@@ -1,95 +1,88 @@
 ---
 name: project-memory-init
-description: First-run initialization instructions for project-memory. Read only when .project-memory/ does not exist.
+description: First-run initialization instructions for the standard profile. Scaffolds .project-memory/ with 2 summaries (roadmap, current-state), no discussions/assignments/eras dirs (created on first use). Writes profile: standard and profile_history into config.yml.
 ---
 
-# First-Run Initialization
+# First-Run Initialization (standard)
 
-Create this directory structure:
+Read only when the user picked `standard` in the SKILL.md init UX. Create this directory structure:
 
 ```
 .project-memory/
 ├── phases/
 │   └── index.yml
 ├── decisions/
-├── discussions/
 │   └── index.md
-├── issues/
-│   ├── open/
-│   └── closed/
 ├── summaries/
-│   ├── project-memory.md
 │   ├── current-state.md
-│   ├── architecture.md
-│   ├── active-issues.md
 │   └── roadmap.md
-├── instructions/
-├── notes/
-├── eras/
-├── maintainers.md
 └── config.yml
 ```
+
+**Not created at init (orthogonal, on-demand only):**
+- `discussions/` — created on first discussion close.
+- `issues/open/` + `issues/closed/` — created on first issue.
+- `instructions/` — created on first user instruction.
+- `notes/` — created on first note.
+- `assignments/` — created on first assignment.
+- `eras/` — created on first era (maintainer-only, rare).
+- `maintainers.md` — optional; create only if the user opts into the maintainer role.
+
+This keeps a fresh project visually clean — empty dirs aren't created speculatively.
+
+---
 
 **`phases/index.yml`** — start empty:
 ```yaml
 phases: []
 ```
 
-**`discussions/index.md`** — start with a header:
+**`decisions/index.md`** — start with the standard header:
 ```md
-# Discussions Index
+# Decisions Index
 
-| Date | ID | Status | Outcome | Tags | Summary |
+## Active
+| Date | ID | Status | Scope | Touches | Claim |
 |---|---|---|---|---|---|
+
+## Superseded
+| Date | ID | Status | Scope | Touches | Claim | Superseded By |
+|---|---|---|---|---|---|---|
 ```
 
-**`.project-memory/config.yml`** — skill configuration. Always start with the profile block at the top:
+---
+
+**`config.yml`** — write the profile block first:
 
 ```yaml
-profile: full
+profile: standard
 
 profile_history:
-  - profile: full
+  - profile: standard
     effective_date: <today YYYY-MM-DD>
     reason: initial
+
+adr_enabled: false
 ```
 
-Then ask the user:
+Standard's default is `adr_enabled: false`. If the user wants ADR support, they can flip it later via `config.yml` and Cat 8 audit will scaffold ADRs for any pre-existing decisions on the next pass. Do NOT prompt the user at init — keeping init friction low is part of the standard contract.
 
-> "Do you want ADR (Architecture Decision Record) support? (y/n)"
+**Backward compatibility:** Legacy config.yml files from the previous profile system (containing `profile: full` or `profile: lite`) continue to work. At read time, both `full` and `lite` are treated as `profile: standard`. The `profile_history` carries the original values for audit and migration-aware checks. No migration action is needed.
 
-- **If yes:** Ask "Where should ADR files be stored? (default: `adr/`)" — accept their answer or use the default. Create that directory in the project root. Append to `config.yml`:
-  ```yaml
-  adr_enabled: true
-  adr_dir: <chosen path>
-  ```
-- **If no:** Append to `config.yml`:
-  ```yaml
-  adr_enabled: false
-  ```
-  Do NOT create an `adr/` directory. `adr_dir` is omitted when ADR is disabled.
+---
 
-ADR support can be toggled at any time by editing `config.yml`. See `audit.md` Cat 8 for behavior when re-enabling on an existing project.
+**Summaries** — create 2 files, each with a stub header and `Last Updated: <today>`. Use the templates in `standard/templates-config.md` → Summary Templates for section headings. Do not fill content yet — wait until you have session context.
 
-**All summaries** — create with a stub header and `Last Updated: <today>`. Use the templates in `.claude/skills/project-memory/templates.md` for section headings. Do not fill in content yet; wait until you have enough context from the session to write something meaningful.
+- `summaries/current-state.md` — sections: What Exists / What's In Progress / Known Debt / Risks.
+- `summaries/roadmap.md` — sections: Next / Later / Considered but not now.
 
-**`maintainers.md`** — create with the current user's email as the first maintainer. Run `git config user.email`. If it returns a value, write:
-```yaml
-maintainers:
-  - email: "<user email>"
-```
-If git email is not configured, write a placeholder that can be edited later:
-```yaml
-maintainers: []
-```
+---
 
-**`.gitignore`** — Add `.project-memory/vector-index` to the project's `.gitignore`.
-Check if `.gitignore` already contains this entry before appending. If `.gitignore`
-does not exist, create it. The vector index is a binary LanceDB artifact generated
-by the MCP companion server — it is always regenerable and must not be tracked in git.
+**`.gitignore`** — Add `.project-memory/vector-index` to the project's `.gitignore`. Check if `.gitignore` already contains this entry before appending. If `.gitignore` does not exist, create it. The vector index is a binary LanceDB artifact generated by the MCP companion server — always regenerable, must not be tracked in git.
 
-**Auto-load reminder** — Do NOT write to CLAUDE.md, AGENTS.md, or any other
-config file. Instead, print this message to the user:
+---
+
+**Auto-load reminder** — Do NOT write to CLAUDE.md, AGENTS.md, or any other config file. Print this message to the user:
 
 ```
 [ℹ] To make sure I load at the start of every session, add this line to your
@@ -102,23 +95,33 @@ config file. Instead, print this message to the user:
     → See INSTALLATION.md for platform-specific instructions.
 ```
 
-Only show this message on first run (i.e., only during this initialization
-flow). Do not repeat it on subsequent sessions.
+Only show this on first run.
 
-After creating the structure, create the first phase directory for whatever work is about to begin. Read `.claude/skills/project-memory/templates.md` for all file formats and field definitions before creating phase files.
+---
 
-6. Check if MCP companion server should be offered: if `mcp-server/` directory exists, read `mcp-server/INSTALL.md` and follow its "For the LLM" section to detect platform and offer installation. Set `mcp_install_offered_for_version` in config.yml after offer is made (regardless of user response).
+**Check MCP companion offer:** If `mcp-server/` directory exists, read `mcp-server/INSTALL.md` and follow its "For the LLM" section to detect platform and offer installation. Set `mcp_install_offered_for_version` in `config.yml` after offer is made (regardless of user response).
 
-7. **Git identity advisory (non-blocking).** Run `git config user.name` and `git config user.email`. If either is empty or the command fails, print:
-   ```
-   [ℹ] Git identity not configured — project-memory records will be attributed to "unknown".
-       To enable attribution, run:
-         git config --global user.name "Your Name"
-         git config --global user.email "you@example.com"
-   ```
-   Installation proceeds normally either way. Never block, never prompt, never escalate. See `conventions.md` → Author Attribution for the soft-fail rule.
+---
+
+**Git identity advisory (non-blocking).** Run `git config user.name` and `git config user.email`. If either is empty or the command fails, print:
+
+```
+[ℹ] Git identity not configured — project-memory records will be attributed to "unknown".
+    To enable attribution, run:
+      git config --global user.name "Your Name"
+      git config --global user.email "you@example.com"
+```
+
+Installation proceeds normally either way. Never block, never prompt, never escalate.
+
+---
+
+**Phase creation:** After scaffolding, create the first phase directory for whatever work is about to begin. In standard, that means `phase.yml` (required) and `plan.md` (optional, only if planning content exists). Read `standard/templates-phase.md` for the schema.
+
+---
 
 Output:
 ```
-[✅] .project-memory/ initialized — first run detected.
+[✅] .project-memory/ initialized in standard profile — first run detected.
+    Profile can be changed later: just say "switch project-memory to minimal" (or back).
 ```

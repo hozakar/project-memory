@@ -1,9 +1,9 @@
 ---
-name: project-memory-gates-lite
-description: Pre-Implementation Gate and Pre-Commit Gate for the lite profile. No phase ceremony. Summary writes are commit-boundary-driven.
+name: project-memory-gates
+description: Pre-Implementation Gate and Pre-Commit Gate for the standard profile. No phase ceremony. Summary writes are commit-boundary-driven.
 ---
 
-# CRITICAL GATES (lite profile)
+# CRITICAL GATES (standard profile)
 
 ```
 BEFORE IMPLEMENTATION → Pre-Implementation Gate (GATE 0 + Steps 1–3)
@@ -47,14 +47,14 @@ For each loaded instruction, verify the planned implementation complies. **Instr
 
 ## Step 1 — Implementation significance?
 
-Classify the work using the binary table below. Lite collapses the 3-way classification into a binary check:
+Classify the work using the binary table below. Standard collapses the previously 3-way classification into a binary check:
 
 | Class | Examples | Action |
 |---|---|---|
 | **Trivial** | rename, format, comment, import cleanup, single-line bugfix, dependency patch bump, single-line comment edit | Skip the decision check entirely (Step 2) |
 | **Everything else** | features, bugfixes, refactors, schema/type changes, dependency upgrades, test additions, config tweaks, doc updates with runtime effect | Run the decision check (Step 2) |
 
-The `Ambiguous` category from full collapses into "everything else" — lite optimizes for simplicity over fine-grained gating.
+The `Ambiguous` category from the legacy full profile collapses into "everything else" — standard optimizes for simplicity over fine-grained gating.
 
 ## Step 2 — Decision check (when required by Step 1)
 
@@ -82,7 +82,7 @@ The `Ambiguous` category from full collapses into "everything else" — lite opt
 
 If the proposed work is a significant architectural move (deployment, auth, persistence, schema, public API) and Step 2 returned no candidates, ask once: "No prior decision covers this. Want to record one now?" — then proceed.
 
-**Step 4 — SKIPPED in lite.** The broader awareness load (`search_memory` without filters at top_k=8) does not run in lite. Conflict gating is fully handled by Step 2. If you need the broader context, upgrade to `full`.
+**Step 4 — SKIPPED in standard.** The broader awareness load (`search_memory` without filters at top_k=8) does not run in standard. Conflict gating is fully handled by Step 2. This was previously a legacy full-only feature.
 
 ### Session override
 

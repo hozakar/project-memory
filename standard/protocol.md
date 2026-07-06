@@ -1,9 +1,9 @@
 ---
-name: project-memory-protocol-lite
-description: Lite-profile agent thinking protocol, reduced memory loading strategy (2 summaries instead of 5), instruction re-injection scope limited to Pre-Impl Gate Step 0.
+name: project-memory-protocol
+description: Standard-profile agent thinking protocol, simplified memory loading strategy (2 summaries), instruction re-injection scope limited to Pre-Impl Gate.
 ---
 
-# Agent Thinking Protocol (lite)
+# Agent Thinking Protocol (standard)
 
 **At session start:**
 - Is `summaries/current-state.md` accurate? Review it as the active session context.
@@ -14,7 +14,7 @@ description: Lite-profile agent thinking protocol, reduced memory loading strate
 - If the work is non-trivial (anything beyond typo/formatting/import cleanup): update `summaries/current-state.md` before the commit lands.
 - If work scope changed during this session, update `summaries/roadmap.md`.
 - Trivial commits (typo, formatting): commit silently, no summary updates.
-- This is the lite Pre-Commit Gate — commit boundaries are the natural checkpoint for recording what changed and why.
+- This is the Pre-Commit Gate — commit boundaries are the natural checkpoint for recording what changed and why.
 
 **Before writing any plan:**
 - List the concrete entities (`touches` candidates) this plan affects.
@@ -32,11 +32,11 @@ When a conversation involves comparing architectural alternatives and the user s
 
 Never plan in isolation from project history.
 
-Lite drops the "3+ repeated failure → Anti-Patterns" rule and the "alternative path not taken" prompts. Both require denser summary infrastructure (`project-memory.md`) that lite does not maintain. If your project has enough cross-session learning to need these, upgrade to `full`.
+Previous full-profile rules ("3+ repeated failure → Anti-Patterns" and "alternative path not taken" prompts) are collapsed into standard's leaner approach. If you need those features, the information can still be captured as DECISION records when significant.
 
 ---
 
-# Session-start Ordering (lite)
+# Session-start Ordering (standard)
 
 The session-start work happens in this order. Each step may be a no-op depending on MCP availability and session state.
 
@@ -53,7 +53,7 @@ The session-start work happens in this order. Each step may be a no-op depending
 
    **Self-check:** If you have NOT executed a `search_memory` call with `type_filter="instruction"` or scanned the instructions directory, you have NOT completed this step. Do it NOW — before the header emission (step 7).
 
-   **Lite scope:** Re-injects only at Pre-Impl Gate (`gates/implementation.md` GATE 0), NOT at every gate. The session-start load gives you the body once; GATE 0 re-asserts before significant implementation.
+   **Standard scope:** Re-injects only at Pre-Impl Gate (`gates/implementation.md` GATE 0), not at every gate. The session-start load gives you the body once; GATE 0 re-asserts before significant implementation.
 5. **Assignment load** — load pending/ongoing/rejected assignments for the current user:
    - Pending/ongoing: `search_memory(type_filter="assignment", assigned_to_email="<run: git config user.email>")`
    - Rejected: `search_memory(type_filter="assignment", assigned_by_email="<run: git config user.email>")`
@@ -61,11 +61,11 @@ The session-start work happens in this order. Each step may be a no-op depending
    - MCP unavailable fallback: scan `.project-memory/assignments/` ASSIGNMENT-*.md files, filter by frontmatter email fields.
 6. **Era prompt** — same as full (orthogonal, maintainer-only).
 7. **Header emission** — output `🧠 PROJECT MEMORY LOADED` (memory loaded indicator only).
-8. **Post-First-Response Drift Audit** — deferred to after the LLM answers the user's first message. Run the drift audit (lite category set, raise_cat4: false) via `audit.md` (MCP fast path if available, otherwise file-based detection from `lite/audit-fs.md`). Emit the drift report as a follow-up block. Exceptions (audit runs synchronously): (a) explicit `Skill project-memory audit` or natural-language trigger per `DECISION-2026-06-17-audit-implicit-triggers`; (b) first user message is itself an audit trigger — run synchronously; (c) `minimal` profile — no audit, no deferral.
+8. **Post-First-Response Drift Audit** — deferred to after the LLM answers the user's first message. Run the drift audit (standard category set, raise_cat4: false) via `audit.md` (MCP fast path if available, otherwise file-based detection from `standard/audit-fs.md`). Emit the drift report as a follow-up block. Exceptions (audit runs synchronously): (a) explicit `Skill project-memory audit` or natural-language trigger per `DECISION-2026-06-17-audit-implicit-triggers`; (b) first user message is itself an audit trigger — run synchronously; (c) `minimal` profile — no audit, no deferral.
 
 ---
 
-# Memory Loading Strategy (lite)
+# Memory Loading Strategy (standard)
 
 ```
 1. .project-memory/summaries/current-state.md
@@ -86,28 +86,28 @@ The session-start work happens in this order. Each step may be a no-op depending
 
 **On context compaction:** Memory Loading Strategy is NOT re-run on compaction. Active instructions survive via Pre-Impl Gate Step 0 re-injection. The rest is best-effort.
 
-**Lite-specific reductions vs full:**
-- Reads 2 summaries (`current-state.md`, `roadmap.md`) instead of 5 — `project-memory.md`, `active-issues.md`, `architecture.md` are not present in lite scaffolding.
+**Standard reductions vs legacy full:**
+- Reads 2 summaries (`current-state.md`, `roadmap.md`) instead of 5 — `project-memory.md`, `active-issues.md`, `architecture.md` are not present in standard scaffolding.
 - No individual DECISION/DISCUSSION file pre-load — gates handle those lazily.
 - No "rejected assignments" or "completed assignment notifications" loading — assignments are still loadable on demand, but the noisy session-start surface is trimmed.
 
-## Token Budget Guidelines (lite)
+## Token Budget Guidelines (standard)
 
 - 2 summary files instead of 5 — token cost is already low.
 - `decisions/index.md` and `discussions/index.md` are loaded at session start. Individual DECISION/DISCUSSION files are loaded on demand.
 - `instructions/index.md` and `assignments/index.yml` are loaded at session start (when present).
 
-## Staleness — lite
+## Staleness — standard
 
 | Criterion | Threshold | Purpose |
 |---|---|---|
 | Tier 3 contradiction detection | ≥ 30 days since closure | Offer the user an override path on old decisions |
 
-Lite does NOT use the era-back threshold (eras are an orthogonal maintainer feature). Discussion expiry is handled by Cat 11 audit — but Cat 11 is OFF in lite (see `lite/audit-fs.md`), so discussion expiry is on the user to manage manually when working under lite.
+Standard does NOT use the era-back threshold (eras are an orthogonal maintainer feature). Discussion expiry is handled by Cat 11 audit — which is OFF in standard (see `standard/audit-fs.md`), so discussion expiry is on the user to manage manually.
 
 ---
 
-# Knowledge Preservation Rule (lite — relaxed)
+# Knowledge Preservation Rule (standard — relaxed)
 
 Every DECISION and significant change must leave enough context to answer:
 
@@ -115,28 +115,28 @@ Every DECISION and significant change must leave enough context to answer:
 - Which commits implemented it? (referenced in the DECISION record or commit message)
 - What should happen next? (a row in `summaries/roadmap.md`)
 
-Full's "what alternatives were rejected, what constraints existed, what tensions does this create or resolve" can still be captured via DECISION files when significant, but lite does not require them for every change. If you find yourself frequently writing DECISIONs in a lite project, consider upgrading — lite is optimized for projects where the "why" is mostly self-evident from the code.
+Legacy full's "what alternatives were rejected, what constraints existed, what tensions does this create or resolve" can still be captured via DECISION files when significant, but standard does not require them for every change. If you find yourself frequently writing DECISIONs, that's normal — standard optimizes for lean ceremony while keeping the value carriers intact.
 
 ---
 
 # MCP Companion Integration
 
-See `mcp-integration.md` for the full tool catalog. MCP behavior in lite is mostly unchanged — MCP is an orthogonal accelerator. Key differences:
+See `mcp-integration.md` for the full tool catalog. MCP behavior in standard is unchanged from the previous profile behavior — MCP is an orthogonal accelerator.
 
 - **Availability check:** same. If `search_memory`, `index_phase`, `index_decision`, `index_instruction` are all present → MCP available.
 - **Proactive DB sync:** same — call `check_consistency` and index any missing entries on session start.
 - **Memory Loading Strategy overlay:**
-   - **Hook A — between step 6 and step 7:** if the session has a stated task, call `search_memory(task_description, top_k=8)` for similarity ≥ 0.6 files. Does NOT set `include_superseded` — superseded decisions are excluded from awareness load. For each result with similarity ≥ 0.6, load the corresponding file from `.project-memory/` (DECISION or DISCUSSION file). These files are *in addition to* steps 7–8, not a substitute.
-   - **Hook B — at Pre-Impl Gate Step 3:** same as full. Does NOT set `include_superseded` — superseded decisions excluded from gate awareness load.
-   - **No Hook C** — the broad awareness load (Step 5 of full's gate) does not exist in lite.
-- **Ad-hoc search rule:** same as full — call `search_memory` when the user asks about past decisions/phases/discussions. When the question is explicitly historical (researching superseded/past decisions), pass `include_superseded: true` to surface those records. Ordinary lookup queries do NOT set this flag. See DECISION-2026-06-19-search-memory-superseded-exclusion.
-- **Constraint search rule** (Discussion Mode trigger): same as full — call `search_memory("engineering constraints and principles", scope_filter=["constraint"], type_filter="decision")` when discussion mode engages. Does NOT set `include_superseded` — only active constraints shape design direction.
-- **Assignment search:** same as full (orthogonal feature).
-- **Squash/rebase recovery:** same as full (`find_similar_commit`).
-- **Drift audit via MCP:** same — `run_audit` if available. The lite category set is enforced by `lite/audit-mcp.md` (Cat 9, 11 dropped from the returned findings).
-- **Era creation prompt:** same as full (maintainer-only, orthogonal).
+  - **Hook A — between step 6 and step 7:** if the session has a stated task, call `search_memory(task_description, top_k=8)` for similarity ≥ 0.6 files. Does NOT set `include_superseded` — superseded decisions are excluded from awareness load. For each result with similarity ≥ 0.6, load the corresponding file from `.project-memory/` (DECISION or DISCUSSION file). These files are *in addition to* steps 7–8, not a substitute.
+  - **Hook B — at Pre-Impl Gate Step 3:** same as full. Does NOT set `include_superseded` — superseded decisions excluded from gate awareness load.
+  - **No Hook C** — the broad awareness load (Step 5 of legacy full's gate) does not exist in standard.
+- **Ad-hoc search rule:** same — call `search_memory` when the user asks about past decisions/phases/discussions. When the question is explicitly historical (researching superseded/past decisions), pass `include_superseded: true` to surface those records. Ordinary lookup queries do NOT set this flag. See DECISION-2026-06-19-search-memory-superseded-exclusion.
+- **Constraint search rule** (Discussion Mode trigger): same — call `search_memory("engineering constraints and principles", scope_filter=["constraint"], type_filter="decision")` when discussion mode engages. Does NOT set `include_superseded` — only active constraints shape design direction.
+- **Assignment search:** same (orthogonal feature).
+- **Squash/rebase recovery:** same (`find_similar_commit`).
+- **Drift audit via MCP:** same — `run_audit` if available. The standard category set is enforced by `standard/audit-mcp.md` (Cat 9, 11 dropped from the returned findings).
+- **Era creation prompt:** same (maintainer-only, orthogonal).
 
-When MCP is unavailable: identical lite behavior using the file-based fallbacks. MCP is an accelerator, never a requirement.
+When MCP is unavailable: identical behavior using the file-based fallbacks. MCP is an accelerator, never a requirement.
 
 ---
 

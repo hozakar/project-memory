@@ -1,9 +1,9 @@
 ---
-name: project-memory-templates-phase-lite
-description: Lite-profile phase templates. phase.yml is required; plan.md is optional. No implementation/review/followup files.
+name: project-memory-templates-phase
+description: Phase-related document templates for the standard profile. phase.yml is required; plan.md is optional. No implementation/review/followup files.
 ---
 
-# Phase Templates (lite)
+# Phase Templates (standard)
 
 ## phase.yml
 
@@ -24,27 +24,27 @@ issues_resolved: []
 decisions_referenced: []
 implements_decision: null    # DECISION-YYYY-MM-DD-slug this phase directly implements; null if not decision-driven
 tags: []
-created_by:                  # required — see conventions/maintainer.md (Author Attribution → lite scope)
+created_by:                  # required — see conventions/maintainer.md (Author Attribution)
   name: "Hakan Ozakar"
   email: "hozakar@gmail.com"
-# contributors field omitted in lite
+# contributors field omitted in standard
 ```
 
-**Differences from full:**
-- No `contributors` field. Lite only writes `created_by`. See `conventions/maintainer.md` → Author Attribution → lite scope.
-- `summary` is still required at Pre-Close, but the suggested length is 1-2 sentences (not 2-3).
+**Differences from legacy full:**
+- No `contributors` field. Standard only writes `created_by`.
+- `summary` is still required before close, but the suggested length is 1-2 sentences (not 2-3).
 - `tags` are still useful for tag-aware filtering in `phases/index.yml` — keep them populated.
 
-**Orphan annotation format:** Same as full. Audit Cat 7 annotates orphaned hashes as `<hash> [orphaned YYYY-MM-DD]`. Do not delete annotated entries.
+**Orphan annotation format:** Audit Cat 7 annotates orphaned hashes as `<hash> [orphaned YYYY-MM-DD]`. Do not delete annotated entries.
 
 **Sorting rule:** Phases sorted newest first in `index.yml`. Prepend new entries.
 
 Status values: `planning` / `implementation` / `review` / `completed` / `abandoned`
 
-Status transitions (lite — simpler):
+Status transitions:
 - `planning → implementation`: first commit lands.
-- `implementation → completed`: Pre-Close Gate passes (commits sanity + summary filled).
-- `review` is rarely used in lite — there is no review-and-fixes.md to gate on. Most lite phases go directly `implementation → completed`.
+- `implementation → completed`: Pre-Commit Gate passes (commits sanity + summary filled).
+- `review` is rarely used — there is no review-and-fixes.md to gate on.
 - `any → abandoned`: work cancelled. Add `abandoned_reason` and `closed_at`.
 
 ---
@@ -58,9 +58,9 @@ Status transitions (lite — simpler):
 # Success Criteria
 ```
 
-Lite drops the `Historical Context`, `Existing Constraints`, and `Risk Analysis` sections from the full template. If you find yourself wanting them, you're probably planning more deeply than lite is intended for — consider upgrading to `full`.
+Standard drops the `Historical Context`, `Existing Constraints`, and `Risk Analysis` sections from the legacy full template.
 
-`plan.md` is **optional** in lite. Skip it for:
+`plan.md` is **optional** in standard. Skip it for:
 - Short refactors with a single, obvious goal.
 - Bug fixes where the fix itself is the explanation.
 - Doc updates.
@@ -68,20 +68,18 @@ Lite drops the `Historical Context`, `Existing Constraints`, and `Risk Analysis`
 Write it for:
 - Multi-step work where intent matters before the diff.
 - Anything that touches multiple modules.
-- Anything where you want a checklist of TODOs (the Pre-Close Gate scans for unchecked items).
+- Anything where you want a checklist of TODOs.
 
 ---
 
-## Files NOT in lite phases
+## Files NOT in standard phases
 
-- `implementation.md` — full's "engineering intent summary" file. In lite, intent goes into `phase.yml.summary` (one or two sentences) or directly into commit messages.
-- `review-and-fixes.md` — full's review-round log. Lite expects reviews to happen in PR comments, code-review chat, or directly on the commit. No separate file.
-- `followup.md` — full's "what remains" file. Lite adds remaining items directly to `summaries/roadmap.md` as the work progresses, not at close.
-
-If a phase grows complex enough to need any of these files, that's a signal to upgrade to `full`.
+- `implementation.md` — legacy full's "engineering intent summary" file. In standard, intent goes into `phase.yml.summary` (one or two sentences) or directly into commit messages.
+- `review-and-fixes.md` — legacy full's review-round log. Reviews happen in PR comments, code-review chat, or directly on the commit. No separate file.
+- `followup.md` — legacy full's "what remains" file. Remaining items go directly into `summaries/roadmap.md`.
 
 ---
 
 # Era Summary
 
-Eras are an orthogonal maintainer feature. The lite era template is identical to full. See `full/templates-phase.md` → Era Summary if you opt into eras under lite.
+Eras are an orthogonal maintainer feature. The era template is identical to the legacy full version. See archived `full/templates-phase.md` → Era Summary.

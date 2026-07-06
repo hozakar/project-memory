@@ -1,9 +1,9 @@
 ---
-name: project-memory-templates-config-lite
-description: Lite-profile config and summary templates. config.yml carries profile + profile_history. Only 2 summaries (roadmap, current-state) scaffolded by default.
+name: project-memory-templates-config
+description: Configuration and summary templates for the standard profile. config.yml carries profile + profile_history. Only 2 summaries (roadmap, current-state) scaffolded by default.
 ---
 
-# Configuration Templates (lite)
+# Configuration Templates (standard)
 
 ## .project-memory/config.yml
 
@@ -12,14 +12,14 @@ Created during first-run init. All fields except `profile` and `profile_history`
 ```yaml
 # .project-memory/config.yml
 
-profile: lite
+profile: standard
 
 profile_history:
-  - profile: lite
+  - profile: standard
     effective_date: YYYY-MM-DD
     reason: initial
 
-adr_enabled: false    # lite default: ADR mirror off. Set to true if you want adr/ scaffolding.
+adr_enabled: false    # standard default: ADR mirror off. Set to true if you want adr/ scaffolding.
 adr_dir: adr
 
 audit_ignore: []      # permanent skip entries (see audit.md → Permanent Skip)
@@ -27,34 +27,36 @@ audit_ignore: []      # permanent skip entries (see audit.md → Permanent Skip)
 
 **Profile fields:**
 - `profile`: the currently active profile. SKILL.md reads this on every load to route.
-- `profile_history`: append-only log of profile changes. Each entry has `profile`, `effective_date: YYYY-MM-DD`, and `reason`. Audit and gates consult this for profile-sensitive checks (e.g. Cat 10 file-completeness — phases started in a full window are expected to have 5 files even after a downgrade to lite).
+- `profile_history`: append-only log of profile changes. Each entry has `profile`, `effective_date: YYYY-MM-DD`, and `reason`. Audit and gates consult this for profile-sensitive checks (e.g. Cat 10 file-completeness — phases started in a full window are expected to have 5 files even after a downgrade to standard).
 
-**`adr_enabled` default in lite:** `false`. Lite's default decision storage is DECISION files + `decisions/index.md` without ADR mirror. If you want ADR support, set `adr_enabled: true` — Cat 8 audit will create stubs for existing decisions on the next audit pass.
+**`adr_enabled` default:** `false`. Standard's default decision storage is DECISION files + `decisions/index.md` without ADR mirror. If you want ADR support, set `adr_enabled: true` — Cat 8 audit will create stubs for existing decisions on the next audit pass.
 
-**`audit_ignore`** behaves identically to full. See `audit.md` → Permanent Skip for the matching rules and fingerprint formats.
+**`audit_ignore`** behaves identically to the legacy full profile. See `audit.md` → Permanent Skip for the matching rules and fingerprint formats.
+
+**Backward compatibility:** `profile: full` and `profile: lite` in legacy config.yml files are treated as `profile: standard` at read time. No migration action is needed.
 
 ---
 
 ## maintainers.md
 
-Orthogonal to profile. Identical to full:
+Orthogonal to profile. Identical to legacy full:
 
 ```yaml
 maintainers:
   - email: "first-maintainer@example.com"
 ```
 
-Lite projects rarely need a maintainer role (era creation prompts are the only thing it gates). If `maintainers.md` is absent, no era prompts fire — the maintainer role is fully opt-in.
+Standard projects rarely need a maintainer role (era creation prompts are the only thing it gates). If `maintainers.md` is absent, no era prompts fire — the maintainer role is fully opt-in.
 
 ---
 
-# Summary Templates (lite)
+# Summary Templates (standard)
 
-Lite scaffolds **2 summary files** in `.project-memory/summaries/`:
+Standard scaffolds **2 summary files** in `.project-memory/summaries/`:
 
 ## current-state.md
 
-Snapshot of where the project stands right now. Updated at every phase close.
+Snapshot of where the project stands right now. Updated at every commit-boundary.
 
 ```md
 # Current State
@@ -71,7 +73,7 @@ Last Updated: YYYY-MM-DD
 - One-liners — debt items, technical risks, blockers
 ```
 
-Target size: under 300 lines. If it grows beyond that, consider upgrading to `full` (which splits this into `current-state.md` + `project-memory.md` + `architecture.md`).
+Target size: under 300 lines. If it grows beyond that, consider splitting content — but standard intentionally keeps a single current-state file.
 
 ---
 
@@ -95,15 +97,15 @@ Last Updated: YYYY-MM-DD
 - description — why parked
 ```
 
-The `## Considered but not now` section captures rejected or deferred ideas. In full, this kind of content lives in `project-memory.md → Rejected Decisions`; lite collapses it into one shared file.
+The `## Considered but not now` section captures rejected or deferred ideas. In the legacy full profile, this kind of content lived in `project-memory.md → Rejected Decisions`; standard collapses it into one shared file.
 
 ---
 
-# Summary files NOT in lite
+# Summary files NOT in standard
 
-These exist in full but are not scaffolded under lite:
-- `project-memory.md` — meta-summary of project purpose, anti-patterns, navigation map. Lite doesn't carry meta-summary infrastructure.
-- `architecture.md` — system architecture overview. Lite users either keep this in their codebase README or upgrade to full when architectural decisions accumulate.
-- `active-issues.md` — issue rollup. Lite uses GitHub Issues or similar external systems; `.project-memory/issues/` is still available as a user-triggered feature, but no rollup summary is maintained.
+These existed in legacy full but are not scaffolded under standard:
+- `project-memory.md` — meta-summary of project purpose, anti-patterns, navigation map. Standard doesn't carry meta-summary infrastructure.
+- `architecture.md` — system architecture overview. Keep this in your codebase README or write a DECISION when architectural decisions accumulate.
+- `active-issues.md` — issue rollup. Use GitHub Issues or similar external systems; `.project-memory/issues/` is still available as a user-triggered feature, but no rollup summary is maintained.
 
-If a user manually creates any of these in a lite project, the audit will NOT auto-update them — lite's automation is scoped to the 2 default summaries only.
+If a user manually creates any of these, the audit will NOT auto-update them — standard's automation is scoped to the 2 default summaries only.
