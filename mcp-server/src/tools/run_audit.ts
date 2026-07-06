@@ -152,7 +152,6 @@ const TRIVIAL_RE = /^(docs|chore\(lint|chore\(format|chore\(deps|chore\(memory|c
 
 function cat1CommitOrphans(
   projectRoot: string,
-  _phases: PhaseEntry[],
   ignored: AuditIgnoreSet
 ): { autoFixed: string[]; pendingFixes: PendingFix[]; escalations: AuditFinding[] } {
   // Re-targeted: Cat 1 now checks for significant commits with no memory trace.
@@ -726,7 +725,7 @@ export async function runAudit(
   pendingFixes.push(...cat7OrphanCommitRefs(projectRoot, phases));
 
   // Cat 1: significant commits with no memory trace
-  const cat1Result = cat1CommitOrphans(projectRoot, phases, ignored);
+  const cat1Result = cat1CommitOrphans(projectRoot, ignored);
   escalations.push(...cat1Result.escalations);
 
   // Cat 3, 12: report-only escalations

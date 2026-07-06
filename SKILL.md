@@ -203,10 +203,10 @@ For language policy, author attribution, maintainer role → `conventions/mainta
 # Quick Reference
 
 ```
-About to commit?          → update current-state.md (and roadmap.md on scope-change) per gates/commit.md
+About to commit?          → update current-state.md (and roadmap.md on scope-change) per standard/gates.md (Pre-Commit Gate)
 About to close discussion?→ Determine outcome, write file, update index (all profiles)
 About to assign work?     → Create ASSIGNMENT-YYYY-MM-DD-slug.md + index entry (all profiles)
-About to implement?       → Pre-Implementation Gate (gates/implementation.md)
+About to implement?       → Pre-Implementation Gate (standard/gates.md)
 About to receive assignment?→ Accept / Reject / Remind at session start
 About to change profile?  → "change profile to X" intent — appends profile_history entry
 ```

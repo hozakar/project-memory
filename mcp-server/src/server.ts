@@ -36,7 +36,7 @@ srv.tool(
     created_by_name: z.string().optional().describe("Filter results to a specific creator name (partial match via LIKE %...%). Default: no filter."),
     assigned_to_email: z.string().optional(),
     assigned_by_email: z.string().optional(),
-    type_filter: z.string().optional().describe("Filter results to a specific type (phase, decision, discussion, era, instruction, note). Default: no filter. When type is 'note', created_by_email is auto-applied if not provided — users can only search their own notes."),
+    type_filter: z.string().optional().describe("Filter results to a specific type (phase, decision, discussion, era, instruction, note, assignment). Default: no filter. When type is 'note', created_by_email is auto-applied if not provided — users can only search their own notes."),
     touches_filter: z.array(z.string()).optional().describe("Exact AND-filter on decision touches field. E.g. [\"conventions_md\"] returns only decisions that touch conventions_md. Multiple values narrow further (AND semantics). Only effective on type=decision records."),
     tags_filter: z.array(z.string()).optional().describe("Exact AND-filter on phase/discussion tags field. E.g. [\"mcp\", \"schema\"] returns records tagged with both. Only effective on type=phase and type=discussion records."),
     scope_filter: z.array(z.string()).optional().describe("Exact OR-filter on decision primary_scope field. E.g. [\"constraint\"] returns only decisions with primary_scope=constraint. Multiple values broaden (OR semantics). Only effective on type=decision records."),
