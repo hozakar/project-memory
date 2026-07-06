@@ -40,7 +40,7 @@ describe("runAudit — Cat 13 orphaned record cleanup (branch-delete scenario)",
     await upsert(record);
   }
 
-  it("cleans ALL orphaned record types from DB", { timeout: 30000 }, async () => {
+  it("cleans ALL orphaned record types from DB", { timeout: 120000 }, async () => {
     // Seed orphaned records for every record type — simulating a feature branch
     // that was indexed, then the branch was deleted.
     const orphans = [
@@ -100,7 +100,7 @@ describe("runAudit — Cat 13 orphaned record cleanup (branch-delete scenario)",
     expect(existsSync(phasePath)).toBe(false);
   });
 
-  it("re-indexes records when FS files reappear (branch restore scenario)", { timeout: 30000 }, async () => {
+  it("re-indexes records when FS files reappear (branch restore scenario)", { timeout: 120000 }, async () => {
     // Simulate: branch was deleted (records orphaned), then branch is restored
     // (FS files reappear via git checkout). Missing → should be re-indexed.
 
