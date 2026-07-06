@@ -18,7 +18,7 @@ description: Standard-profile agent thinking protocol, simplified memory loading
 
 **Before writing any plan:**
 - List the concrete entities (`touches` candidates) this plan affects.
-- Find prior decisions and discussions touching those entities or sharing the same `primary_scope` — see `gates/implementation.md` Pre-Implementation Gate Step 3.
+- Find prior decisions and discussions touching those entities or sharing the same `primary_scope` — see `standard/gates.md` Pre-Implementation Gate Step 3.
 - Apply the Decision Resolution Rules from `conventions/decisions.md` to candidates.
 - Has something similar been attempted and abandoned before?
 
@@ -53,7 +53,7 @@ The session-start work happens in this order. Each step may be a no-op depending
 
    **Self-check:** If you have NOT executed a `search_memory` call with `type_filter="instruction"` or scanned the instructions directory, you have NOT completed this step. Do it NOW — before the header emission (step 7).
 
-   **Standard scope:** Re-injects only at Pre-Impl Gate (`gates/implementation.md` GATE 0), not at every gate. The session-start load gives you the body once; GATE 0 re-asserts before significant implementation.
+   **Standard scope:** Re-injects only at Pre-Impl Gate (`standard/gates.md` GATE 0), not at every gate. The session-start load gives you the body once; GATE 0 re-asserts before significant implementation.
 5. **Assignment load** — load pending/ongoing/rejected assignments for the current user:
    - Pending/ongoing: `search_memory(type_filter="assignment", assigned_to_email="<run: git config user.email>")`
    - Rejected: `search_memory(type_filter="assignment", assigned_by_email="<run: git config user.email>")`

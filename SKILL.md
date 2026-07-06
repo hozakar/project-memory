@@ -1,6 +1,6 @@
 ---
 name: project-memory
-version: 0.1.0
+version: 0.1.1
 description: Project memory system. Loads at every session start to provide engineering context → history, decisions, active tensions, anti-patterns. Use when planning, implementing, or reviewing. Always active in this project.
 ---
 
@@ -21,7 +21,7 @@ When this skill activates:
    Ask the user:
    ```
    How do you want to run project-memory in this project?
-     1) standard — lean ceremony, 2 summaries, 12-category audit, for most projects
+     1) standard — lean ceremony, 2 summaries, 10-category audit, for most projects
      2) minimal  — single MEMORY.md file, for short or throwaway work
 
    Things to consider:
@@ -41,7 +41,7 @@ When this skill activates:
    - `profile=standard` → read `standard/protocol.md` for the Memory Loading Strategy and follow it. Then proceed to step 5.
    - `profile=minimal` → follow `minimal/minimal.md` instead — it covers loading, the single gate, and record-append behavior.
 
-5. **Post-first-response drift audit** (standard only) — the drift audit is deferred to after the LLM answers the user's first message. After the first user-facing response is delivered, run the drift audit (12 categories, raise_cat4: false) via `audit.md` and emit the drift report as a follow-up block. Exceptions (audit runs synchronously): (a) explicit invocation via `Skill project-memory audit` or natural-language audit trigger per `DECISION-2026-06-17-audit-implicit-triggers`; (b) the first user message is itself an audit-implicit/explicit trigger — run audit synchronously to answer correctly; (c) `minimal` profile — no audit at all, no deferral applies.
+5. **Post-first-response drift audit** (standard only) — the drift audit is deferred to after the LLM answers the user's first message. After the first user-facing response is delivered, run the drift audit (10 categories) via `audit.md` and emit the drift report as a follow-up block. Exceptions (audit runs synchronously): (a) explicit invocation via `Skill project-memory audit` or natural-language audit trigger per `DECISION-2026-06-17-audit-implicit-triggers`; (b) the first user message is itself an audit-implicit/explicit trigger — run audit synchronously to answer correctly; (c) `minimal` profile — no audit at all, no deferral applies.
 
 6. Continue with the session. Do not ask the user for anything beyond the init UX (step 3) at this stage.
 
@@ -105,11 +105,11 @@ The optional `mcp-server/` subdirectory provides semantic search and determinist
 # CRITICAL GATES
 
 ```
-BEFORE IMPLEMENTATION → EXECUTE search_memory(type="instruction") — verify compliance per gates/implementation.md GATE 0 (all profiles)
-BEFORE COMMIT         → update current-state.md (and roadmap.md on scope-change) per gates/commit.md
+BEFORE IMPLEMENTATION → Pre-Implementation Gate (GATE 0 + Steps 1–3) per standard/gates.md
+BEFORE COMMIT         → Pre-Commit Gate (significance → update summaries → capture decision) per standard/gates.md
 ```
 
-For detailed gate procedures → read gates/commit.md and gates/implementation.md.
+For detailed gate procedures → read standard/gates.md.
 For agent thinking protocol and memory loading → read `<profile>/protocol.md`.
 For quick reference cheatsheet → read `<profile>/cheatsheet.md`.
 
@@ -163,14 +163,8 @@ Records carry author attribution via `created_by` and `contributors` frontmatter
 │   ├── audit-mcp.md
 │   ├── templates-config.md
 │   ├── init.md
-│   └── cheatsheet.md
-│
-├── gates/                     ← Gate procedures shared across profiles
-│   ├── commit.md              ← Pre-Commit Gate (significance + state updates)
-│   ├── implementation.md      ← Pre-Implementation Gate (Step 0–4)
-│   ├── close.md               ← Pre-Close Gate (historical — phase ceremony removed)
-│   ├── lifecycle.md           ← gate lifecycle
-│   └── mcp-triggers.md        ← MCP index triggers for decisions/discussions
+│   ├── cheatsheet.md
+│   └── gates.md              ← Pre-Implementation Gate + Pre-Commit Gate
 │
 ├── minimal/                   ← Files used when profile=minimal
 │   └── minimal.md             ← Single-file spec (covers everything)
