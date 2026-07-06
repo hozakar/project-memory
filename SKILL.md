@@ -1,7 +1,7 @@
 ---
 name: project-memory
 version: 0.1.0
-description: Project memory and phase management system. Loads at every session start to provide engineering context → history, decisions, active tensions, anti-patterns. Use when planning, implementing, reviewing, or closing phases. Always active in this project.
+description: Project memory system. Loads at every session start to provide engineering context → history, decisions, active tensions, anti-patterns. Use when planning, implementing, or reviewing. Always active in this project.
 ---
 
 # On Load
@@ -89,7 +89,7 @@ When the user says "switch project-memory to <full|lite|minimal>" or similar phr
 
 # Profiles
 
-This skill supports three profiles (`full`, `lite`, `minimal`). Profiles gate ceremony-bearing features (phase ceremony, gate steps, audit categories, summaries, attribution depth, topic-shift detection, commit classification, instruction re-injection scope, decisions storage shape).
+This skill supports three profiles (`full`, `lite`, `minimal`). Profiles gate ceremony-bearing features (gate steps, audit categories, summaries, attribution depth, topic-shift detection, commit classification, instruction re-injection scope, decisions storage shape).
 
 User-triggered features (discussions, issues, assignments, instructions, notes creation, eras, maintainer role, ADR mirror, MCP companion) are **NOT** tier-bound — they remain opt-in regardless of profile.
 
@@ -106,14 +106,11 @@ The optional `mcp-server/` subdirectory provides semantic search and determinist
 # CRITICAL GATES
 
 ```
-BEFORE IMPLEMENTATION → phase must exist (full/lite) → create it first
-                      → EXECUTE search_memory(type="instruction") — verify compliance per gates/implementation.md GATE 0 (all profiles)
-BEFORE MERGE/CLOSE    → Pre-Close Gate (full: 3-file verify + roadmap transfer; lite: sanity + TODO warn)
-BEFORE COMMIT         → classify → update phase files if significant (see gates/commit.md)
-PIPELINE SUBMISSION   → counts as implementation → phase must exist before submit (full/lite)
+BEFORE IMPLEMENTATION → EXECUTE search_memory(type="instruction") — verify compliance per gates/implementation.md GATE 0 (all profiles)
+BEFORE COMMIT         → update current-state.md (and roadmap.md on scope-change) per gates/commit.md
 ```
 
-For detailed gate procedures, commit significance, topic shift → read gates/commit.md, gates/implementation.md, gates/close.md, gates/lifecycle.md.
+For detailed gate procedures → read gates/commit.md and gates/implementation.md.
 For agent thinking protocol and memory loading → read `<profile>/protocol.md`.
 For quick reference cheatsheet → read `<profile>/cheatsheet.md`.
 
@@ -139,7 +136,7 @@ Records carry author attribution via `created_by` and `contributors` frontmatter
 
 ```
 .project-memory/
-├── phases/           phase-YYYYMMDD-slug/{phase.yml, plan.md, ...} (5 files in full, 2 in lite)
+├── phases/           # frozen archive — see phases/README.md
 ├── decisions/        DECISION-YYYY-MM-DD-slug.md + index.md
 ├── discussions/      DISCUSSION-YYYY-MM-DD-slug.md + index.md
 ├── issues/           open/ + closed/
@@ -182,9 +179,9 @@ Records carry author attribution via `created_by` and `contributors` frontmatter
 ├── gates/                     ← Gate procedures shared across profiles
 │   ├── commit.md              ← Commit significance + Pre-Commit Gate
 │   ├── implementation.md      ← Pre-Implementation Gate (Step 0–5)
-│   ├── close.md               ← Pre-Close Gate + End-of-Phase Maintenance
-│   ├── lifecycle.md           ← Phase lifecycle + Creation + Topic Shift
-│   └── mcp-triggers.md        ← MCP index triggers for decisions/discussions/phases
+│   ├── close.md               ← Pre-Close Gate + commit-boundary maintenance
+│   ├── lifecycle.md           ← gate lifecycle + topic shift
+│   └── mcp-triggers.md        ← MCP index triggers for decisions/discussions
 │
 ├── minimal/                   ← Files used when profile=minimal
 │   └── minimal.md             ← Single-file spec (covers everything)
@@ -209,29 +206,6 @@ Records carry author attribution via `created_by` and `contributors` frontmatter
 
 ---
 
-# Phase Lifecycle (full / lite)
-
-```
-Significant work begins → Phase created (status: planning)
-          ↓
-Commits accumulate → phase.yml updated with commit hashes
-          ↓
-Work unit complete → Phase closes (status: completed)
-                     full: followup.md → roadmap.md transfer (mandatory)
-                     lite: roadmap entries already added during work
-```
-
-**Key rules:**
-- Phase created BEFORE first significant commit → see `gates/commit.md` for commit significance.
-- Required files (full): `phase.yml`, `plan.md`, `implementation.md`, `review-and-fixes.md`, `followup.md`.
-- Required files (lite): `phase.yml`. `plan.md` is optional.
-- Phase status transitions and close criteria in `gates/lifecycle.md` and `gates/close.md`.
-- Phases sorted newest first in `index.yml`. Prepend on creation.
-
-Minimal has no phase concept — work is logged as rows in `MEMORY.md`.
-
----
-
 # Records & Conventions
 
 For naming conventions, file templates, lifecycle rules, and the Decision Resolution Rules → read `conventions.md` (dispatcher — routes to shared topic-specific sub-files).
@@ -246,9 +220,7 @@ For language policy, author attribution, maintainer role → `conventions/mainta
 # Quick Reference
 
 ```
-About to commit?          → Classify significance (full only), check phase exists (full/lite)
-About to open a phase?    → phase.yml + plan.md (lite: plan optional) + index.yml entry
-About to close a phase?   → full: verify 3 files; lite: commits sanity + TODO warn
+About to commit?          → update current-state.md (and roadmap.md on scope-change) per gates/commit.md
 About to close discussion?→ Determine outcome, write file, update index (all profiles)
 About to assign work?     → Create ASSIGNMENT-YYYY-MM-DD-slug.md + index entry (all profiles)
 About to implement?       → Pre-Implementation Gate (gates/implementation.md)
