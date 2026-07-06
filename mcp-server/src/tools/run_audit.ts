@@ -164,7 +164,7 @@ function cat1CommitOrphans(
   const pendingFixes: PendingFix[] = [];
   const escalations: AuditFinding[] = [];
 
-  const logOutput = git("git log --format='%h %ae %aI %s' -30", projectRoot);
+  const logOutput = git("git log --format=%h%x20%ae%x20%aI%x20%s -30", projectRoot);
   if (!logOutput) return { autoFixed, pendingFixes, escalations };
 
   for (const line of logOutput.split("\n")) {

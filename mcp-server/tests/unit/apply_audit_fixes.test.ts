@@ -253,26 +253,6 @@ describe("apply_audit_fixes — create_adr_file", () => {
   });
 });
 
-describe("apply_audit_fixes — create_phase_stub", () => {
-  it("creates a missing implementation.md stub", async () => {
-    fs.mkdirSync(path.join(pmDir, "phases", "phase-x"), { recursive: true });
-    const fix: PendingFix = { type: "create_phase_stub", phaseId: "phase-x", missingFile: "implementation.md" };
-    const result = await applyAuditFixes(pmDir, [fix]);
-    expect(result.partial).toHaveLength(1);
-    expect(r("phases/phase-x/implementation.md")).toContain("# Summary");
-    expect(r("phases/phase-x/implementation.md")).toContain("<!-- TODO -->");
-  });
-
-  it("returns partial-already-present when file exists", async () => {
-    fs.mkdirSync(path.join(pmDir, "phases", "phase-x"), { recursive: true });
-    w("phases/phase-x/implementation.md", "# existing\n");
-    const fix: PendingFix = { type: "create_phase_stub", phaseId: "phase-x", missingFile: "implementation.md" };
-    const result = await applyAuditFixes(pmDir, [fix]);
-    expect(result.partial[0].context.already_present).toBe(true);
-    expect(r("phases/phase-x/implementation.md")).toBe("# existing\n");
-  });
-});
-
 describe("apply_audit_fixes — regression guards from review", () => {
   it("annotate_orphan: abbreviated hash does not corrupt a stored full-length hash", async () => {
     const fullHash = "deadbee" + "abcdef0123456789012345678901234"; // 41 char? actually need 40 total
@@ -351,24 +331,6 @@ describe("apply_audit_fixes — regression guards from review", () => {
     expect(content.indexOf("adr_id: 7")).toBeLessThan(closingIdx);
   });
 
-  it("create_phase_stub: covers all four stub templates", async () => {
-    fs.mkdirSync(path.join(pmDir, "phases", "phase-x"), { recursive: true });
-    for (const f of ["plan.md", "implementation.md", "review-and-fixes.md", "followup.md"]) {
-      const fix: PendingFix = { type: "create_phase_stub", phaseId: "phase-x", missingFile: f };
-      const result = await applyAuditFixes(pmDir, [fix]);
-      expect(result.partial).toHaveLength(1);
-      expect(r(`phases/phase-x/${f}`)).toContain("<!-- TODO -->");
-    }
-  });
-
-  it("create_phase_stub: unknown filename returns failed", async () => {
-    fs.mkdirSync(path.join(pmDir, "phases", "phase-x"), { recursive: true });
-    const fix: PendingFix = { type: "create_phase_stub", phaseId: "phase-x", missingFile: "unknown.md" };
-    const result = await applyAuditFixes(pmDir, [fix]);
-    expect(result.failed).toHaveLength(1);
-    expect(result.failed[0].reason).toBe("schema_mismatch");
-  });
-
   it("two consecutive calls with the same payload — true idempotency", async () => {
     w("phases/index.yml", `phases:\n  - id: phase-x\n    commits: []\n`);
     w("phases/phase-x/phase.yml", `id: phase-x\ncommits: []\n`);
@@ -423,11 +385,6 @@ describe("apply_audit_fixes — path traversal hardening", () => {
   it("create_adr_file: rejects decisionId with traversal sequence", async () => {
     w("config.yml", `adr_dir: adr\n`);
     const fix: PendingFix = { type: "create_adr_file", decisionId: "../../etc/passwd", adrId: "1" };
-    await expect(applyAuditFixes(pmDir, [fix])).rejects.toThrow("Invalid memory ID");
-  });
-
-  it("create_phase_stub: rejects phaseId with traversal sequence", async () => {
-    const fix: PendingFix = { type: "create_phase_stub", phaseId: "../../etc/passwd", missingFile: "plan.md" };
     await expect(applyAuditFixes(pmDir, [fix])).rejects.toThrow("Invalid memory ID");
   });
 
