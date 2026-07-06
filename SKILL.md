@@ -161,7 +161,6 @@ Records carry author attribution via `created_by` and `contributors` frontmatter
 │   ├── protocol.md
 │   ├── audit-fs.md
 │   ├── audit-mcp.md
-│   ├── templates-phase.md
 │   ├── templates-config.md
 │   ├── init.md
 │   └── cheatsheet.md

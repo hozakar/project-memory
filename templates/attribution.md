@@ -5,7 +5,7 @@ description: Shared Author Attribution schema (created_by, contributors) referen
 
 # Author Attribution Fields
 
-The `created_by` and `contributors` fields are **required** on phase / decision / discussion / issue records. Full rules are in `conventions.md` → Author Attribution. This file covers the schema only.
+The `created_by` and `contributors` fields are **required** on decision / discussion / issue records. Full rules are in `conventions.md` → Author Attribution. This file covers the schema only.
 
 **Shape:**
 ```yaml
@@ -25,14 +25,12 @@ contributors:
 
 | Record     | Triggers that append the current identity to `contributors` |
 |------------|-------------------------------------------------------------|
-| phase      | first or substantive write of `implementation.md` / `review-and-fixes.md` / `followup.md`; phase close (status: completed) |
 | decision   | initial write; status change (active → superseded / amended) |
 | discussion | initial write; resume update; close (status: concluded) |
 | issue      | initial write; status change (open → closed) |
 
 **Profile scope:**
-- `full`: both `created_by` and `contributors` required.
-- `lite`: only `created_by` required; `contributors` omitted.
+- `standard`: only `created_by` required; `contributors` omitted.
 - `minimal`: neither field used.
 
 **Out of scope (do NOT add these fields):** `era-*.md`, `summaries/*.md`, `MEMORY.md`, `adr/NNNN-*.md`, all index files (`phases/index.yml`, `decisions/index.md`, `discussions/index.md`).

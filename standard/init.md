@@ -1,6 +1,6 @@
 ---
 name: project-memory-init
-description: First-run initialization instructions for the standard profile. Scaffolds .project-memory/ with 2 summaries (roadmap, current-state), no discussions/assignments/eras dirs (created on first use). Writes profile: standard and profile_history into config.yml.
+description: First-run initialization instructions for the standard profile. Scaffolds .project-memory/ with 2 summaries (roadmap, current-state), no phases/discussions/assignments/eras dirs (created on first use as needed). Writes profile: standard and profile_history into config.yml.
 ---
 
 # First-Run Initialization (standard)
@@ -9,8 +9,6 @@ Read only when the user picked `standard` in the SKILL.md init UX. Create this d
 
 ```
 .project-memory/
-├── phases/
-│   └── index.yml
 ├── decisions/
 │   └── index.md
 ├── summaries/
@@ -30,12 +28,9 @@ Read only when the user picked `standard` in the SKILL.md init UX. Create this d
 
 This keeps a fresh project visually clean — empty dirs aren't created speculatively.
 
----
+> **Historical phases/ archive:** if `.project-memory/phases/` already exists (from a pre-2026-07 project), it is a frozen archive. Do NOT modify it, do NOT create new phase files. New work uses records (DECISION, DISCUSSION, NOTE) and summary updates, not phases.
 
-**`phases/index.yml`** — start empty:
-```yaml
-phases: []
-```
+---
 
 **`decisions/index.md`** — start with the standard header:
 ```md
@@ -43,11 +38,11 @@ phases: []
 
 ## Active
 | Date | ID | Status | Scope | Touches | Claim |
-|---|---|---|---|---|---|
+|---|---|---|---|---|---|--|
 
 ## Superseded
 | Date | ID | Status | Scope | Touches | Claim | Superseded By |
-|---|---|---|---|---|---|---|
+|---|---|---|---|---|---|---|---|
 ```
 
 ---
@@ -113,10 +108,6 @@ Only show this on first run.
 ```
 
 Installation proceeds normally either way. Never block, never prompt, never escalate.
-
----
-
-**Phase creation:** After scaffolding, create the first phase directory for whatever work is about to begin. In standard, that means `phase.yml` (required) and `plan.md` (optional, only if planning content exists). Read `standard/templates-phase.md` for the schema.
 
 ---
 

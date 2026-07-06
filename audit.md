@@ -139,19 +139,17 @@ When an era (`era-NNN.md`) is created or updated in `.project-memory/eras/`:
   Auto-fixed:
   • Replaced N stub placeholder(s) in summaries/ → *(none)*
   • Synced N discussion index drift(s): M added, K removed, J fixed
-  • Renamed N tag typo(s): "<old>" → "<new>" across M phase(s)
+  • Renamed N tag typo(s): "<old>" → "<new>" across M historical phase record(s)
   • Bumped N stale summary Last Updated date(s)
   • Synced N decision index drift(s)
   • Synced N ADR drift(s)
-  • Created N stub file(s) for M phase(s)
-  • Auto-assigned N commit(s) to phase(s)
-  • Auto-annotated: N orphan commit reference(s) across M phase(s) → [orphaned YYYY-MM-DD]
+  • Auto-annotated: N orphan commit reference(s) across M historical phase record(s) → [orphaned YYYY-MM-DD]
   • Auto-archived: DISCUSSION-xxx → discussions/archive/
   • Auto-fixed: moved <filename> to closed/
   • MCP sync: N entries updated
 
   Info:
-  • Cat 1: N orphan commit(s) (last 3 days). Run `audit` to review.
+  • Cat 1: N significant commit(s) with no memory trace (last 3 days). Run `audit` to review.
 ```
 
 Replace `N` with the count of auto-fixed items. Omit any bullet that has no findings.

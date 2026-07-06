@@ -47,7 +47,7 @@ Instruction records capture user workflow preferences as short prompts. They are
 - Date first — chronological sort order
 - Slug describes the instruction topic, not the state
 - Use kebab-case
-- Example: `INSTRUCTION-2026-06-13-branch-per-phase.md`
+- Example: `INSTRUCTION-2026-06-13-branch-per-era.md`
 
 **Frontmatter (required):**
 ```yaml

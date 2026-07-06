@@ -19,7 +19,7 @@ The right axis for choosing a profile is **longevity × revisit frequency × rea
 |---|---|---|---|---|
 | 1 | Pre-Implementation Gate | Step 0 + 1 + 2 + 3 (Step 4 skipped) | Step 0 only (instruction inject, then continue) |
 | 2 | Pre-Commit Gate | Step 0 + 2-file verify + scope-change→roadmap transfer | n/a |
-| 3 | Drift Audit | 12 categories (Cat 1,2,3,4,5,6,7,8,10,12,13,14). **Off:** 9, 11 | none |
+| 3 | Drift Audit | 10 categories (Cat 1,2,3,5,6,7,8,12,13,14). Phase-related categories retired. **Off:** 9, 11 | none |
 | 4 | Summaries | 2 files (`roadmap.md` + `current-state.md`) | inline sections of `MEMORY.md` |
 | 5 | Gate instruction re-injection | Pre-Impl Gate Step 0 only | Pre-Impl Gate Step 0 only (the only gate that exists) |
 | 6 | Author attribution | `created_by` only | none |
@@ -27,7 +27,7 @@ The right axis for choosing a profile is **longevity × revisit frequency × rea
 
 ## Profile history and audit
 
-Cat 10 (phase file completeness) consults `profile_history` for per-phase shape inference. A phase whose `started_at` falls within a legacy `full` window is expected to have the 5-file shape; phases in `standard` or legacy `lite` windows expect only `phase.yml` (required) + `plan.md` (optional). This ensures historical phases are not retroactively flagged after a profile change.
+Cat 12 (tag inconsistency) and other retired category checks consult `profile_history` for any check whose correctness depends on the profile in force when an artifact was created. Phase-related audit categories (open-phase gaps, phase file completeness) are retired — historical `profile_history` entries referencing phase shapes are preserved for read-only backward compatibility.
 
 ## Minimal `MEMORY.md` schema
 
@@ -78,7 +78,7 @@ First-run init asks one question with inline guidance:
 ```
 How do you want to run project-memory in this project?
 
-  1) standard — lean ceremony, 2 summaries, 12-category audit, for most projects
+  1) standard — lean ceremony, 2 summaries, 10-category audit, for most projects
   2) minimal  — single MEMORY.md file, for short or throwaway work
 
 Things to consider:
@@ -111,9 +111,9 @@ profile_history:
 
 **Migration rules:**
 
-- Audit and gates consult `profile_history` for any check whose correctness depends on the profile in force when an artifact was created. Example: Cat 10 shape only applies to phases whose `started_at` falls within a `full` profile window.
+- Audit and gates consult `profile_history` for any check whose correctness depends on the profile in force when an artifact was created. Retired phase-related categories (Cat 4, Cat 10) used to differentiate by profile window — historical `profile_history` entries with `full` or `lite` remain valid for backward compatibility checks.
 - **Downgrade** (e.g. `standard → minimal`): past artifacts stay as-is. No retroactive file deletion or schema simplification. Only future behavior changes.
-- **Upgrade** (e.g. `minimal → standard`): no backfill required. Past entries keep their minimal shape; future phases get full scaffolding. Cat 10 differentiates by `started_at` against `profile_history`.
+- **Upgrade** (e.g. `minimal → standard`): no backfill required. Past entries keep their minimal shape; future work gets standard scaffolding. `profile_history` entries with legacy profile values are preserved for migration-aware checks.
 - **Cross-shape transitions:** existing artifacts are preserved. Going *to* `minimal` creates `.project-memory/MEMORY.md` seeded from `summaries/roadmap.md` (if any) and updates `config.yml` with `profile: minimal`; going *from* `minimal` expands the existing `.project-memory/` skeleton with the standard profile's structure, seeding `roadmap.md` and `decisions/index.md` from `MEMORY.md` content.
 
 User changes profile via natural language ("switch project-memory to minimal"). SKILL.md recognizes the intent, appends a new `profile_history` entry with `effective_date: <today>` and a `reason` field captured from the user's stated motivation (or `"user request"` if not stated).
@@ -134,7 +134,6 @@ User changes profile via natural language ("switch project-memory to minimal"). 
 │   ├── gates.md
 │   ├── audit-fs.md
 │   ├── audit-mcp.md
-│   ├── templates-phase.md
 │   ├── templates-config.md
 │   ├── init.md
 │   └── cheatsheet.md
@@ -160,6 +159,6 @@ User changes profile via natural language ("switch project-memory to minimal"). 
 └── README.md
 ```
 
-**Why hybrid split (and not pure-split):** truly invariant lifecycles (decision file format, MCP integration, record templates) live in one place — duplicating them in `standard/` and `minimal/` would create maintenance drift without LLM-side benefit. Divergent behavior (gate steps, audit category set, phase template shape) lives under profile dirs so the LLM reads only what applies; no conditional parsing of unified files.
+**Why hybrid split (and not pure-split):** truly invariant lifecycles (decision file format, MCP integration, record templates) live in one place — duplicating them in `standard/` and `minimal/` would create maintenance drift without LLM-side benefit. Divergent behavior (gate steps, audit category set, template shape) lives under profile dirs so the LLM reads only what applies; no conditional parsing of unified files.
 
 **Why minimal is one file:** total `minimal` behavior fits in ~50-80 lines — single `MEMORY.md` schema, Step 0 as the only gate, zero audit, zero summary auto-update. Splitting that across 6 files would obscure rather than clarify.

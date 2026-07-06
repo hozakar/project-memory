@@ -33,7 +33,7 @@ origin_updated: false      # true when origin instruction has been modified sinc
 - Date first — chronological sort order
 - Slug describes the instruction topic
 - Use kebab-case
-- Example: `INSTRUCTION-2026-06-13-branch-per-phase.md`
+- Example: `INSTRUCTION-2026-06-13-branch-per-era.md`
 
 **Lifecycle:**
 - `active` → loaded at session start for the matching user

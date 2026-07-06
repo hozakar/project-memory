@@ -123,7 +123,7 @@ Legacy full's "what alternatives were rejected, what constraints existed, what t
 
 See `mcp-integration.md` for the full tool catalog. MCP behavior in standard is unchanged from the previous profile behavior — MCP is an orthogonal accelerator.
 
-- **Availability check:** same. If `search_memory`, `index_phase`, `index_decision`, `index_instruction` are all present → MCP available.
+- **Availability check:** same. If `search_memory`, `index_decision`, `index_instruction` are all present → MCP available.
 - **Proactive DB sync:** same — call `check_consistency` and index any missing entries on session start.
 - **Memory Loading Strategy overlay:**
   - **Hook A — between step 6 and step 7:** if the session has a stated task, call `search_memory(task_description, top_k=8)` for similarity ≥ 0.6 files. Does NOT set `include_superseded` — superseded decisions are excluded from awareness load. For each result with similarity ≥ 0.6, load the corresponding file from `.project-memory/` (DECISION or DISCUSSION file). These files are *in addition to* steps 7–8, not a substitute.
