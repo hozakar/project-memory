@@ -24,7 +24,7 @@ The rules below describe the `full` behavior. Under `lite`, ignore every mention
 
 ---
 
-All phase / decision / discussion / issue records carry author attribution via two required frontmatter fields:
+All decision / discussion / issue records carry author attribution via two required frontmatter fields:
 
 ```yaml
 created_by:
@@ -50,14 +50,13 @@ The pair becomes the current identity. If either command fails or returns an emp
 
 | Record     | Triggers that append the current identity to `contributors` |
 |------------|-------------------------------------------------------------|
-| phase      | first or substantive write of `implementation.md` / `review-and-fixes.md` / `followup.md`; phase close (status: completed) |
 | decision   | initial write; status change (active → superseded / amended) |
 | discussion | initial write; resume update; close (status: concluded) |
 | issue      | initial write; status change (open → closed) |
 
-**In scope:** `phase.yml`, `DECISION-YYYY-MM-DD-*.md`, `DISCUSSION-YYYY-MM-DD-*.md`, `ISSUE-YYYY-MM-DD-*.md`.
+**In scope:** `DECISION-YYYY-MM-DD-*.md`, `DISCUSSION-YYYY-MM-DD-*.md`, `ISSUE-YYYY-MM-DD-*.md`.
 
-**Out of scope (do NOT add these fields):** `era-NNN.md` (project-wide), `summaries/*.md` (project-wide), `MEMORY.md` (single-user), `adr/NNNN-*.md` (MADR has no Author field — DECISION is canonical), index files (`phases/index.yml`, `decisions/index.md`, `discussions/index.md` — token economy).
+**Out of scope (do NOT add these fields):** `era-NNN.md` (project-wide), `summaries/*.md` (project-wide), `MEMORY.md` (single-user), `adr/NNNN-*.md` (MADR has no Author field — DECISION is canonical), index files (`decisions/index.md`, `discussions/index.md` — token economy).
 
 **No audit category.** Soft-fall to `unknown` makes "missing field" impossible by construction; the drift audit does not check attribution.
 
@@ -94,7 +93,6 @@ maintainers:
 | Action | Developer | Maintainer |
 |--------|-----------|------------|
 | Audit | ✅ | ✅ |
-| Phase management | ✅ | ✅ |
 | Era creation decision | ❌ (silent) | ✅ (prompted) |
 
 ## Era Frontmatter Schema

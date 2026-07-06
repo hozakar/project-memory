@@ -5,7 +5,7 @@ description: Discussion lifecycle, loss-heuristic gate, expiry rules, and Pre-Im
 
 # Discussions
 
-Discussions capture exploratory conversations between the user and the LLM that may lead to decisions, phases, issues, or roadmap entries.
+Discussions capture exploratory conversations between the user and the LLM that may lead to decisions, issues, or roadmap entries.
 
 **Naming:** `DISCUSSION-YYYY-MM-DD-<short-slug>.md`
 - Date first -- chronological sort order
@@ -17,7 +17,7 @@ Discussions capture exploratory conversations between the user and the LLM that 
 See `templates.md` for the full schema. Key fields:
 - `id`: unique identifier
 - `status`: `open` (still active / can be resumed) or `concluded` (finished)
-- `outcome.type`: `phase`, `decision`, `issue`, `roadmap`, or `none`
+- `outcome.type`: `decision`, `issue`, `roadmap`, or `none` — plus the legacy type `phase` (existing files only; see `templates/discussions.md` → Backward compatibility)
 - `outcome.id`: the ID of the linked artifact (null for roadmap and none)
 
 **Lifecycle:**
@@ -33,14 +33,11 @@ Trigger (explicit or implicit)
       -> Apply Loss Heuristic Gate (see below)
           explicit user save   -> always write
           concrete loss answer -> auto-save
-          vague / no loss      -> silent drop; proceed to phase/decision if applicable
+          vague / no loss      -> silent drop; proceed to decision if applicable
           razor-thin           -> ask user: "Worth saving? (yes/no)"
       -> If saving: determine outcome type:
-          phase    -> offer to create phase; set `implements_decision: null` (or the relevant decision ID if the discussion also resolved a decision)
           decision -> offer to create DECISION file; set `spawned_from_discussion: <this-discussion-id>` in the DECISION frontmatter;
-                      then ask once: "Does this decision also require a phase? (open now / add to roadmap / skip)" —
-                      if "open now": create phase with `implements_decision: <decision-id>`;
-                      if "add to roadmap": add roadmap entry pointing to the decision ID
+                      then ask once: "Does this decision need implementing? (add to roadmap / skip)"
           issue    -> offer to create ISSUE file
           roadmap  -> add entry to roadmap.md
           none     -> just save the discussion
@@ -72,7 +69,7 @@ Evaluate the answer:
 
 **Vague / drop scenarios:**
 - "It was a good discussion" — without a concrete consequence of losing it
-- The outcome is fully captured in a DECISION file or phase plan.md — the discussion adds no new reasoning
+- The outcome is fully captured in a DECISION file — the discussion adds no new reasoning
 - The topic is trivial or cosmetic; re-discovering it costs nothing
 - Uncertain which tier applies — default to drop, not escalate
 
@@ -83,17 +80,12 @@ Evaluate the answer:
 ```
 discussion → decision (outcome.type: decision, outcome.id: DECISION-slug)
     DECISION.spawned_from_discussion = this discussion's id
-                └→ phase    (phase.implements_decision = DECISION-slug)
-                └→ roadmap  (roadmap entry points to DECISION-slug; phase opened later)
-
-discussion → phase (outcome.type: phase, outcome.id: phase-slug)
-    phase.implements_decision = null (unless a decision was also resolved)
+                └→ roadmap  (roadmap entry points to DECISION-slug; implementation scheduled later)
 ```
 
 Traceability rules:
 - `discussion.outcome.id` → always points forward to the artifact the discussion spawned.
 - `DECISION.spawned_from_discussion` → points back to the discussion that created it; null if decision was opened standalone.
-- `phase.implements_decision` → points back to the decision the phase implements; null if phase is not decision-driven.
 
 **Resume:**
 User says "continue discussion X" -> load the full DISCUSSION file -> continue conversation -> UPDATE the same file at close. Status remains `open` until conclusively finished. If the outcome changes on resume, update the frontmatter accordingly. On every resume update AND on close, append the current git identity to `contributors` (dedup by email).
@@ -104,7 +96,7 @@ Discussions with `outcome.type: none` AND `date` older than 30 days are expired:
 2. Remove its row from `discussions/index.md`.
 3. Archived discussions are excluded from session-start loading and Pre-Implementation Gate scanning — accessible on explicit request only.
 
-Discussions with any other outcome type (`phase`, `decision`, `issue`, `roadmap`) are never expired automatically regardless of age. The 30-day threshold is intentionally lenient; tighten in conventions.md if noise accumulates faster than expected.
+Discussions with any other outcome type (`decision`, `issue`, `roadmap`) are never expired automatically regardless of age. The 30-day threshold is intentionally lenient; tighten in conventions.md if noise accumulates faster than expected.
 
 **Pre-Implementation Gate integration:**
 When the gate scans `decisions/index.md` for `touches` overlap, also scan `discussions/index.md` for discussions with outcome types that relate to the proposed implementation. If a past discussion explicitly concluded against the current direction, surface it as a directional conflict alongside decision conflicts.

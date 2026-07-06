@@ -67,7 +67,7 @@ Last Updated: YYYY-MM-DD
 - Components, features, modules currently in place
 
 ## What's In Progress
-- Open phase(s) and their goals
+- Active items and their goals
 
 ## Known Debt / Risks
 - One-liners — debt items, technical risks, blockers
@@ -79,7 +79,7 @@ Target size: under 300 lines. If it grows beyond that, consider splitting conten
 
 ## roadmap.md
 
-Forward-looking. What's planned, what's pending. Edit incrementally during work, not only at phase close.
+Forward-looking. What's planned, what's pending. Edit incrementally during work.
 
 ```md
 # Roadmap
@@ -91,7 +91,7 @@ Last Updated: YYYY-MM-DD
 - [ ] ...
 
 ## Later
-- [ ] longer-horizon items, may need a phase decision
+- [ ] longer-horizon items, may need a roadmap decision
 
 ## Considered but not now
 - description — why parked

@@ -25,7 +25,7 @@ assigned_by:
 assigned_at: YYYY-MM-DD
 
 # Direct assignment — linked to existing record
-target_type: issue | phase | discussion | roadmap_item | null
+target_type: issue | discussion | roadmap_item | null   # 'phase' is legacy-only; see below
 target_id: ISSUE-YYYY-MM-DD-slug | null
 
 # Freeform assignment — standalone task
@@ -38,7 +38,6 @@ rejection_reason: null
 # Completion
 completed_at: null
 completion_note: null
-completed_phase_id: null
 completed_decision_id: null
 completed_discussion_id: null
 
@@ -63,8 +62,10 @@ contributors:
 <For freeform: the full task description, context, and expectations>
 
 # Target
-<For direct: link and key details from the target file>
-<For freeform: "Freeform assignment — no linked record.">
+**Target:** `<For direct: link and key details from the target file>`
+`<For freeform: "Freeform assignment — no linked record.">`
+
+> **Backward compatibility:** Legacy ASSIGNMENT files with `target_type: phase` or `completed_phase_id` are still parsed — the loader tolerates them. New assignments must NOT use these fields.
 ```
 
 **Naming:** `ASSIGNMENT-YYYY-MM-DD-<short-slug>.md`
@@ -85,7 +86,7 @@ rejected → remind me later → pending (remind_count++)
 
 **Completion rules:**
 - Only the assignee can mark `completed` (assigner uses "Do It Yourself" to close from their side)
-- At least one evidence field required: `completion_note`, `completed_phase_id`, `completed_decision_id`, or `completed_discussion_id`
+- At least one evidence field required: `completion_note`, `completed_decision_id`, or `completed_discussion_id`
 - `completed_at` set when status transitions to `completed`
 
 **Session-start discovery:**

@@ -18,8 +18,8 @@ provenance: directive | collaborative  # directive = user-imposed; collaborative
 summary: Brief summary of the discussion
 conclusion: What was decided or resolved
 outcome:
-  type: phase | decision | issue | roadmap | none
-  id: phase-YYYYMMDD-... | DECISION-YYYY-... | ISSUE-YYYY-... | null
+  type: decision | issue | roadmap | none        # 'phase' is legacy-only; see below
+  id: DECISION-YYYY-... | ISSUE-YYYY-... | null
   summary: ""               # free-text for roadmap entries; null otherwise
 tags: []
 created_by:                 # required — see templates/attribution.md
@@ -30,6 +30,8 @@ contributors:               # required — appended on resume / close
     email: "hozakar@gmail.com"
 ---
 ```
+
+> **Backward compatibility:** Legacy DISCUSSION files with `outcome.type: phase` and `outcome.id: phase-YYYYMMDD-...` are still read — the parser tolerates them. New discussions must NOT use `phase`; use `roadmap` or `decision` instead.
 
 **Body:**
 ```md
@@ -50,10 +52,10 @@ What should happen next as a result of this discussion.
 
 | type | id field | summary field | Behavior |
 |------|----------|---------------|----------|
-| phase | phase-YYYYMMDD-slug | null | Discussion triggered a new phase |
+| phase | phase-YYYYMMDD-slug | null | LEGACY — Discussion triggered a new phase (no longer writable) |
 | decision | DECISION-YYYY-MM-DD-slug | null | Discussion resulted in a formal decision |
 | issue | ISSUE-YYYY-MM-DD-slug | null | Discussion identified a bug or problem |
-| roadmap | null | free-text entry | Discussion produced a roadmap item (no immediate phase) |
+| roadmap | null | free-text entry | Discussion produced a roadmap item |
 | `none` | null | null | Discussion was exploratory; no concrete artifact produced |
 
 **Resume rule:** When the user says "continue this discussion", load the existing file, continue, and UPDATE it at close. Do NOT create a new DISCUSSION file for the same topic.
@@ -69,7 +71,7 @@ One-row-per-discussion summary table. Loaded at session start by SKILL.md Memory
 
 | Date | ID | Status | Outcome | Tags | Summary |
 |---|---|---|---|---|---|
-| 2026-06-11 | DISCUSSION-2026-06-11-slug | concluded | phase-20260611-... | feature, discussion | Brief one-line summary |
+|| 2026-06-11 | DISCUSSION-2026-06-11-slug | concluded | DECISION-2026-... | feature, discussion | Brief one-line summary |
 ```
 
 Maintenance rules:

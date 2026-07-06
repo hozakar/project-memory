@@ -66,10 +66,9 @@ Rejected alternatives are first-class content. Future agents need to know what w
 3. If `supersedes` is set, update the superseded file: change its `status` to `superseded` and set its `superseded_by` field. Move its row in `decisions/index.md` from the **Active** section to the **Superseded** section and update the Status cell. The index has two sections; only the Active section is scanned during the Pre-Implementation Gate.
 4. **If `adr_enabled: true`** (or absent) in `.project-memory/config.yml`: create the corresponding `adr/` file — count existing `.md` files in `adr_dir` (from config, default `adr/`), assign next integer zero-padded to 4 digits, set `adr_id` in the DECISION frontmatter to that value, write `<adr_dir>/<adr_id>-<slug>.md` using the ADR file template from `templates.md`. **If `adr_enabled: false`**: skip this step; leave `adr_id: null` in the DECISION frontmatter.
 5. If `supersedes` is set AND `adr_enabled: true`: also update the superseded DECISION's `adr/` counterpart — change its Status line to `Superseded by [NNNN-slug](NNNN-slug.md)`. If `adr_enabled: false`, skip.
-6. **Implementation offer:** After completing steps 0–5, if the decision entails concrete implementation work (new feature, schema migration, deployment change, etc.), ask once: *"Does this decision require a phase? (open now / add to roadmap / skip)"*
-   - `open now` → create phase with `implements_decision: <this-decision-id>` in `phase.yml`.
-   - `add to roadmap` → add a roadmap entry in `summaries/roadmap.md` with a pointer to this decision ID. No phase opened yet.
-   - `skip` → no action. Phase can be opened later at the Pre-Implementation Gate.
+6. **Implementation offer:** After completing steps 0–5, if the decision entails concrete implementation work (new feature, schema migration, deployment change, etc.), ask once: *"Does this decision need implementing? (add to roadmap / skip)"*
+   - `add to roadmap` → add a roadmap entry in `summaries/roadmap.md` with a pointer to this decision ID.
+   - `skip` → no action.
    Skip this step entirely if: (a) the decision is purely directive/policy (no code change expected), or (b) `spawned_from_discussion` is set and the originating discussion already handled the implementation offer.
 
 **ADR Status mapping:**
