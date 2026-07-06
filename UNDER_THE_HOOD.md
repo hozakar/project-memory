@@ -21,9 +21,8 @@ overhead I introduce automatically. Choose at first run; switch at any time.
 
 | | `standard` | `minimal` |
 |---|---|---|
-| Phase files | `phase.yml` only (plan.md optional) | none |
 | Pre-Impl Gate | Steps 0–3 (GATE 0 + Steps 1–3) | Step 0 only |
-| Drift audit | 12 categories | none |
+| Drift audit | 10 categories | none |
 | Summaries | `roadmap.md` + `current-state.md` | inline in `MEMORY.md` |
 | Author attribution | `created_by` only | none |
 | Topic-shift detection | off | n/a |
@@ -45,11 +44,6 @@ leaner tree at init — no `discussions/`, `issues/`, `assignments/`, `eras/`, o
 
 ```
 .project-memory/
-├── phases/
-│   ├── index.yml
-│   └── phase-YYYYMMDD-short-title/
-│       ├── phase.yml              ← required
-│       ├── plan.md                ← optional
 ├── decisions/
 │   ├── index.md
 │   └── DECISION-YYYY-MM-DD-slug.md
@@ -85,25 +79,33 @@ own subdirectories inside `.project-memory/` on first use, same as other profile
 
 ---
 
-## Phases
+## Write triggers
 
-A phase is a logical unit of work. It opens before significant implementation
-begins and closes when that unit is complete. I track which commits belong to
-which phase, flag gaps, and maintain the phase record.
+The skill acts at three kinds of moments, not at phase boundaries:
 
-In the `standard` profile, each phase directory holds `phase.yml` (required)
-and optionally `plan.md`. There are no `implementation.md`, `review-and-fixes.md`,
-or `followup.md` files — keeping the ceremony light.
-In `minimal`, there is no phase concept — work is logged as rows in `MEMORY.md`.
+- **Session start** — load context (summaries, decisions, discussions, instructions,
+  assignments), cross-reference active decisions against the working tree, log the
+  session. No phase ceremony — just memory loading and conflict detection.
 
-**Pre-Implementation Gate:** I cross-reference what you're about to build
-against active decisions before any code is written. If a conflict is detected,
-I surface a single batched question — not a stream of prompts. The gate has 4
-steps (GATE 0 + Steps 1–3) in `standard`, and 1 (instruction re-injection only) in `minimal`.
+- **Commit boundary** — every `git commit` triggers a significance check. Significant
+  commits (features, refactors, schema changes, dep upgrades, tests, docs) update
+  `summaries/current-state.md`; trivial commits (typos, formatting, imports,
+  single-line bugfixes) pass silently. Scope changes also update `summaries/roadmap.md`.
+  The Pre-Commit Gate is the only write trigger for summary files — no separate
+  phase-open or phase-close ceremony.
 
-**Pre-Commit Gate:** In `standard`, I classify the significance of every commit.
-Significant commits trigger summary file updates; trivial commits skip silently.
-`Minimal` has no gate.
+- **Decision moment** — whenever an architectural or design choice is made, a
+  `DECISION-YYYY-MM-DD-slug.md` is created, indexed, and cross-referenced. This is
+  the primary value-carrier: the "why" that git cannot capture.
+
+In the `standard` profile, the Pre-Implementation Gate cross-references against
+active decisions before any work starts. The gate has 4 steps (GATE 0 + Steps 1–3).
+In `minimal`, only Step 0 (instruction re-injection) runs.
+
+There is no phase concept. Work continuity across sessions is provided by
+`current-state.md` (what exists now), `roadmap.md` (what's next), and era
+narratives (long-term retrospectives). If a named unit of work is useful for
+your team, capture it as a DECISION or DISCUSSION — that's what they're for.
 
 ---
 
@@ -112,8 +114,8 @@ Significant commits trigger summary file updates; trivial commits skip silently.
 `summaries/` contains living documents updated automatically at every commit.
 The set of files depends on the active profile:
 
-**Standard profile** (2 files): `current-state.md` and `roadmap.md`. Roadmap
-entries are added incrementally during work — no transfer step at phase close.
+|**Standard profile** (2 files): `current-state.md` and `roadmap.md`. Roadmap
+entries are added incrementally during work.
 
 **Minimal profile**: no `summaries/` directory. The `## Roadmap` section of
 `MEMORY.md` serves the same purpose, edited directly.
@@ -135,7 +137,7 @@ surface a single batched question. If there's no conflict, I proceed silently.
 ## Discussions
 
 Exploratory conversations are captured as `DISCUSSION-YYYY-MM-DD-slug.md` files.
-At close, a discussion links to its downstream artifact — a new phase, a decision,
+At close, a discussion links to its downstream artifact — a decision,
 an issue, or a roadmap entry. Discussions can be resumed across sessions.
 
 I score each discussion for relevancy before saving. Low-signal conversations
@@ -157,7 +159,7 @@ are never loaded into your session.
 ## Assignments
 
 A lightweight safety net for open work — not a task tracker. The typical use case:
-a team member leaves the project with open phases or decisions in flight. Assignments
+a team member leaves the project with open decisions or discussions in flight. Assignments
 let you hand off those loose ends so nothing gets orphaned. Two variants: direct
 (linked to an existing record) and freeform (standalone). State machine:
 `pending → accepted → ongoing → completed / rejected`. Session-start notifications
@@ -168,9 +170,9 @@ feature; for day-to-day task management, use your existing tools.
 
 ## Eras
 
-As phases accumulate, I periodically write an `era-NNN.md` narrative summarizing
-that period's work. Eras provide long-term continuity — when a project has hundreds
-of phases, era summaries let me load a compressed view of history rather than
+Over time, I periodically write an `era-NNN.md` narrative summarizing
+that period's work. Eras provide long-term continuity — when a project has months
+of work recorded, era summaries let me load a compressed view of history rather than
 scanning everything. Era creation is gated to maintainers.
 
 ---
@@ -191,8 +193,9 @@ sentinel if identity cannot be determined — no escalation, no blocked workflow
 
 A lightweight two-role system controls who receives era creation prompts.
 **Maintainers** are listed in `.project-memory/maintainers.md` by email; they
-get prompted when ~25 phases accumulate since the last era. **Developers** work
-identically — they just don't see era maintenance prompts.
+get prompted when ~6 weeks or ~30 significant commits have accumulated since the
+last era. **Developers** work identically — they just don't see era maintenance
+prompts.
 
 ---
 
@@ -207,20 +210,18 @@ at any time via `.project-memory/config.yml`.
 
 ## Drift audit
 
-I run a 12-category drift audit each session, deferred to after the first user response so it doesn't add latency to session start. Three exceptions run synchronously: explicit `Skill project-memory audit` invocation, a first message that is itself an audit trigger, and the `minimal` profile (no audit at all). With the MCP companion server, all 12 categories are fully deterministic — no LLM judgment involved. Without MCP, the same categories run via file-system detection with the same deterministic logic.
+I run a 10-category drift audit each session, deferred to after the first user response so it doesn't add latency to session start. One exception runs synchronously: explicit `Skill project-memory audit` invocation. With the MCP companion server, all 10 categories are fully deterministic — no LLM judgment involved. Without MCP, the same categories run via file-system detection with the same deterministic logic.
 
 | Category | Description | Resolution |
 |---|---|---|
-| 1 | Orphan commits (not attached to any phase) | Auto-classify if aged >3d; notice if fresh |
+| 1 | Orphan commits (not attached to any record) | Auto-classify if aged >3d; notice if fresh |
 | 2 | Stale summary files | Auto-fix if aged >3d; escalate if fresh |
 | 3 | Stub placeholders in summary files | Auto-fix |
-| 4 | Open phase with no recent commits | Escalate |
 | 5 | Issue files in wrong directory | Auto-fix (file move) |
 | 6 | Decision index drift | Auto-fix if aged >3d; escalate if fresh |
-| 7 | Orphan commit references in phase.yml | Auto-annotate |
+| 7 | Orphan commit references | Auto-annotate |
 | 8 | ADR sync drift (when ADR enabled) | Auto-fix if aged >3d; escalate if fresh |
 | 9 | **DISABLED in standard** | — |
-| 10 | Completed phase missing required files | Escalate (phase.yml only) |
 | 11 | **DISABLED in standard** | — |
 | 12 | Tag inconsistency | Auto-suppress or escalate |
 | 13 | DB/filesystem consistency | Auto-index missing entries |
@@ -232,21 +233,22 @@ I run a 12-category drift audit each session, deferred to after the first user r
 
 An optional MCP server (`mcp-server/`) that dramatically improves memory quality
 and session performance. Strongly suggested for any project beyond the first few
-phases.
+sessions.
 
 Without MCP I read files sequentially. With MCP I run semantic vector search over
-all record types in a single call — finding relevant prior decisions, similar past
-phases, and conflicting discussions with high accuracy, even when keyword overlap
-is low.
+all record types in a single call — finding relevant prior decisions, discussions,
+and past work with high accuracy, even when keyword overlap is low.
 
 **Tools provided:**
 - `search_memory` — semantic search across all record types with filters
-- `run_audit` — all 14 audit categories in a single deterministic call
-- `index_phase`, `index_decision`, `index_discussion`, `index_era`,
-  `index_instruction`, `index_assignment` — upsert records into the vector index
-- `apply_audit_fixes` — deterministic execution of all seven `PendingFix` variants from `run_audit`; source-of-truth-safe, idempotent, prose cells left as `<!-- TODO -->` markers
+- `run_audit` — all 10 audit categories in a single deterministic call
+- `index_decision`, `index_discussion`, `index_era`,
+  `index_instruction`, `index_assignment`, `index_note`, `delete_note` — upsert and
+  delete records in the vector index
+- `apply_audit_fixes` — deterministic execution of all `PendingFix` variants from `run_audit`; source-of-truth-safe, idempotent, prose cells left as `<!-- TODO -->` markers
 - `find_similar_commit` — squash/rebase recovery via diff-based similarity search
 - `check_consistency` and `rebuild_index` — DB/filesystem sync and full index rebuild
+- `list_contributors` — deduplicated contributor list across all record types
 
 **Stack:** LanceDB + `all-MiniLM-L6-v2` local embeddings. No API key, no external
 service. Runs locally alongside the skill.
@@ -274,12 +276,11 @@ that don't diverge across profiles stay at the root.
 
 | File | Purpose |
 |---|---|
-| `gates/` (5 files) | commit.md (significance + pre-commit), implementation.md (pre-impl gate), close.md (pre-close + maintenance), lifecycle.md (phase lifecycle + creation + topic shift), mcp-triggers.md (MCP index triggers) |
+| `gates/` (5 files) | commit.md (significance + pre-commit), implementation.md (pre-impl gate), close.md, lifecycle.md, mcp-triggers.md (MCP index triggers) |
 | `protocol.md` | Agent thinking protocol, memory loading strategy, knowledge preservation |
 | `cheatsheet.md` | Quick reference, event-based trigger table |
 | `audit-fs.md` | Drift audit — filesystem detection path |
 | `audit-mcp.md` | Drift audit — MCP fast path |
-| `templates-phase.md` | Phase file templates and field definitions |
 | `templates-config.md` | `config.yml` schema and summary file templates |
 | `init.md` | First-run initialization procedure |
 

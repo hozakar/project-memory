@@ -26,7 +26,9 @@ Use to restrict discussion searches to a specific conclusion category:
 ```typescript
 { query: "...", typeFilter: "discussion", outcomeTypeFilter: "none" }
 ```
-`outcomeTypeFilter` values: `none`, `phase`, `decision`, `roadmap`. Exact match on the `outcomeType` column in LanceDB.
+`outcomeTypeFilter` values: `none`, `decision`, `roadmap`. The `phase` value was removed per
+DECISION-2026-07-05; existing phase-outcome discussions retain their historical value but are
+not used for new content. Exact match on the `outcomeType` column in LanceDB.
 
 ## Adding new queries
 

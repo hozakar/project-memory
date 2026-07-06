@@ -96,19 +96,16 @@ No commands to learn. Just ask naturally:
 Not every project needs the same level of ceremony. When we first work together
 on a new project, I'll ask you to choose one:
 
-- **full** — everything on: full phase documentation (5 files), decision cross-reference,
-  14-category drift audit, topic-shift detection, and 5 summary files. For long-lived
-  or multi-contributor projects where architectural reasoning matters most.
-
-- **lite** — reduced ceremony: one required phase file (`phase.yml`), lighter gates,
-  no topic-shift detection, 2 summary files (`roadmap.md` and `current-state.md`).
-  For most mid-sized solo or small-team work.
+- **standard** — lean ceremony: 10-category drift audit, 2 summary files
+  (`roadmap.md` and `current-state.md`), Pre-Impl Gate with decision cross-reference.
+  For most solo and small-team projects where architectural reasoning matters.
 
 - **minimal** — a `.project-memory/` directory with just `config.yml` and a single
-  `MEMORY.md` inside. No phase ceremony — just running sections for roadmap, decisions,
-  and a work log. For short or throwaway projects where git history alone is almost enough.
+  `MEMORY.md` inside. No ceremony — just running sections for roadmap, decisions,
+  notes, and a log. For short or throwaway projects where git history alone is
+  almost enough.
 
-You can switch at any time — just tell me: *"Switch project-memory to lite."*
+You can switch at any time — just tell me: *"Switch project-memory to minimal."*
 Past artifacts are preserved; only future behavior changes.
 
 **MCP companion server and profiles**
@@ -119,12 +116,8 @@ it varies quite a bit:
 - **minimal** — MCP gives you some uplift, but honestly you'll be fine without it.
   A single markdown file doesn't need a vector index.
 
-- **lite** — I strongly suggest it. Without MCP, you'll feel the difference — semantic
-  search and single-call audits are where lite earns its efficiency over full.
-
-- **full** — I could technically work without it. But don't say I didn't warn you.
-  Running full without MCP is a bit like running a local LLM on a 10-year-old
-  laptop: it'll do something, eventually.
+- **standard** — I strongly suggest it. Without MCP, you'll feel the difference —
+  semantic search and single-call audits are where it earns its keep.
 
 ---
 
@@ -178,7 +171,7 @@ No obligation. Entirely up to you.
 
 ## Under the hood
 
-Curious how I actually work — phases, audit categories, decision cross-reference,
+Curious how I actually work — audit categories, decision cross-reference,
 MCP schema? → [UNDER_THE_HOOD.md](UNDER_THE_HOOD.md)
 
 ---

@@ -17,7 +17,7 @@ npx tsx stress-test/index.ts stress-test/generated
 npx tsx stress-test/eval.ts stress-test/generated
 ```
 
-**Pass criterion:** `eval.ts` exits 0 (P@1 ≥ 14/15).
+**Pass criterion:** `eval.ts` exits 0 (P@1 ≥ 15/16).
 
 ## Full evaluation (pre-release, ~15 min)
 
@@ -35,7 +35,7 @@ npx tsx stress-test/eval.ts stress-test/generated    # P@1 assertion
 ## Acceptance rule
 
 Accept a search change if **both** hold:
-1. P@1 stays ≥ 15/15 in full-eval mode (no regression in top-1 accuracy).
+1. P@1 stays ≥ 15/16 in full-eval mode (no regression in top-1 accuracy).
 2. At least one of: average similarity scores improve, OR result-set correctness improves (verified manually via `query.ts` output — fewer irrelevant top-5 entries).
 
 If P@1 drops 15→14 AND no scores improved: reject.

@@ -32,7 +32,7 @@ Standard does not split "significant" vs "ambiguous". Everything non-trivial tri
 → Update `current-state.md` and `roadmap.md` to reflect the new direction at the next significant commit.
 
 **Work cancelled / superseded?**
-→ Capture in a DECISION record with the cancellation rationale. No phase-close ceremony.
+→ Capture in a DECISION record with the cancellation rationale.
 
 **About to route work to a teammate?**
 → `assignments/` directory is created on first use. Use ASSIGNMENT template.
