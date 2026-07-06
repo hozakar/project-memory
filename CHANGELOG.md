@@ -2,7 +2,7 @@
 
 All notable changes to the project-memory skill and MCP companion server.
 
-## [0.0.11] — 2026-07-06 — Phase concept removed (breaking)
+## [0.1.1] — 2026-07-06 — Phase concept removed (breaking)
 
 ### Breaking changes
 
