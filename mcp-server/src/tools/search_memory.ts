@@ -17,6 +17,11 @@ export async function searchMemory(
   outcomeTypeFilter?: string,
   diversify?: boolean,
   include_superseded: boolean = false,
+  /**
+   * NOTE: Phase rows are legacy read-only. No new phases can be indexed via this
+   * surface. Historical type:phase entries in the vector DB continue to be
+   * returned for backward-compatible search results.
+   */
   /** Caller identity email — required for note privacy enforcement. Only used when typeFilter === "note". */
   callerEmail?: string
 ): Promise<SearchResult[]> {

@@ -1,7 +1,6 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { searchMemory } from "./tools/search_memory";
-import { indexPhase } from "./tools/index_phase";
 import { indexDecision } from "./tools/index_decision";
 import { indexDiscussion } from "./tools/index_discussion";
 import { checkConsistency } from "./tools/check_consistency";
@@ -14,8 +13,6 @@ import { indexNote } from "./tools/index_note";
 import { runAudit } from "./tools/run_audit";
 import { applyAuditFixes } from "./tools/apply_audit_fixes";
 import { listContributors } from "./tools/list_contributors";
-import { findTouchingPhases } from "./tools/find_touching_phases";
-import { findPhaseDependencies, getAllDependencies } from "./tools/find_phase_dependencies";
 import { deleteNote } from "./tools/delete_note";
 import type { IndexEntry, PendingFix } from "./types";
 import { version } from "../package.json";
@@ -51,34 +48,6 @@ srv.tool(
   async (args: any) => {
     const results = await searchMemory(args.query, args.top_k, args.include_commits, args.created_by_email, args.created_by_name, args.type_filter, args.touches_filter, args.tags_filter, args.assigned_to_email, args.assigned_by_email, args.scope_filter, args.outcome_type_filter, args.diversify, args.include_superseded);
     return { content: [{ type: "text" as const, text: JSON.stringify(results) }] };
-  }
-);
-
-srv.tool(
-  "index_phase",
-  "Index or update a phase in the vector DB. Call on phase open (empty implementationText) and on phase close (full content). Also indexes per-commit records for find_similar_commit. Upsert by ID.",
-  {
-    id: z.string().regex(/^[a-zA-Z0-9-]+$/).describe("Phase ID, e.g. phase-20260612-mcp-companion-mvp"),
-    title: z.string(),
-    tags: z.array(z.string()).optional(),
-    tagsJson: z.string().optional(),
-    planText: z.string(),
-    implementationText: z.string(),
-    commitDiffs: z.array(z.object({
-      hash: z.string().regex(/^[0-9a-f]{7,40}$/).describe("Git commit hash (hex, 7–40 chars)"),
-      message: z.string(),
-      files: z.array(z.string()),
-      diffSnippet: z.string(),
-    })),
-    status: z.string(),
-  },
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  async (args: any) => {
-    if (!args.tags && args.tagsJson) {
-      try { args.tags = JSON.parse(args.tagsJson); } catch {}
-    }
-    const result = await indexPhase(args);
-    return { content: [{ type: "text" as const, text: JSON.stringify(result) }] };
   }
 );
 
@@ -286,26 +255,25 @@ srv.tool(
 
 srv.tool(
   "run_audit",
-  "Run deterministic audit checks on a project-memory directory. Returns structured findings: auto_fixed (Cat 5/11 file moves executed), pending_fixes (Cat 7 YAML annotations for LLM to apply), escalations (all other findings with severity and interactive flag), cat4_gap_count (present when raise_cat4=false — count of Cat 4 open-phase gaps suppressed server-side). Profile-aware: profile=lite skips Cat 9 and Cat 11 and reduces Cat 10 to phase.yml-only; profile=minimal returns an empty report.",
+  "Run deterministic audit checks on a project-memory directory. Returns structured findings: auto_fixed (Cat 5/11 file moves executed), pending_fixes (Cat 7 YAML annotations for LLM to apply), escalations (all other findings with severity and interactive flag). Profile-aware: profile=minimal returns an empty report.",
   {
     project_memory_dir: z.string().describe("Absolute path to the .project-memory/ directory"),
-    profile: z.enum(["full", "lite", "minimal"]).optional().default("full").describe("Active project-memory profile. Default 'full'. 'lite' skips Cat 9 + Cat 11 and reduces Cat 10 to require phase.yml only. 'minimal' returns empty findings (no audit by design)."),
-    raise_cat4: z.boolean().optional().default(false).describe("When false (default, for on-load audits), Cat 4 open-phase gaps are suppressed from escalations and returned as cat4_gap_count instead — non-blocking info line. When true (for manual 'Skill project-memory audit' runs), Cat 4 findings are returned in escalations as interactive=true for user triage."),
+    profile: z.enum(["standard", "minimal"]).optional().default("standard").describe("Active project-memory profile. Default 'standard'. 'minimal' returns empty findings (no audit by design)."),
   },
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async (args: any) => {
-    const result = await runAudit(args.project_memory_dir, args.profile ?? "full", args.raise_cat4 ?? false);
+    const result = await runAudit(args.project_memory_dir, args.profile ?? "standard");
     return { content: [{ type: "text" as const, text: JSON.stringify(result) }] };
   }
 );
 
 srv.tool(
   "apply_audit_fixes",
-  "Deterministically execute the pending_fixes payload returned by run_audit. Handles annotate_orphan, assign_commit, add_decision_index_row, fix_decision_index_status, assign_adr_id, create_adr_file, create_phase_stub. Idempotent: re-running with the same payload is a no-op. Source-of-truth safe: never reads the vector index, never synthesizes prose (template cells with prose content are returned as `partial` for LLM completion).",
+  "Deterministically execute the pending_fixes payload returned by run_audit. Handles annotate_orphan, assign_commit, add_decision_index_row, fix_decision_index_status, assign_adr_id, create_adr_file. Idempotent: re-running with the same payload is a no-op. Source-of-truth safe: never reads the vector index, never synthesizes prose (template cells with prose content are returned as `partial` for LLM completion).",
   {
     project_memory_dir: z.string().describe("Absolute path to the .project-memory/ directory"),
     pending_fixes: z.array(z.object({
-      type: z.enum(["annotate_orphan", "assign_commit", "add_decision_index_row", "fix_decision_index_status", "assign_adr_id", "create_adr_file", "create_phase_stub"]),
+      type: z.enum(["annotate_orphan", "assign_commit", "add_decision_index_row", "fix_decision_index_status", "assign_adr_id", "create_adr_file"]),
     }).passthrough()).describe("The pending_fixes array from run_audit, passed through verbatim."),
   },
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -339,40 +307,6 @@ srv.tool(
   {},
   async () => {
     const result = await listContributors();
-    return { content: [{ type: "text" as const, text: JSON.stringify(result) }] };
-  }
-);
-
-srv.tool(
-  "find_touching_phases",
-  "Find which phases touched a given file. Runs git log on the file, then matches commit hashes against phase.yml commit lists. Returns phases sorted by most recent touch. Unmatched commits (not in any phase) are returned separately. Useful for reverse lookup: 'which phase last changed this file?'",
-  {
-    file_path: z.string().describe("File path relative to the project root (e.g. 'mcp-server/src/db.ts')."),
-  },
-  async (args: { file_path: string }) => {
-    const result = await findTouchingPhases(args.file_path);
-    return { content: [{ type: "text" as const, text: JSON.stringify(result) }] };
-  }
-);
-
-srv.tool(
-  "find_phase_dependencies",
-  "Analyze the dependency graph for a specific phase. Returns upstream (phases this one depends on), downstream (phases that depend on this one), conflicts, and transitive closure via BFS traversal. Reads depends_on/enables/conflicts_with from phase.yml files across all phases.",
-  {
-    phase_id: z.string().describe("Phase ID, e.g. 'phase-20260619-roadmap-run'."),
-  },
-  async (args: { phase_id: string }) => {
-    const result = await findPhaseDependencies(args.phase_id);
-    return { content: [{ type: "text" as const, text: JSON.stringify(result) }] };
-  }
-);
-
-srv.tool(
-  "get_all_dependencies",
-  "Analyze the entire phase dependency graph. Returns all phases with their relationship data, lists of blocked/unblocked phases, and detected circular dependency cycles. Useful for roadmap planning: 'what can I start now?' and 'are there any dependency deadlocks?'",
-  {},
-  async () => {
-    const result = await getAllDependencies();
     return { content: [{ type: "text" as const, text: JSON.stringify(result) }] };
   }
 );

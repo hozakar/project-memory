@@ -3,7 +3,6 @@ import * as path from "path";
 import { execSync, spawnSync } from "child_process";
 // execSync used by git() helper; spawnSync used by cat7 for stdin piping
 import type { AuditReport, AuditFinding, PendingFix } from "../types";
-import { validateMemoryId } from "../validation.js";
 import { checkConsistency } from "./check_consistency";
 import { indexNote } from "./index_note";
 import { deleteNote } from "./delete_note";
@@ -94,77 +93,6 @@ interface PhaseEntry {
   startedAt: string | null;
 }
 
-export interface ProfileHistoryEntry {
-  profile: "full" | "lite" | "minimal";
-  effective_date: string;
-}
-
-export function readProfileHistory(projectMemoryDir: string): ProfileHistoryEntry[] {
-  const configPath = path.join(projectMemoryDir, "config.yml");
-  const configYml = readFile(configPath);
-
-  // Extract the profile_history block
-  const blockMatch = configYml.match(/^profile_history:\s*\n((?:[ \t].+\n?)*)/m);
-  if (!blockMatch) return [];
-
-  const block = blockMatch[1];
-
-  // Split into individual list items — each starts with optional whitespace then "- "
-  const itemStartRe = /^[ \t]*-[ \t]+/m;
-  const lines = block.split("\n");
-  const itemTexts: string[] = [];
-  let current: string[] = [];
-
-  for (const line of lines) {
-    if (itemStartRe.test(line) && current.length > 0) {
-      itemTexts.push(current.join("\n"));
-      current = [line];
-    } else {
-      current.push(line);
-    }
-  }
-  if (current.length > 0) itemTexts.push(current.join("\n"));
-
-  const validProfiles = ["full", "lite", "minimal"];
-  const entries: ProfileHistoryEntry[] = [];
-  for (const item of itemTexts) {
-    const profileMatch = item.match(/profile:\s*(\S+)/);
-    const dateMatch = item.match(/effective_date:\s*(\d{4}-\d{2}-\d{2})/);
-    if (!profileMatch || !dateMatch) continue;
-
-    const profileValue = profileMatch[1].replace(/^['"]|['"]$/g, "") as ProfileHistoryEntry["profile"];
-    if (!validProfiles.includes(profileValue)) continue;
-
-    entries.push({
-      profile: profileValue,
-      effective_date: dateMatch[1],
-    });
-  }
-
-  return entries.sort((a, b) => a.effective_date.localeCompare(b.effective_date));
-}
-
-/**
- * @param profileHistory Must be sorted ascending by effective_date.
- *   Use readProfileHistory() to obtain a correctly sorted array.
- */
-export function resolveProfileAtDate(
-  date: string,
-  profileHistory: ProfileHistoryEntry[],
-  fallback: "full" | "lite" | "minimal",
-): "full" | "lite" | "minimal" {
-  if (profileHistory.length === 0) return fallback;
-  let resolved = fallback;
-  for (const entry of profileHistory) {
-    if (entry.effective_date <= date) {
-      resolved = entry.profile;
-    } else {
-      break;
-    }
-  }
-  return resolved;
-}
-
 function parsePhasesFromIndex(indexContent: string): PhaseEntry[] {
   const entries: PhaseEntry[] = [];
   const phaseBlockRe = /^\s{2}-\s+id:\s+(.+)$/gm;
@@ -224,73 +152,45 @@ const TRIVIAL_RE = /^(docs|chore\(lint|chore\(format|chore\(deps|chore\(memory|c
 
 function cat1CommitOrphans(
   projectRoot: string,
-  phases: PhaseEntry[],
+  _phases: PhaseEntry[],
   ignored: AuditIgnoreSet
 ): { autoFixed: string[]; pendingFixes: PendingFix[]; escalations: AuditFinding[] } {
-  const currentUserEmail = git("git config user.email", projectRoot) || "";
+  // Re-targeted: Cat 1 now checks for significant commits with no memory trace.
+  // A significant commit is one that does NOT touch any of:
+  //   - .project-memory/summaries/current-state.md
+  //   - A DECISION-*.md, DISCUSSION-*.md, or NOTE-*.md file
+  // If none of these memory-related files were changed, it's flagged.
+  const autoFixed: string[] = [];
+  const pendingFixes: PendingFix[] = [];
+  const escalations: AuditFinding[] = [];
 
   const logOutput = git("git log --format='%h %ae %aI %s' -30", projectRoot);
-  if (!logOutput) return { autoFixed: [], pendingFixes: [], escalations: [] };
-
-  const allTracked = new Set<string>();
-  for (const p of phases) for (const h of p.commits) allTracked.add(h);
-  for (const p of phases) for (const h of p.commits) allTracked.add(h.slice(0, 7));
-
-  const agedOrphans: string[] = [];
-  const freshOrphanEntries: { hash: string; files: string[] }[] = [];
+  if (!logOutput) return { autoFixed, pendingFixes, escalations };
 
   for (const line of logOutput.split("\n")) {
     const lm = line.match(/^([0-9a-f]{7,40})\s+(\S+)\s+(\S+)\s+(.+)$/);
     if (!lm) continue;
-    const [, hash, authorEmail, isoDate, subject] = lm;
-    if (allTracked.has(hash)) continue;
+    const [, hash, , , subject] = lm;
     if (TRIVIAL_RE.test(subject)) continue;
     if (ignored.has(`commit:${hash}`)) continue;
 
-    if (currentUserEmail && authorEmail !== currentUserEmail) continue;
+    // Check what files this commit touched
+    const filesOutput = git(`git diff-tree --no-commit-id --name-only -r ${hash}`, projectRoot);
+    const files = filesOutput ? filesOutput.split("\n").filter(Boolean) : [];
 
-    const ageDays = daysDiff(isoDate.split("T")[0]);
-    if (ageDays > 3) {
-      agedOrphans.push(hash);
-    } else {
-      const filesOutput = git(`git diff-tree --no-commit-id --name-only -r ${hash}`, projectRoot);
-      freshOrphanEntries.push({ hash, files: filesOutput ? filesOutput.split("\n").filter(Boolean) : [] });
-    }
-  }
+    const touchedMemory = files.some(f =>
+      f.includes("summaries/current-state.md") ||
+      f.match(/DECISION-.+\.md/) ||
+      f.match(/DISCUSSION-.+\.md/) ||
+      f.match(/NOTE-.+\.md/)
+    );
 
-  const autoFixed: string[] = [];
-  if (agedOrphans.length > 0) {
-    autoFixed.push(`Auto-trivially classified ${agedOrphans.length} aged orphan commit(s): ${agedOrphans.join(" ")} (age > 3 days)`);
-  }
-
-  const pendingFixes: PendingFix[] = [];
-  const escalations: AuditFinding[] = [];
-
-  for (const entry of freshOrphanEntries) {
-    // Try to match commit files to phase directories
-    const matchedPhases: string[] = [];
-    for (const file of entry.files) {
-      for (const p of phases) {
-        validateMemoryId(p.phaseId, "phaseId");
-        const phaseDir = path.join(projectRoot, ".project-memory", "phases", p.phaseId).replace(/\\/g, "/");
-        if (file.startsWith("phases/" + p.phaseId + "/") || file.includes(phaseDir)) {
-          if (!matchedPhases.includes(p.phaseId)) matchedPhases.push(p.phaseId);
-        }
-      }
-    }
-
-    if (matchedPhases.length === 1) {
-      pendingFixes.push({
-        type: "assign_commit",
-        phaseId: matchedPhases[0],
-        commitHash: entry.hash,
-        files: entry.files,
+    if (!touchedMemory) {
+      escalations.push({
+        category: 1, severity: "medium", interactive: false,
+        description: `Significant commit ${hash} has no memory trace. No update to summaries/current-state.md and no new/updated DECISION/DISCUSSION/NOTE in its changed files. Subject: ${subject}`,
+        data: { hash, subject, files },
       });
-      autoFixed.push(`Auto-assigned orphan commit ${entry.hash} to phase ${matchedPhases[0]}`);
-    } else if (matchedPhases.length > 1) {
-      autoFixed.push(`Orphan commit ${entry.hash} matches ${matchedPhases.length} phases (${matchedPhases.join(", ")}). Skipping auto-assign.`);
-    } else {
-      autoFixed.push(`Orphan commit ${entry.hash} matched no phase directory. Skipping auto-assign.`);
     }
   }
 
@@ -349,164 +249,6 @@ function cat3StubPlaceholders(projectMemoryDir: string, ignored: AuditIgnoreSet)
     }
   }
   return findings;
-}
-
-function offsetDate(dateStr: string, days: number): string {
-  const d = new Date(dateStr);
-  d.setUTCDate(d.getUTCDate() + days);
-  return d.toISOString().slice(0, 10);
-}
-
-function getPhaseFiles(projectRoot: string, phase: PhaseEntry): string[] {
-  const allFiles = new Set<string>();
-  for (const h of phase.commits) {
-    const filesOutput = git(`git diff-tree --no-commit-id --name-only -r ${h}`, projectRoot);
-    if (filesOutput) {
-      for (const f of filesOutput.split("\n").filter(Boolean)) allFiles.add(f);
-    }
-  }
-  return [...allFiles];
-}
-
-function cat4OpenPhaseGap(
-  projectRoot: string,
-  phases: PhaseEntry[],
-  ignored: AuditIgnoreSet
-): { autoFixed: string[]; pendingFixes: PendingFix[]; escalations: AuditFinding[] } {
-  const currentUserEmail = git("git config user.email", projectRoot) || "";
-  const autoFixed: string[] = [];
-  const pendingFixes: PendingFix[] = [];
-  const escalations: AuditFinding[] = [];
-
-  // Sort phases by started_at for chronological lookup
-  const sortedPhases = [...phases]
-    .filter(p => p.startedAt)
-    .sort((a, b) => (a.startedAt! < b.startedAt! ? -1 : a.startedAt! > b.startedAt! ? 1 : 0));
-
-  // Pre-compute phase files for open phases only (used for file-matching heuristic)
-  const phaseFilesCache = new Map<string, string[]>();
-  for (const p of phases) {
-    if (p.status === "open" || p.status === "planning" || p.status === "implementation" || p.status === "review") {
-      phaseFilesCache.set(p.phaseId, getPhaseFiles(projectRoot, p));
-    }
-  }
-
-  for (const phase of phases) {
-    if (!phase.status || phase.status === "completed" || phase.status === "abandoned") continue;
-    if (ignored.has(`phase-gap:${phase.phaseId}`)) continue;
-
-    let branch = "";
-    const branchMatch = phase.block.match(/branch:\s+(\S+)/);
-    if (branchMatch && branchMatch[1] !== "null") {
-      branch = branchMatch[1].replace(/^['"]|['"]$/g, "");
-    } else {
-      for (const fb of ["main", "master", "staging"]) {
-        if (git(`git rev-parse --verify ${fb}`, projectRoot)) { branch = fb; break; }
-      }
-    }
-    if (!branch) continue;
-
-    const afterFlag = phase.startedAt ? ` --after=${offsetDate(phase.startedAt, -1)}` : "";
-    const logOutput = git(`git log --oneline --max-count=200${afterFlag} ${branch}`, projectRoot);
-    if (!logOutput) continue;
-
-    const missing: string[] = [];
-    const missingDates = new Map<string, string>(); // hash → iso date
-    for (const line of logOutput.split("\n")) {
-      const lm = line.match(/^([0-9a-f]{7,40})\s+(.+)$/);
-      if (!lm) continue;
-      if (!phase.commits.has(lm[1]) && !TRIVIAL_RE.test(lm[2])) {
-        missing.push(lm[1]);
-      }
-    }
-
-    if (missing.length === 0) continue;
-
-    // Get commit dates for missing commits
-    for (const hash of missing) {
-      const dateStr = git(`git log -1 --format=%cs ${hash}`, projectRoot);
-      if (dateStr) missingDates.set(hash, dateStr);
-    }
-
-    for (const hash of missing) {
-      // 1. Get commit author
-      const authorEmail = git(`git log -1 --format='%ae' ${hash}`, projectRoot);
-      
-      // 2. Different user → escalate
-      if (currentUserEmail && authorEmail !== currentUserEmail) {
-        escalations.push({
-          category: 4, severity: "high", interactive: true,
-          description: `Open phase ${phase.phaseId} missing commit ${hash} (author: ${authorEmail}). Different user's commit, needs review.`,
-          data: { phase_id: phase.phaseId, missing_hash: hash, author: authorEmail },
-        });
-        continue;
-      }
-
-      // 3. Same user → file-matching heuristic
-      const commitFilesOutput = git(`git diff-tree --no-commit-id --name-only -r ${hash}`, projectRoot);
-      const commitFiles = commitFilesOutput ? commitFilesOutput.split("\n").filter(Boolean) : [];
-
-      const commitDate = missingDates.get(hash) || "";
-
-      // Find next phase chronologically after commit date
-      let nextPhase: PhaseEntry | null = null;
-      if (commitDate) {
-        for (const sp of sortedPhases) {
-          if (sp.startedAt && sp.startedAt > commitDate) {
-            nextPhase = sp;
-            break;
-          }
-        }
-      }
-
-      const currentPhaseId = phase.phaseId;
-      const currentFiles = phaseFilesCache.get(currentPhaseId) || [];
-      const nextPhaseId = nextPhase?.phaseId;
-      const nextFiles = nextPhaseId ? (phaseFilesCache.get(nextPhaseId) || []) : [];
-
-      if (!nextPhase) {
-        // No next phase → auto-assign to current phase
-        pendingFixes.push({
-          type: "assign_commit",
-          phaseId: currentPhaseId,
-          commitHash: hash,
-          files: commitFiles,
-        });
-        autoFixed.push(`Auto-assigned missing commit ${hash} to open phase ${currentPhaseId} (no subsequent phase exists).`);
-        continue;
-      }
-
-      // Score commit files against each phase
-      const currentScore = commitFiles.filter(f => currentFiles.includes(f)).length;
-      const nextScore = commitFiles.filter(f => nextFiles.includes(f)).length;
-
-      if (currentScore > nextScore) {
-        pendingFixes.push({
-          type: "assign_commit",
-          phaseId: currentPhaseId,
-          commitHash: hash,
-          files: commitFiles,
-        });
-        autoFixed.push(`Auto-assigned missing commit ${hash} to open phase ${currentPhaseId} (file overlap: current=${currentScore}, next=${nextScore}).`);
-      } else if (nextScore > currentScore) {
-        pendingFixes.push({
-          type: "assign_commit",
-          phaseId: nextPhaseId,
-          commitHash: hash,
-          files: commitFiles,
-        });
-        autoFixed.push(`Auto-assigned missing commit ${hash} to subsequent phase ${nextPhaseId} (file overlap: current=${currentScore}, next=${nextScore}).`);
-      } else {
-        // Equal scores or no overlap → escalate
-        escalations.push({
-          category: 4, severity: "high", interactive: true,
-          description: `Open phase ${phase.phaseId} missing commit ${hash}. Ambiguous assignment (current=${currentScore}, next=${nextScore}). Needs manual review.`,
-          data: { phase_id: phase.phaseId, missing_hash: hash, commit_files: commitFiles, current_phase_id: currentPhaseId, next_phase_id: nextPhaseId, current_score: currentScore, next_score: nextScore },
-        });
-      }
-    }
-  }
-  return { autoFixed, pendingFixes, escalations };
 }
 
 function cat5MisplacedIssues(projectMemoryDir: string): string[] {
@@ -767,19 +509,6 @@ function cat9DiscussionDrift(projectMemoryDir: string, ignored: AuditIgnoreSet):
   return findings;
 }
 
-// removed: create_phase_stub in 2026-07-06 phase-removal — Cat 10 no longer outputs phase stub fixes
-function cat10PhaseCompleteness(
-  projectMemoryDir: string,
-  phases: PhaseEntry[],
-  ignored: AuditIgnoreSet,
-  profile: "full" | "lite" | "minimal" = "full",
-  profileHistory: ProfileHistoryEntry[] = [],
-): PendingFix[] {
-  // Phase file completeness checks are no longer relevant. Historical phase
-  // rows are preserved as read-only archives. No stub fixes are generated.
-  return [];
-}
-
 function cat11DiscussionExpiry(projectMemoryDir: string): string[] {
   const discussionsDir = path.join(projectMemoryDir, "discussions");
   if (!fs.existsSync(discussionsDir)) return [];
@@ -957,12 +686,11 @@ function cat14AssignmentIntegrity(
 // Main entry point
 // ---------------------------------------------------------------------------
 
-export type Profile = "full" | "lite" | "minimal";
+export type Profile = "standard" | "minimal";
 
 export async function runAudit(
   projectMemoryDir: string,
-  profile: Profile = "full",
-  raiseCat4: boolean = false,
+  profile: Profile = "standard",
 ): Promise<AuditReport> {
   // Minimal profile has no audit by design — return empty report immediately.
   if (profile === "minimal") {
@@ -979,11 +707,7 @@ export async function runAudit(
 
   // Auto-fix categories (silent)
   autoFixed.push(...cat5MisplacedIssues(projectMemoryDir));
-  // Cat 11 (discussion expiry) disabled in lite — discussions feature is still
-  // available but expiry hygiene becomes the user's responsibility.
-  if (profile !== "lite") {
-    autoFixed.push(...cat11DiscussionExpiry(projectMemoryDir));
-  }
+  autoFixed.push(...cat11DiscussionExpiry(projectMemoryDir));
 
   // Cat 2: always auto-fix (returns string[])
   autoFixed.push(...cat2SummaryStaleness(projectRoot, projectMemoryDir, ignored));
@@ -998,34 +722,18 @@ export async function runAudit(
   autoFixed.push(...cat8Result.autoFixed);
   pendingFixes.push(...cat8Result.pendingFixes);
 
-  // Cat 10: per-phase profile-history-aware required file list
-  const profileHistory = readProfileHistory(projectMemoryDir);
-  pendingFixes.push(...cat10PhaseCompleteness(projectMemoryDir, phases, ignored, profile, profileHistory));
-
   // Cat 7: pending fixes (YAML annotations — LLM applies these)
   pendingFixes.push(...cat7OrphanCommitRefs(projectRoot, phases));
 
-  // Cat 1: auto-fix + pending fixes + escalations
+  // Cat 1: significant commits with no memory trace
   const cat1Result = cat1CommitOrphans(projectRoot, phases, ignored);
-  autoFixed.push(...cat1Result.autoFixed);
-  pendingFixes.push(...cat1Result.pendingFixes);
   escalations.push(...cat1Result.escalations);
 
-  // Cat 4: auto-fix + pending fixes + escalations (or suppressed as cat4_gap_count)
-  const cat4Result = cat4OpenPhaseGap(projectRoot, phases, ignored);
-  autoFixed.push(...cat4Result.autoFixed);
-  pendingFixes.push(...cat4Result.pendingFixes);
-  if (raiseCat4) {
-    escalations.push(...cat4Result.escalations);
-  }
-
-  // Cat 3, 12: report-only escalations active in both full and lite
+  // Cat 3, 12: report-only escalations
   escalations.push(...cat3StubPlaceholders(projectMemoryDir, ignored));
   escalations.push(...cat12TagInconsistency(phases, ignored));
-  // Cat 9 (discussion index drift) disabled in lite.
-  if (profile !== "lite") {
-    escalations.push(...cat9DiscussionDrift(projectMemoryDir, ignored));
-  }
+  // Cat 9 (discussion index drift)
+  escalations.push(...cat9DiscussionDrift(projectMemoryDir, ignored));
   // Cat 13: FS is source of truth.
   // Missing (FS has file, DB doesn't) → re-index from FS.
   // Orphaned (DB has record, FS doesn't) → delete from DB. Never modify FS.
@@ -1076,6 +784,5 @@ export async function runAudit(
   escalations.push(...cat14.escalations);
 
   const report: AuditReport = { auto_fixed: autoFixed, pending_fixes: pendingFixes, escalations };
-  if (!raiseCat4) report.cat4_gap_count = cat4Result.escalations.length;
   return report;
 }
