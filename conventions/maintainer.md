@@ -68,7 +68,7 @@ The pair becomes the current identity. If either command fails or returns an emp
 Project-memory uses a lightweight two-role system for era creation gating only. All other operations are unrestricted.
 
 **Roles:**
-- **Maintainer** — receives era creation prompts when ~25 phases accumulate. Can decide to create an era.
+- **Maintainer** — receives era creation prompts when ~6 weeks have passed since the last era OR ~30 significant commits have landed since the last era, maintainer-confirmed as today. Can decide to create an era.
 - **Developer** — default role. No era prompts. Everything else is identical to maintainer.
 
 **Source of truth:** `.project-memory/maintainers.md` — a flat YAML file:
@@ -96,6 +96,27 @@ maintainers:
 | Audit | ✅ | ✅ |
 | Phase management | ✅ | ✅ |
 | Era creation decision | ❌ (silent) | ✅ (prompted) |
+
+## Era Frontmatter Schema
+
+New era files (era-NNN.md) use the following frontmatter. The `phases` field from legacy era files is replaced by `records` and `date_range`:
+
+```yaml
+id: era-NNN
+title: "Era N — Short Title"
+date_range: "YYYY-MM-DD to YYYY-MM-DD"
+records:
+  - DECISION-YYYY-MM-DD-slug
+  - DISCUSSION-YYYY-MM-DD-slug
+created_by:
+  name: "Your Name"
+  email: "your@email.com"
+contributors:
+  - name: "Your Name"
+    email: "your@email.com"
+```
+
+**Legacy note:** Existing era files under `.project-memory/eras/` carry a `phases:` field (listing phase IDs that comprised the era). This field is historical metadata — the `phases` field is no longer part of the schema for new eras. Do not remove or modify `phases:` in existing era files.
 
 **What this is NOT:**
 - NOT a security boundary (git handles that)

@@ -82,4 +82,20 @@ Write it for:
 
 # Era Summary
 
-Eras are an orthogonal maintainer feature. The era template is identical to the legacy full version. See archived `full/templates-phase.md` → Era Summary.
+Eras are an orthogonal maintainer feature. New era files (era-NNN.md) use this frontmatter:
+
+```yaml
+id: era-NNN
+title: "Era N — Short Title"
+date_range: "YYYY-MM-DD to YYYY-MM-DD"
+records:
+  - DECISION-YYYY-MM-DD-slug
+  - DISCUSSION-YYYY-MM-DD-slug
+created_by:
+  name: "Your Name"
+  email: "your@email.com"
+```
+
+The era trigger is: ~6 weeks since last era OR ~30 significant commits since last era, maintainer-confirmed as today. See `conventions/maintainer.md` → Maintainer Role for the full cadence rule.
+
+**Legacy note:** Existing era files under `.project-memory/eras/` carry a `phases:` field which is historical metadata. Do not remove or modify `phases:` in existing era files.

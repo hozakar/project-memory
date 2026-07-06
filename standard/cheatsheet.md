@@ -76,7 +76,7 @@ Standard does not split "significant" vs "ambiguous". Anything non-trivial trigg
 | Drift audit (post-first-response) — `run_audit` available | Default: deferred. Call `run_audit(project_memory_dir, { profile: "standard", raise_cat4: false })`. Apply pending_fixes; triage escalations. |
 | Drift audit (post-first-response) — `run_audit` NOT available | Default: deferred. Run file-based detection (12 active categories, raise_cat4: false). |
 | User mentions lost commits after squash/rebase | `find_similar_commit` per `mcp-integration.md`. |
-| ~25 phases accumulated since last era | Maintainer-only prompt. |
+| ~6 weeks since last era OR ~30 significant commits since last era | Maintainer-only prompt. |
 | Assignment created / status changed | Update `assignments/index.yml`, re-call `index_assignment` if MCP. |
 | Session start — load open phases | MCP → `search_memory(type="phase", status="in_progress")`; else scan `phases/` index |
 | Session start — pending/rejected/completed assignment notifications | Same as legacy full. |
