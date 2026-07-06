@@ -1,7 +1,7 @@
 import { embed } from "../embedder";
 import { atomicRebuild } from "../db";
 import { buildDecisionText, buildDiscussionText, buildCommitText, buildEraText, buildInstructionText, buildAssignmentText, buildNoteText, deriveOutcomeType } from "../utils";
-import type { IndexEntry, LanceRecord, PhaseIndexData, DecisionIndexData, DiscussionIndexData, EraIndexData, InstructionIndexData, AssignmentIndexData, NoteIndexData, Identity } from "../types";
+import type { IndexEntry, LanceRecord, CommitDiff, PhaseIndexData, DecisionIndexData, DiscussionIndexData, EraIndexData, InstructionIndexData, AssignmentIndexData, NoteIndexData, Identity } from "../types";
 
 const UNKNOWN_IDENTITY: Identity = { name: "unknown", email: "unknown" };
 

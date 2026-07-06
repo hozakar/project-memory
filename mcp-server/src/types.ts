@@ -89,7 +89,6 @@ export interface AssignmentIndexData {
   rejectionReason: string | null;
   completedAt: string | null;
   completionNote: string | null;
-  completedPhaseId: string | null;
   completedDecisionId: string | null;
   completedDiscussionId: string | null;
   remindCount: number;
@@ -154,8 +153,6 @@ export interface PendingFix {
   decisionContent?: string;
   decisionStatus?: string;
   adrStatus?: string;
-  // create_phase_stub fields
-  missingFile?: string;
 }
 
 export interface AuditReport {
