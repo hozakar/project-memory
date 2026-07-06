@@ -6,14 +6,14 @@ description: Lite-profile agent thinking protocol, reduced memory loading strate
 # Agent Thinking Protocol (lite)
 
 **At session start:**
-- Is there an open phase? (any phase in `phases/index.yml` with `status != completed`)
-- What commits have landed since the last recorded commit in the active phase?
+- Is `summaries/current-state.md` accurate? Review it as the active session context.
+- What commits have landed since the last session?
 - Is `summaries/roadmap.md` or `summaries/current-state.md` stale relative to recent git commits?
 
 **Before committing:**
-- If the work is non-trivial (anything beyond typo/formatting/import cleanup): update `phase.yml.commits` with the commit hash before the commit lands.
-- If `plan.md` exists and the plan evolved during this work, update it incrementally.
-- Trivial commits (typo, formatting): attach silently, no updates.
+- If the work is non-trivial (anything beyond typo/formatting/import cleanup): update `summaries/current-state.md` before the commit lands.
+- If work scope changed during this session, update `summaries/roadmap.md`.
+- Trivial commits (typo, formatting): commit silently, no summary updates.
 - This is the lite Pre-Commit Gate — commit boundaries are the natural checkpoint for recording what changed and why.
 
 **Before writing any plan:**
@@ -70,17 +70,17 @@ The session-start work happens in this order. Each step may be a no-op depending
 ```
 1. .project-memory/summaries/current-state.md
 2. .project-memory/summaries/roadmap.md
-3. .project-memory/phases/index.yml
-4. Active phase directory (if open) — phase.yml (always); plan.md (if present)
-5. User-scoped session items (current user — derived from git identity):
+3. .project-memory/decisions/index.md — Active section (primary input to Pre-Impl Gate Step 3)
+4. .project-memory/discussions/index.md (active entries only)
+5. .project-memory/instructions/index.md (if present)
+6. .project-memory/assignments/index.yml (if present)
+7. User-scoped session items (current user — derived from git identity):
    - **Instructions (global):**
      - MCP available: `search_memory(query="instructions applies globally", type="instruction", top_k=10)` — filter `applies_globally: true`.
      - MCP unavailable: scan `.project-memory/instructions/` for `INSTRUCTION-*.md`; filter `applies_globally: true`.
    - Active instructions (EXECUTE — see Step 4 above)
    - Pending/ongoing assignments (EXECUTE — see Step 5 above)
    - Notification format etc. defined in conventions/records.md
-6. .project-memory/decisions/index.md — Active section (primary input to Pre-Impl Gate Step 3)
-7. .project-memory/discussions/index.md (active entries only)
 8. Recent git commits (as needed)
 ```
 
@@ -88,22 +88,20 @@ The session-start work happens in this order. Each step may be a no-op depending
 
 **Lite-specific reductions vs full:**
 - Reads 2 summaries (`current-state.md`, `roadmap.md`) instead of 5 — `project-memory.md`, `active-issues.md`, `architecture.md` are not present in lite scaffolding.
+- No individual DECISION/DISCUSSION file pre-load — gates handle those lazily.
 - No "rejected assignments" or "completed assignment notifications" loading — assignments are still loadable on demand, but the noisy session-start surface is trimmed.
-- No "individual DECISION file pre-load on scope match" — the gate handles that lazily.
 
 ## Token Budget Guidelines (lite)
 
 - 2 summary files instead of 5 — token cost is already low.
-- `phases/index.yml` with 20+ phases: apply tag-aware filtering. Read up to 10 tag-matching phases. Fall back to most recent 10 when no tags can be derived.
-- Active phase directory: always load in full (phase.yml + plan.md if present).
-- Historical phase directories: load only on direct relevance.
+- `decisions/index.md` and `discussions/index.md` are loaded at session start. Individual DECISION/DISCUSSION files are loaded on demand.
+- `instructions/index.md` and `assignments/index.yml` are loaded at session start (when present).
 
-## Staleness — two criteria in lite
+## Staleness — lite
 
 | Criterion | Threshold | Purpose |
 |---|---|---|
 | Tier 3 contradiction detection | ≥ 30 days since closure | Offer the user an override path on old decisions |
-| Token Budget Guidelines | ≥ 20 phases in `phases/index.yml` | Switch to tag-aware filtering at load time |
 
 Lite does NOT use the era-back threshold (eras are an orthogonal maintainer feature). Discussion expiry is handled by Cat 11 audit — but Cat 11 is OFF in lite (see `lite/audit-fs.md`), so discussion expiry is on the user to manage manually when working under lite.
 
@@ -111,13 +109,13 @@ Lite does NOT use the era-back threshold (eras are an orthogonal maintainer feat
 
 # Knowledge Preservation Rule (lite — relaxed)
 
-Lite phases must leave enough context to answer:
+Every DECISION and significant change must leave enough context to answer:
 
-- Why was this done? (one line in `phase.yml.summary`, or in `plan.md` if present)
-- Which commits implemented it? (`phase.yml.commits`)
+- Why was this done? (captured in the DECISION record or `summaries/current-state.md`)
+- Which commits implemented it? (referenced in the DECISION record or commit message)
 - What should happen next? (a row in `summaries/roadmap.md`)
 
-Full's "what alternatives were rejected, what constraints existed, what tensions does this create or resolve" can still be captured via DECISION files when significant, but lite does not require them for every phase. If you find yourself frequently writing DECISIONs in a lite project, consider upgrading — lite is optimized for projects where the "why" is mostly self-evident from the code.
+Full's "what alternatives were rejected, what constraints existed, what tensions does this create or resolve" can still be captured via DECISION files when significant, but lite does not require them for every change. If you find yourself frequently writing DECISIONs in a lite project, consider upgrading — lite is optimized for projects where the "why" is mostly self-evident from the code.
 
 ---
 
@@ -128,7 +126,7 @@ See `mcp-integration.md` for the full tool catalog. MCP behavior in lite is most
 - **Availability check:** same. If `search_memory`, `index_phase`, `index_decision`, `index_instruction` are all present → MCP available.
 - **Proactive DB sync:** same — call `check_consistency` and index any missing entries on session start.
 - **Memory Loading Strategy overlay:**
-   - **Hook A — between step 4 and step 5:** if the session has a stated task, call `search_memory(task_description, top_k=8)` for similarity ≥ 0.6 files. Does NOT set `include_superseded` — superseded decisions are excluded from awareness load. Same as full.
+   - **Hook A — between step 6 and step 7:** if the session has a stated task, call `search_memory(task_description, top_k=8)` for similarity ≥ 0.6 files. Does NOT set `include_superseded` — superseded decisions are excluded from awareness load. For each result with similarity ≥ 0.6, load the corresponding file from `.project-memory/` (DECISION or DISCUSSION file). These files are *in addition to* steps 7–8, not a substitute.
    - **Hook B — at Pre-Impl Gate Step 3:** same as full. Does NOT set `include_superseded` — superseded decisions excluded from gate awareness load.
    - **No Hook C** — the broad awareness load (Step 5 of full's gate) does not exist in lite.
 - **Ad-hoc search rule:** same as full — call `search_memory` when the user asks about past decisions/phases/discussions. When the question is explicitly historical (researching superseded/past decisions), pass `include_superseded: true` to surface those records. Ordinary lookup queries do NOT set this flag. See DECISION-2026-06-19-search-memory-superseded-exclusion.

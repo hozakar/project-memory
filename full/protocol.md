@@ -6,15 +6,15 @@ description: Agent thinking protocol, memory loading strategy with token budgets
 # Agent Thinking Protocol
 
 **At session start:**
-- Is there an open phase? (any phase in `phases/index.yml` with `status != completed`)
-- What commits have landed since the last recorded commit in the active phase?
+- Is `summaries/current-state.md` accurate? Review it as the active session context.
+- What commits have landed since the last session?
 - Are summary files current? Compare each file's `Last Updated:` date against recent git commits. If any summary is older than the most recent memory commit, update it before proceeding.
 - Do any sections contain stale placeholders (`"None recorded yet"`, `"TBD"`, `"system just initialized"`)? Clear them if real data exists.
 
 **Before committing:**
 - Classify significance (trivial / significant / ambiguous) per `gates/commit.md` commit significance table.
-- If significant: update phase files (`implementation.md`, `followup.md`, `review-and-fixes.md`) before the commit lands. Capture reasoning, not just the what — the phase files are the structured counterpart to the commit message. Append incrementally.
-- Trivial and ambiguous commits: attach to phase silently, no file updates.
+- If significant: update `summaries/current-state.md` (always) and `summaries/roadmap.md` (on scope change) before the commit lands. Capture reasoning, not just the what — current-state.md is the structured counterpart to the commit message. Append incrementally.
+- Trivial and ambiguous commits: commit silently, no summary updates.
 - This is the Pre-Commit Gate — the enforcement mechanism for the Knowledge Preservation Rule ("without reconstructing history from source code").
 
 **Before writing any plan:**
@@ -61,7 +61,7 @@ The session-start work happens in this order. Each step may be a no-op depending
 
 1. **MCP availability check** — set the session-level flag (see MCP Companion Integration → Availability check).
 2. **Proactive DB sync** — `check_consistency` + index any missing entries. MCP-only; skipped when unavailable.
-3. **Memory Loading Strategy** — execute steps 1–14 below. Summary files first, then phase/decision/discussion indexes.
+3. **Memory Loading Strategy** — execute steps 1–14 below. Summary files first, then decision/discussion/instruction/assignment indexes.
 4. **⚠️ INSTRUCTION RE-INJECTION — EXECUTE NOW**
 
    This step is NOT documentation — it is a MANDATORY action. You have NOT loaded
@@ -98,59 +98,52 @@ At session start (see `Session-start Ordering` above for the surrounding sequenc
 3. .project-memory/summaries/active-issues.md
 4. .project-memory/summaries/architecture.md
 5. .project-memory/summaries/roadmap.md
-6. .project-memory/phases/index.yml
-7. Active phase directory (if open)
-8. User-scoped session items (current user — derived from git identity):
-   - **Instructions / Assignments (global):**
-     - MCP available: `search_memory(query="instructions applies globally", type="instruction", top_k=10)` — filter `applies_globally: true` from results.
-     - MCP unavailable: scan `.project-memory/instructions/` for `INSTRUCTION-*.md` files; read frontmatter, filter `applies_globally: true`.
-   - Active instructions (EXECUTE — see Step 4 above)
-   - Pending/ongoing assignments (EXECUTE — see Step 5 above)
-   - Rejected assignments created by the user (EXECUTE — see Step 5 above)
-   - Completed assignment notifications — same filter as rejected; shown once, non-persistent
+6. .project-memory/decisions/index.md — Active section only (primary input to Pre-Implementation Gate); Superseded section is available on demand for historical lookups but is NOT scanned during Pre-Implementation Gate
+7. .project-memory/discussions/index.md (active entries only; archived discussions in discussions/archive/ are excluded)
+8. .project-memory/instructions/index.md (if present)
+9. .project-memory/assignments/index.yml (if present)
+10. User-scoped session items (current user — derived from git identity):
+    - **Instructions / Assignments (global):**
+      - MCP available: `search_memory(query="instructions applies globally", type="instruction", top_k=10)` — filter `applies_globally: true` from results.
+      - MCP unavailable: scan `.project-memory/instructions/` for `INSTRUCTION-*.md` files; read frontmatter, filter `applies_globally: true`.
+    - Active instructions (EXECUTE — see Step 4 above)
+    - Pending/ongoing assignments (EXECUTE — see Step 5 above)
+    - Rejected assignments created by the user (EXECUTE — see Step 5 above)
+    - Completed assignment notifications — same filter as rejected; shown once, non-persistent
 
-   Notification format, "passive single line" rule, and interaction model are defined in `conventions/records.md` (Assignment lifecycle — Session-start UX). Do not duplicate those rules here.
-9. .project-memory/decisions/index.md — Active section only (primary input to Pre-Implementation Gate); Superseded section is available on demand for historical lookups but is NOT scanned during Pre-Implementation Gate
-10. Individual DECISION-YYYY-MM-DD-* files (only when planning in a scope the index flags as relevant)
-11. Open issues (as needed)
-12. .project-memory/discussions/index.md (load fully — active entries only; archived discussions in discussions/archive/ are excluded)
+    Notification format, "passive single line" rule, and interaction model are defined in `conventions/records.md` (Assignment lifecycle — Session-start UX). Do not duplicate those rules here.
+11. Individual DECISION-YYYY-MM-DD-* files (only when planning in a scope the index flags as relevant)
+12. Open issues (as needed)
 13. Individual DISCUSSION-YYYY-MM-DD-* files (when resuming a discussion or when planning in a scope the index flags as relevant; archived files loaded on explicit request only)
 14. Recent git commits (as needed)
 ```
 
-Do not load all historical phases unless necessary. Prefer summarized memory before raw history. Tags are the primary navigation mechanism on the MCP-unavailable path — tag-aware filtering applies at initial load, not only when diving deeper. When MCP is active, semantic search via `search_memory` is the primary navigation mechanism, with `tags_filter` available as an optional exact-match refinement.
+Prefer summarized memory before raw history. Tags are the primary navigation mechanism on the MCP-unavailable path for DECISION/DISCUSSION records — `tags_filter` applies at initial load, not only when diving deeper. When MCP is active, semantic search via `search_memory` is the primary navigation mechanism, with `tags_filter` available as an optional exact-match refinement.
 
 ## Token Budget Guidelines
 
 - Summary files are the primary budget concern — read all five by default (designed to stay concise).
-- If `phases/index.yml` contains 20+ phases, apply tag-aware filtering:
-  1. Derive the current task's scope as a set of tags (same entities used in Pre-Implementation Gate step 3 — file names, feature names, system areas).
-  2. Prefer phases whose `tags` intersect the derived scope. Read up to 10 tag-matching phases.
-  3. If fewer than 3 tag-matching phases exist, supplement with the most recent entries to reach at least 3 total.
-  4. Fall back to the most recent 10 entries when no tags can be derived from the task (e.g. cold session start with no stated goal).
 - If any single summary file exceeds 300 lines, read the first 150 lines only on initial load; fetch the rest on demand.
-- Active phase directory: always load in full — it is the most time-sensitive memory.
-- Historical phase directories: load only when the user's task explicitly relates to that phase's area.
-- `discussions/index.md` is loaded at session start alongside `decisions/index.md`. Individual DISCUSSION files are loaded on demand.
-- `assignments/index.yml` is loaded at session start. Individual ASSIGNMENT files matching the current user are loaded in full — they are time-sensitive workflow items.
+- `decisions/index.md` and `discussions/index.md` are loaded at session start alongside each other. Individual DECISION/DISCUSSION files are loaded on demand.
+- `instructions/index.md` and `assignments/index.yml` are loaded at session start (when present). Individual ASSIGNMENT files matching the current user are loaded in full — they are time-sensitive workflow items.
+- DECISION/DISCUSSION indexes under 30 entries are loaded in full; above 30, defer to `search_memory` with appropriate `type_filter` for scope-relevant entries.
 
-## Staleness — three distinct criteria
+## Staleness — two distinct criteria
 
-The word "stale" appears in three places in this skill, measuring three different things. They are not interchangeable.
+The word "stale" appears in multiple places in this skill, measuring different things. They are not interchangeable.
 
 | Criterion | Threshold | Question it answers |
 |---|---|---|
 | Tier 3 contradiction detection (Agent Thinking Protocol above) | ≥ 30 days since closure OR ≥ 2 eras back | Is the decision context still current, or should I offer an override path? |
-| Token Budget Guidelines (this section) | ≥ 20 phases in `phases/index.yml` | Is the index large enough that I need tag-aware filtering at load time? |
 | Discussion expiry (`conventions/discussions.md`) | ≥ 30 days AND `outcome: none` | Did this open discussion go nowhere? Archive it. |
 
-Picking the wrong threshold for the wrong purpose will produce the wrong behaviour — e.g., archiving discussions on a 2-era boundary loses recent context; loading every phase on a 30-day window misses load-time scalability.
+Picking the wrong threshold for the wrong purpose will produce the wrong behaviour.
 
 ---
 
 # Knowledge Preservation Rule
 
-Every phase must leave enough context to answer:
+Every DECISION and significant change must leave enough context to answer:
 
 - Why was this done?
 - Which commits implemented it?
@@ -159,7 +152,7 @@ Every phase must leave enough context to answer:
 - What tensions does this create or resolve?
 - What should happen next?
 
-without reconstructing history from source code. Memory Loading Strategy step 14 ("Recent git commits — as needed") is an escape valve for cases where the memory record is incomplete — not the primary reasoning source. If you find yourself relying on `git log` to answer one of the questions above, the missing context belongs in a phase or DECISION file, not in the commit history.
+without reconstructing history from source code. Memory Loading Strategy step 14 ("Recent git commits — as needed") is an escape valve for cases where the memory record is incomplete — not the primary reasoning source. If you find yourself relying on `git log` to answer one of the questions above, the missing context belongs in a DECISION, DISCUSSION, or INSTRUCTION file, not in the commit history.
 
 ---
 
@@ -176,7 +169,7 @@ If `search_memory`, `index_phase`, `index_decision`, and `index_instruction` all
 
 The canonical strategy is the trunk. When MCP is available, two `search_memory` hooks fire at fixed positions; their results are added to the working set alongside whatever the canonical steps load.
 
-- **Hook A — between step 5 and step 6:** If the session has a stated task or goal, call `search_memory(task_description, top_k=8)` (does NOT set `include_superseded` — superseded decisions are excluded from awareness load). For each result with similarity ≥ 0.6, load the corresponding file from `.project-memory/` (phase directory or DECISION file). These files are *in addition to* steps 6–13, not a substitute.
+- **Hook A — between step 5 and step 6:** If the session has a stated task or goal, call `search_memory(task_description, top_k=8)` (does NOT set `include_superseded` — superseded decisions are excluded from awareness load). For each result with similarity ≥ 0.6, load the corresponding file from `.project-memory/` (DECISION or DISCUSSION file). These files are *in addition to* steps 6–14, not a substitute.
 - **Hook B — at Pre-Implementation Gate Step 3:** Call `search_memory(natural language description of what you are implementing, top_k=8)` (does NOT set `include_superseded` — superseded decisions are excluded from gate awareness load) and load any additional relevant files not already in context.
 
 **Ad-hoc search rule:**
@@ -194,7 +187,7 @@ When Discussion Mode is engaged (explicit `Skill project-memory discuss` or impl
 
 **Assignment search:** At session start, when assignments exist, call `search_memory` with both `assigned_to_email` (pending/ongoing) and `assigned_by_email` (rejected/completed) filters and `type_filter: "assignment"`. For targeted lookups (e.g., "what did I assign to Mehmet?"), combine with the user's question text for semantic ranking.
 
-**Squash/rebase recovery:** If the user mentions that a squash, rebase, or force-push lost commits before opening a new phase, call `find_similar_commit(description_of_lost_work, top_k=5)`. Load the returned phase files from disk and use them to pre-populate the new phase's context. Best-effort — proceed normally if no matches found.
+**Squash/rebase recovery:** If the user mentions that a squash, rebase, or force-push lost commits in the current session scope, call `find_similar_commit(description_of_lost_work, top_k=5)`. Load the returned files from `.project-memory/` and use them to restore context. Best-effort — proceed normally if no matches found.
 
 **Proactive DB sync (session start):** After checking MCP availability, if MCP is active, call `check_consistency(project_memory_dir)`. For each ID in `missing` (file exists but not in DB): call the appropriate index tool (`index_phase`, `index_decision`, `index_discussion`, `index_era`, `index_instruction`, or `index_note`) with the file's content. For each ID in `orphaned` (DB record exists but file is gone): call `deleteRecord(id)` (or `delete_note(id)` for NOTE-*). FS is source of truth — never modify filesystem. This covers branch-delete scenarios: records indexed during a feature branch become orphaned when the branch is deleted. See `mcp-integration.md` for the full tool list.
 
