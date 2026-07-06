@@ -1,6 +1,6 @@
 import { embed } from "../embedder";
 import { upsert } from "../db";
-import { buildPhaseText, buildCommitText } from "../utils";
+import { buildCommitText } from "../utils";
 import type { PhaseIndexData, LanceRecord, Identity } from "../types";
 
 export async function indexPhase(
@@ -10,7 +10,16 @@ export async function indexPhase(
     const createdBy: Identity = data.createdBy ?? { name: "unknown", email: "unknown" };
     const contributors: Identity[] = data.contributors ?? [];
 
-    let text = buildPhaseText(data);
+    const parts: string[] = [
+      data.title,
+      (data.tags ?? []).join(" "),
+      data.planText,
+      data.implementationText,
+    ];
+    for (const diff of data.commitDiffs) {
+      parts.push(`${diff.message}\n${diff.files.join(" ")}\n${diff.diffSnippet}`);
+    }
+    let text = parts.join("\n").slice(0, 6000);
     text += `\nAuthor: ${createdBy.name} <${createdBy.email}>`;
 
     const vector = await embed(text);

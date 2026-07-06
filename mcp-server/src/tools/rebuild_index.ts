@@ -1,6 +1,6 @@
 import { embed } from "../embedder";
 import { atomicRebuild } from "../db";
-import { buildPhaseText, buildDecisionText, buildDiscussionText, buildCommitText, buildEraText, buildInstructionText, buildAssignmentText, buildNoteText, deriveOutcomeType } from "../utils";
+import { buildDecisionText, buildDiscussionText, buildCommitText, buildEraText, buildInstructionText, buildAssignmentText, buildNoteText, deriveOutcomeType } from "../utils";
 import type { IndexEntry, LanceRecord, PhaseIndexData, DecisionIndexData, DiscussionIndexData, EraIndexData, InstructionIndexData, AssignmentIndexData, NoteIndexData, Identity } from "../types";
 
 const UNKNOWN_IDENTITY: Identity = { name: "unknown", email: "unknown" };
@@ -16,7 +16,16 @@ export async function rebuildIndex(entries: IndexEntry[]): Promise<{ indexed: nu
       let contributors: Identity[] | undefined;
       if (entry.type === "phase") {
         const d = entry.data as PhaseIndexData;
-        text = buildPhaseText(d);
+        const parts: string[] = [
+          d.title,
+          (d.tags ?? []).join(" "),
+          d.planText,
+          d.implementationText,
+        ];
+        for (const diff of d.commitDiffs) {
+          parts.push(`${diff.message}\n${diff.files.join(" ")}\n${diff.diffSnippet}`);
+        }
+        text = parts.join("\n").slice(0, 6000);
         createdBy = d.createdBy ?? UNKNOWN_IDENTITY;
         contributors = d.contributors ?? [];
       } else if (entry.type === "decision") {

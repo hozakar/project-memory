@@ -486,56 +486,7 @@ Status: ${status}
   };
 }
 
-// ---------------------------------------------------------------------------
-// create_phase_stub — create the missing required file for a completed phase
-// with section headers only. LLM fills the prose.
-// ---------------------------------------------------------------------------
-
-const PHASE_STUBS: Record<string, string> = {
-  "plan.md":
-    `# Goal\n\n<!-- TODO -->\n\n# Context\n\n<!-- TODO -->\n\n# Planned Changes\n\n<!-- TODO -->\n\n# Success Criteria\n\n<!-- TODO -->\n`,
-  "implementation.md":
-    `# Summary\n\n<!-- TODO -->\n\n# Related Commits\n\n<!-- TODO -->\n\n# Architectural Impact\n\n<!-- TODO -->\n\n# Deviations From Plan\n\n<!-- TODO -->\n\n# Notes\n\n<!-- TODO -->\n\n# Lessons Learned\n\n<!-- TODO -->\n`,
-  "review-and-fixes.md":
-    `# Review & Fix Log\n\n## Round 1\n### Findings\n\n<!-- TODO -->\n\n### Actions Taken\n\n<!-- TODO -->\n`,
-  "followup.md":
-    `# Remaining Open Issues\n\n<!-- TODO -->\n\n# Technical Debt Introduced\n\n<!-- TODO -->\n\n# Recommended Next Phases\n\n<!-- TODO -->\n`,
-};
-
-function applyCreatePhaseStub(
-  fix: PendingFix,
-  projectMemoryDir: string,
-): PartialFix | FailedFix {
-  const phaseId = fix.phaseId;
-  const missingFile = fix.missingFile;
-  if (!phaseId || !missingFile) {
-    return { fix_type: "create_phase_stub", reason: "schema_mismatch", details: "missing phaseId/missingFile" };
-  }
-  if (!(missingFile in PHASE_STUBS)) {
-    return { fix_type: "create_phase_stub", reason: "schema_mismatch", details: `no stub template for ${missingFile}` };
-  }
-  validateMemoryId(phaseId, "phaseId");
-  const phaseDir = path.join(projectMemoryDir, "phases", phaseId);
-  if (!fs.existsSync(phaseDir)) {
-    return { fix_type: "create_phase_stub", reason: "file_not_found", details: phaseDir };
-  }
-  const targetPath = path.join(phaseDir, missingFile);
-  if (fileExists(targetPath)) {
-    return {
-      fix_type: "create_phase_stub",
-      target_file: path.relative(path.dirname(projectMemoryDir), targetPath),
-      llm_must_do: `${missingFile} already exists in ${phaseId}. Verify content.`,
-      context: { phaseId, missingFile, already_present: true },
-    };
-  }
-  fs.writeFileSync(targetPath, PHASE_STUBS[missingFile], "utf-8");
-  return {
-    fix_type: "create_phase_stub",
-    target_file: path.relative(path.dirname(projectMemoryDir), targetPath),
-    llm_must_do: `Stub created at phases/${phaseId}/${missingFile}. Replace each <!-- TODO --> with content from session memory or git history.`,
-    context: { phaseId, missingFile },
-  };
-}
+// removed: create_phase_stub in 2026-07-06 phase-removal — the entire applyCreatePhaseStub function and PHASE_STUBS constant are deleted
 
 // ---------------------------------------------------------------------------
 // Dispatcher
@@ -569,9 +520,6 @@ export async function applyAuditFixes(
         break;
       case "create_adr_file":
         result = applyCreateAdrFile(fix, projectMemoryDir);
-        break;
-      case "create_phase_stub":
-        result = applyCreatePhaseStub(fix, projectMemoryDir);
         break;
       default: {
         const exhaust: never = fix.type;

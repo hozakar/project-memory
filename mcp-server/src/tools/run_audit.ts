@@ -767,6 +767,7 @@ function cat9DiscussionDrift(projectMemoryDir: string, ignored: AuditIgnoreSet):
   return findings;
 }
 
+// removed: create_phase_stub in 2026-07-06 phase-removal — Cat 10 no longer outputs phase stub fixes
 function cat10PhaseCompleteness(
   projectMemoryDir: string,
   phases: PhaseEntry[],
@@ -774,38 +775,9 @@ function cat10PhaseCompleteness(
   profile: "full" | "lite" | "minimal" = "full",
   profileHistory: ProfileHistoryEntry[] = [],
 ): PendingFix[] {
-  const pendingFixes: PendingFix[] = [];
-
-  for (const phase of phases) {
-    const p = phase;
-    if (p.status !== "completed") continue;
-
-    // Resolve the profile in effect when this phase was created.
-    // Falls back to the passed profile param when startedAt is absent or
-    // profileHistory is empty (backward-compatible for legacy projects).
-    const phaseProfile = p.startedAt
-      ? resolveProfileAtDate(p.startedAt, profileHistory, profile)
-      : profile;
-
-    const required = phaseProfile === "lite"
-      ? ["phase.yml"]
-      : ["phase.yml", "plan.md", "implementation.md", "review-and-fixes.md", "followup.md"];
-
-    validateMemoryId(p.phaseId, "phaseId");
-    const phaseDir = path.join(projectMemoryDir, "phases", p.phaseId);
-    for (const file of required) {
-      if (!fs.existsSync(path.join(phaseDir, file))) {
-        if (!ignored.has(`phase-completeness:${p.phaseId}:${file}`)) {
-          pendingFixes.push({
-            type: "create_phase_stub",
-            phaseId: p.phaseId,
-            missingFile: file,
-          });
-        }
-      }
-    }
-  }
-  return pendingFixes;
+  // Phase file completeness checks are no longer relevant. Historical phase
+  // rows are preserved as read-only archives. No stub fixes are generated.
+  return [];
 }
 
 function cat11DiscussionExpiry(projectMemoryDir: string): string[] {

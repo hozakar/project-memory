@@ -1,17 +1,5 @@
-import type { PhaseIndexData, DecisionIndexData, DiscussionIndexData, CommitDiff, EraIndexData, InstructionIndexData, AssignmentIndexData, NoteIndexData } from "./types";
-
-export function buildPhaseText(data: PhaseIndexData): string {
-  const parts: string[] = [
-    data.title,
-    (data.tags ?? []).join(" "),
-    data.planText,
-    data.implementationText,
-  ];
-  for (const diff of data.commitDiffs) {
-    parts.push(`${diff.message}\n${diff.files.join(" ")}\n${diff.diffSnippet}`);
-  }
-  return parts.join("\n").slice(0, 6000);
-}
+// removed: buildPhaseText in 2026-07-06 phase-removal
+import type { DecisionIndexData, DiscussionIndexData, CommitDiff, EraIndexData, InstructionIndexData, AssignmentIndexData, NoteIndexData } from "./types";
 
 export function buildDecisionText(data: DecisionIndexData): string {
   return [
