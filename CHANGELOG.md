@@ -2,6 +2,51 @@
 
 All notable changes to the project-memory skill and MCP companion server.
 
+## [0.0.11] — 2026-07-06 — Phase concept removed (breaking)
+
+### Breaking changes
+
+The phase concept has been removed from the skill. See
+[DECISION-2026-07-05-phase-concept-dropped](.project-memory/decisions/DECISION-2026-07-05-phase-concept-dropped.md)
+for the full rationale.
+
+- **MCP tools removed:** `index_phase`, `find_phase_dependencies`,
+  `find_touching_phases` are no longer available. `get_all_dependencies` is also
+  removed. Legacy phase rows remain searchable via `search_memory`.
+- **Audit categories removed:** Cat 4 (open-phase gaps) and Cat 10 (phase file
+  completeness) have been retired. The drift audit now has 10 categories instead
+  of 12.
+- **Skill profiles collapsed:** `full` and `lite` profiles have been merged into
+  `standard`. Existing `config.yml` files with `profile: full` or `profile: lite`
+  are treated as `profile: standard` at read time. `profile_history` entries
+  retain their original values for backward compatibility.
+- **Cat 1 re-targeted:** orphan-commit detection no longer references phases
+  ("not attached to any record" instead of "not attached to any phase").
+- **Cat 7 simplified:** orphan commit references no longer target `phase.yml`
+  specifically.
+- **Era trigger re-anchored:** era creation now triggers on ~6 weeks or ~30
+  significant commits (replaces ~25 phases).
+- **Write-trigger model:** the three triggers are now session-start, commit-boundary,
+  and decision-moment — no phase open/close ceremony.
+
+### Documentation
+
+- `README.md`: profiles section rewritten (standard + minimal), feature list
+  and under-the-hood pointer scrubbed of phase references.
+- `UNDER_THE_HOOD.md`: Phases section replaced with Write triggers narrative;
+  directory structure, profiles table, drift audit table, MCP tool list, and
+  skill files table updated throughout.
+- `mcp-integration.md`: tool catalog updated — `index_phase`,
+  `find_phase_dependencies`, `find_touching_phases` removed; legacy phase rows
+  note added.
+- `standard/cheatsheet.md`: "phase-close ceremony" reference removed.
+- `mcp-server/README.md` and `mcp-server/INSTALL.md`: tool lists updated to
+  match server.ts.
+- `profiles.md`: tier matrix reflects 10-category audit, phase-removed profile
+  structure.
+
+MCP server version bumped to `0.1.1`.
+
 ## [0.1.0] — 2026-06-23 — First minor release
 
 ### Housekeeping & polish
