@@ -27,7 +27,7 @@ audit_ignore: []      # permanent skip entries (see audit.md → Permanent Skip)
 
 **Profile fields:**
 - `profile`: the currently active profile. SKILL.md reads this on every load to route.
-- `profile_history`: append-only log of profile changes. Each entry has `profile`, `effective_date: YYYY-MM-DD`, and `reason`. Audit and gates consult this for profile-sensitive checks (e.g. Cat 10 file-completeness — phases started in a full window are expected to have 5 files even after a downgrade to standard).
+- `profile_history`: append-only log of profile changes. Each entry has `profile`, `effective_date: YYYY-MM-DD`, and `reason`. Audit and gates consult this for profile-sensitive checks (retired phase-based categories reference phase file shapes by profile window).
 
 **`adr_enabled` default:** `false`. Standard's default decision storage is DECISION files + `decisions/index.md` without ADR mirror. If you want ADR support, set `adr_enabled: true` — Cat 8 audit will create stubs for existing decisions on the next audit pass.
 
