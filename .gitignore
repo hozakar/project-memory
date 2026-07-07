@@ -1,6 +1,3 @@
-CLAUDE.md
-AGENTS.md
-.hermes.md
 .claude/
 .husky/
 mcp-server/node_modules/
@@ -13,3 +10,5 @@ stress-test/generated/
 !.kyck/sync.json
 !.kyck/events.*.enc
 .pi-subagents/
+# pi subagent run scratch logs
+.pi-runs/
