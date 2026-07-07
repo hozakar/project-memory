@@ -12,3 +12,4 @@ stress-test/generated/
 .kyck/*
 !.kyck/sync.json
 !.kyck/events.*.enc
+.pi-subagents/
