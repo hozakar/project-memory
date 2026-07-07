@@ -64,13 +64,13 @@ Snapshot of where the project stands right now. Updated at turn end by the turn-
 Last Updated: YYYY-MM-DD
 
 ## What Exists
-- Components, features, modules currently in place
+- *(none)*
 
 ## What's In Progress
-- Active items and their goals
+- *(none)*
 
 ## Known Debt / Risks
-- One-liners — debt items, technical risks, blockers
+- *(none)*
 ```
 
 Target size: under 300 lines. If it grows beyond that, consider splitting content — but standard intentionally keeps a single current-state file.
@@ -87,14 +87,13 @@ Forward-looking. What's planned, what's pending. Edit incrementally during work.
 Last Updated: YYYY-MM-DD
 
 ## Next
-- [ ] short description of the next item
-- [ ] ...
+- *(none)*
 
 ## Later
-- [ ] longer-horizon items, may need a roadmap decision
+- *(none)*
 
 ## Considered but not now
-- description — why parked
+- *(none)*
 ```
 
 The `## Considered but not now` section captures rejected or deferred ideas. In the legacy full profile, this kind of content lived in `project-memory.md → Rejected Decisions`; standard collapses it into one shared file.

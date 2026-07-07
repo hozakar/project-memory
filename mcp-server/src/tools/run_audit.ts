@@ -140,33 +140,6 @@ function levenshtein(a: string, b: string): number {
 // Audit categories
 // ---------------------------------------------------------------------------
 
-function cat3StubPlaceholders(projectMemoryDir: string, ignored: AuditIgnoreSet): AuditFinding[] {
-  const summariesDir = path.join(projectMemoryDir, "summaries");
-  if (!fs.existsSync(summariesDir)) return [];
-
-  const stubPatterns = ["None recorded yet", "TBD", "system just initialized", "first run detected"];
-  const findings: AuditFinding[] = [];
-
-  for (const filename of fs.readdirSync(summariesDir)) {
-    if (!filename.endsWith(".md")) continue;
-    const content = readFile(path.join(summariesDir, filename));
-    for (const pattern of stubPatterns) {
-      if (!content.includes(pattern)) continue;
-      const idx = content.indexOf(pattern);
-      const before = content.slice(0, idx);
-      const headingMatch = before.match(/^#+\s+(.+)$/mg);
-      const section = headingMatch ? headingMatch[headingMatch.length - 1].replace(/^#+\s+/, "") : "unknown";
-      if (ignored.has(`stub:${filename}:${section}`)) continue;
-      findings.push({
-        category: 3, severity: "low", interactive: false,
-        description: `Stub placeholder in ${filename} → section "${section}"`,
-        data: { filename, section, pattern },
-      });
-    }
-  }
-  return findings;
-}
-
 function cat5MisplacedIssues(projectMemoryDir: string): string[] {
   const openDir = path.join(projectMemoryDir, "issues", "open");
   const closedDir = path.join(projectMemoryDir, "issues", "closed");
@@ -638,8 +611,7 @@ export async function runAudit(
   // Cat 7: pending fixes (YAML annotations — LLM applies these)
   pendingFixes.push(...cat7OrphanCommitRefs(projectRoot, phases));
 
-  // Cat 3, 12: report-only escalations
-  escalations.push(...cat3StubPlaceholders(projectMemoryDir, ignored));
+  // Cat 12: report-only escalations
   escalations.push(...cat12TagInconsistency(phases, ignored));
   // Cat 9 (discussion index drift)
   escalations.push(...cat9DiscussionDrift(projectMemoryDir, ignored));

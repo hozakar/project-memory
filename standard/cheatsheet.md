@@ -60,7 +60,7 @@ One judgment per turn, not N per commit. Decision-moment awareness (DECISION-202
 | Turn with a commit | Turn-boundary sweep: update `summaries/current-state.md` (once, covering the turn's commits); also update `summaries/roadmap.md` on scope change. |
 | User asks about past decisions/discussions (MCP available) | `search_memory` per `mcp-integration.md`. Pass `include_superseded: true` only when explicitly researching past/superseded decisions. |
 | Drift audit (post-first-response) — `run_audit` available | Default: deferred. Call `run_audit(project_memory_dir, { profile: "standard" })`. Apply pending_fixes; triage escalations. |
-| Drift audit (post-first-response) — `run_audit` NOT available | Default: deferred. Run file-based detection (8 active categories). |
+| Drift audit (post-first-response) — `run_audit` NOT available | Default: deferred. Run file-based detection (7 active categories). |
 | User mentions lost commits after squash/rebase | `find_similar_commit` per `mcp-integration.md`. |
 | ~6 weeks since last era OR ~30 significant commits since last era | Maintainer-only prompt. |
 | Assignment created / status changed | Update `assignments/index.yml`, re-call `index_assignment` if MCP. |
@@ -68,7 +68,7 @@ One judgment per turn, not N per commit. Decision-moment awareness (DECISION-202
 | Session start — pending/rejected/completed assignment notifications | Same as legacy. |
 | User says "switch project-memory to &lt;profile&gt;" | SKILL.md → change-profile flow: append `profile_history` entry, switch active `profile`, handle minimal ↔ structured shape transitions per `profiles.md` → Migration mechanism. |
 
-**Stub placeholders to clear on sight:** `"None recorded yet"`, `"TBD"`, `"system just initialized"`, `"first run detected"`, or any `*(none)*` in a section that now has content.
+**Clear on sight:** any `*(none)*` in a section that now has content (replace the `*(none)*` with the real content).
 
 **Standard reminders (often forgotten):**
 - `current-state.md` Last Updated MUST be bumped after every turn that includes commits.

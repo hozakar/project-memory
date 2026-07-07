@@ -38,7 +38,7 @@ Exceptions (audit runs synchronously):
 3. **If yes:** read `<profile>/audit-mcp.md` and follow its MCP Fast Path (the same `run_audit(project_memory_dir, { profile: "standard" })` call shape applies to both on-load and explicit invocation). Skip `<profile>/audit-fs.md`.
 4. **If no:** read `<profile>/audit-fs.md` and follow its file-based Detection Procedure.
 
-`<profile>` is `standard`. The standard profile uses a reduced category set (3, 5, 6, 7, 8 (conditional), 12, 13 (conditional), 14 — phase-related categories retired, Cat 9 and 11 omitted).
+`<profile>` is `standard`. The standard profile uses a reduced category set (5, 6, 7, 8 (conditional), 12, 13 (conditional), 14 — phase-related categories retired, Cat 9 and 11 omitted).
 
 **Semantic Conflict Scan (`semantic-conflict-scan`)** was a legacy full-only optional stage. It is no longer available in the standard profile.
 
@@ -52,7 +52,7 @@ The model has 1 effective tier:
 
 | Severity | Categories | Behavior |
 |----------|-----------|----------|
-| **auto-fix** | 3,5,6,7,8,12,13,14 | Applied silently; logged in drift report. |
+| **auto-fix** | 5,6,7,8,12,13,14 | Applied silently; logged in drift report. |
 
 In standard, phase-related categories retired, Cat 9 and 11 are not detected at all (not "auto-fixed silently" — simply absent).
 
@@ -76,7 +76,6 @@ Before escalating any finding, check the `audit_ignore` list in `.project-memory
 | # | Key format |
 |---|---|
 | 2 | `summary:<filename>` |
-| 3 | `stub:<filename>:<section-heading>` |
 | 6 | `decision-drift:<DECISION-ID>:<missing-row|orphan-row|status-mismatch>` |
 | 8 | `adr-drift:<DECISION-ID>:<missing-adr_id|missing-file|status-mismatch>` |
 | 9 | `discussion-drift:<DISCUSSION-ID>:<missing-row|orphan-row|status-mismatch>` |
@@ -138,7 +137,6 @@ When an era (`era-NNN.md`) is created or updated in `.project-memory/eras/`:
 ```
 [🧠] POST-RESPONSE DRIFT AUDIT — N auto-fixed
   Auto-fixed:
-  • Replaced N stub placeholder(s) in summaries/ → *(none)*
   • Synced N discussion index drift(s): M added, K removed, J fixed
   • Renamed N tag typo(s): "<old>" → "<new>" across M historical phase record(s)
   • Synced N decision index drift(s)
@@ -171,6 +169,6 @@ When the skill is invoked as `Skill project-memory audit` (standard only):
 
 **Question shapes per category:**
 
-No interactive categories remain. All active categories (3,5,6,7,8,12,13,14) are auto-fixed silently. Phase-related categories have been retired. Cat 9 and 11 remain disabled.
+No interactive categories remain. All active categories (5,6,7,8,12,13,14) are auto-fixed silently. Phase-related categories have been retired. Cat 9 and 11 remain disabled.
 
 When the user chooses `"mark ignored (permanent)"` for any finding: write the corresponding `audit_ignore` entry to `.project-memory/config.yml` immediately, then move to the next finding.

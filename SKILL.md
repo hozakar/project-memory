@@ -22,7 +22,7 @@ When this skill activates:
    - `profile=standard` → read `standard/protocol.md` for the Memory Loading Strategy and follow it. Then proceed to step 5.
    - `profile=minimal` → follow `minimal/minimal.md` instead — it covers loading, the single gate, and record-append behavior.
 
-5. **Post-first-response drift audit** (standard only) — the drift audit is deferred to after the LLM answers the user's first message. After the first user-facing response is delivered, run the drift audit (8 categories) via `audit.md` and emit the drift report as a follow-up block. Exceptions (audit runs synchronously): (a) explicit invocation via `Skill project-memory audit` or natural-language audit trigger per `DECISION-2026-06-17-audit-implicit-triggers`; (b) the first user message is itself an audit-implicit/explicit trigger — run audit synchronously to answer correctly; (c) `minimal` profile — no audit at all, no deferral applies.
+5. **Post-first-response drift audit** (standard only) — the drift audit is deferred to after the LLM answers the user's first message. After the first user-facing response is delivered, run the drift audit (7 categories) via `audit.md` and emit the drift report as a follow-up block. Exceptions (audit runs synchronously): (a) explicit invocation via `Skill project-memory audit` or natural-language audit trigger per `DECISION-2026-06-17-audit-implicit-triggers`; (b) the first user message is itself an audit-implicit/explicit trigger — run audit synchronously to answer correctly; (c) `minimal` profile — no audit at all, no deferral applies.
 
 6. Continue with the session. Do not ask the user for anything beyond the init UX (step 3) at this stage.
 

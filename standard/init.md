@@ -66,7 +66,7 @@ Standard's default is `adr_enabled: false`. If the user wants ADR support, they 
 
 ---
 
-**Summaries** — create 2 files, each with a stub header and `Last Updated: <today>`. Use the templates in `standard/templates-config.md` → Summary Templates for section headings. Do not fill content yet — wait until you have session context.
+**Summaries** — create 2 files, each with a stub header and `Last Updated: <today>`. Use the templates in `standard/templates-config.md` → Summary Templates for section headings. Scaffold each section with `*(none)*` as the default content (replace `*(none)*` with real content once you have session context).
 
 - `summaries/current-state.md` — sections: What Exists / What's In Progress / Known Debt / Risks.
 - `summaries/roadmap.md` — sections: Next / Later / Considered but not now.

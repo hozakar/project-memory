@@ -4,6 +4,26 @@ All notable changes to the project-memory skill and MCP companion server.
 
 ## Unreleased
 
+### Cat 3 drop + init deterministic defaults
+
+- **Cat 3 (stub placeholders) dropped.** Its detection targets
+  (`None recorded yet`, `TBD`, `system just initialized`, `first run
+  detected`) are never produced by the current init flow — init scaffolds
+  summary sections with instruction-text placeholders, not these stub
+  strings — so Cat 3 was a 0/0 no-op on standard-profile projects. The
+  post-hoc audit fix was compensating for init leaving placeholders
+  instead of a deterministic default; the cleaner fix is to move the
+  default into init (below) and drop the audit category.
+- **init now scaffolds `*(none)*` deterministic defaults.**
+  `standard/init.md` + `standard/templates-config.md` Summary Templates
+  fill each section with `*(none)*` at scaffold time (replacing the
+  instruction-text placeholder lines); the LLM overrides `*(none)*` with
+  real content once session context arrives. Removes the post-hoc audit
+  fix Cat 3 was performing.
+- Category count 8 → 7 active across skill + MCP docs (3,5,6,7,8,12,13,14
+  → 5,6,7,8,12,13,14); `cat3StubPlaceholders` fn + call site removed from
+  `run_audit.ts`.
+
 ### Skill slimming
 
 - `SKILL.md` on-load procedure trimmed: profile-detection step shortened
