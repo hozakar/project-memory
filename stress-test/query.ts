@@ -62,7 +62,7 @@ const QUERIES: Query[] = [
     id: 3,
     category: "Temporal",
     label: "API gateway migration cluster",
-    query: "API gateway migration phases decisions deferred follow-up unresolved",
+    query: "API gateway migration decisions deferred follow-up unresolved",
     diversify: true,
   },
   {
@@ -135,7 +135,7 @@ const QUERIES: Query[] = [
     id: 12,
     category: "Conflict",
     label: "REST → gRPC migration impact",
-    query: "REST HTTP internal service communication protocol assumptions decisions phases",
+    query: "REST HTTP internal service communication protocol assumptions decisions",
     diversify: true,
   },
   {

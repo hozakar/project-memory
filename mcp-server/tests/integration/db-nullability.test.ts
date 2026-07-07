@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import * as path from "path";
 import { createTmpDir, type TmpDir } from "./helpers/tmp-db";
-import { indexPhase } from "../../src/tools/index_phase";
+import { indexDecision } from "../../src/tools/index_decision";
 import { indexDiscussion } from "../../src/tools/index_discussion";
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-explicit-any
@@ -24,14 +24,15 @@ afterAll(() => {
 
 describe("getTable() schema nullability", () => {
   it("fresh DB produces all-nullable columns (id/vector excluded)", async () => {
-    const r = await indexPhase({
-      id: "phase-20260623-nullability-fresh-check",
+    const r = await indexDecision({
+      id: "DECISION-2026-06-23-nullability-fresh-check",
       title: "Fresh DB nullability check",
-      tags: ["test"],
-      planText: "irrelevant",
-      implementationText: "irrelevant",
-      commitDiffs: [],
-      status: "planning",
+      status: "active",
+      provenance: "collaborative",
+      primaryScope: "schema",
+      context: "irrelevant",
+      decisionBody: "irrelevant",
+      touches: ["test"],
     });
     expect(r.success).toBe(true);
 

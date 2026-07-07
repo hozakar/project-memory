@@ -62,11 +62,11 @@ None. Git already records the author of every commit; minimal does not duplicate
 
 ## MCP companion
 
-Available if installed, but minimal does NOT auto-index `MEMORY.md` into the vector DB. The single-file shape isn't a fit for the existing index schema (which is keyed on phase/decision/discussion records). If MCP is installed and the user later upgrades to lite or full, the migration step seeds proper records that DO get indexed.
+Available if installed, but minimal does NOT auto-index `MEMORY.md` into the vector DB. The single-file shape isn't a fit for the existing index schema (which is keyed on decision/discussion records; legacy phase rows are read-only). If MCP is installed and the user later upgrades to standard, the migration step seeds proper records that DO get indexed.
 
 ## Upgrading from minimal
 
-User says "switch project-memory to lite" (or full). SKILL.md → change-profile flow:
+User says "switch project-memory to standard". SKILL.md → change-profile flow:
 
 1. Expand `.project-memory/` with the target profile's skeleton (see `<target>/init.md`). `config.yml` and `MEMORY.md` are already there.
 2. Seed `summaries/roadmap.md` from `.project-memory/MEMORY.md → ## Roadmap`.
@@ -77,7 +77,7 @@ User says "switch project-memory to lite" (or full). SKILL.md → change-profile
 
 ## Downgrading to minimal
 
-User says "switch project-memory to minimal" from full or lite:
+User says "switch project-memory to minimal" from standard:
 
 1. Create `.project-memory/MEMORY.md` with the three-section template.
 2. Seed `## Roadmap` from `summaries/roadmap.md`.
@@ -92,4 +92,4 @@ User says "switch project-memory to minimal" from full or lite:
 - No drift audit: bookkeeping mistakes accumulate silently. Minimal projects shouldn't generate enough bookkeeping for this to matter — if they do, upgrade.
 - No instruction re-injection across compaction: in a long context that gets compacted, the instruction body may be lost. Minimal is for short bursts where compaction is unlikely.
 
-If any of these limitations bite, upgrade to `lite`. That's the explicit purpose of the profile system.
+If any of these limitations bite, upgrade to `standard`. That's the explicit purpose of the profile system.

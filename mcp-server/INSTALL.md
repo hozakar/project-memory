@@ -2,7 +2,7 @@
 
 The MCP companion server adds semantic search, deterministic audits, and vector
 indexing to project-memory. Strongly recommended for any project beyond the
-first few phases.
+first few sessions.
 
 ## Prerequisites
 
@@ -169,10 +169,12 @@ the MCP server automatically.
 
 ## Verify
 
-You should see these tools available: `search_memory`, `index_phase`,
-`index_decision`, `index_discussion`, `index_era`, `index_instruction`,
-`index_assignment`, `find_similar_commit`, `check_consistency`,
-`rebuild_index`, `run_audit`, `apply_audit_fixes`.
+You should see these tools available: `search_memory`, `index_decision`,
+`index_discussion`, `index_era`, `index_instruction`, `index_assignment`,
+`index_note`, `delete_note`, `find_similar_commit`, `check_consistency`,
+`rebuild_index`, `run_audit`, `apply_audit_fixes`, `list_contributors`.
+
+Legacy phase rows remain searchable via `search_memory`.
 
 ---
 

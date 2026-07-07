@@ -5,12 +5,12 @@ Synthetic load generator and indexer for validating semantic search quality at s
 ## What it tests
 
 Semantic search over a realistic project-memory corpus:
-- Up to 440 phases across 15 engineering domains (40 templates × 11 services)
-- Up to 286 decisions with full context / alternatives / rationale prose (26 templates × 11 services)
+- Up to 440 decisions across 15 engineering domains (26 templates × 11 services)
+- Up to 440 historical phase records (preserved for legacy search compat)
 - Up to 12 discussions (one per template)
 - 3-year timeline with Gaussian burst distribution (milestones every ~7 weeks, ±10 days spread)
 
-The goal is to catch search regressions — queries that should surface a specific phase or decision
+The goal is to catch search regressions — queries that should surface a specific decision or discussion
 but don't, or that return unrelated noise at the top of the result set.
 
 ## Corpus limits
@@ -20,12 +20,18 @@ combinations to avoid duplicate files:
 
 | Record type | Templates | Services | Max unique |
 |-------------|-----------|----------|------------|
-| Phases      | 40        | 11       | 440        |
 | Decisions   | 26        | 11       | 286        |
+| Phases      | 40        | 11       | 440        |
 | Discussions | 12        | —        | 12         |
 
 To go beyond these limits, use `--llm` (generates unique prose for each record) or
 `--differentiate` (post-generates variation on duplicate groups, more economical than full LLM mode).
+
+> **Note:** The phase concept was removed from the skill per DECISION-2026-07-05. Phase records
+> remain in the generated corpus as historical artifacts for legacy-compat search testing. The
+> search corpus still indexes phases alongside decisions and discussions; the eval suite includes
+> a dedicated legacy-compat query (`typeFilter: "phase"`) that verifies historical phase search
+> continues to work.
 
 ## Usage
 

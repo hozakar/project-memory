@@ -18,6 +18,8 @@
     "Decisions capped at 286 unique combos in template mode; --llm removes the cap.",
     "Discussions = max(12, decisions // 5) in --llm mode.",
     "LLM differentiation rewrites title + content for all duplicate groups (decisions, phases, discussions).",
-    "LanceDB index built with: npx tsx stress-test/index.ts stress-test/generated"
+    "LanceDB index built with: npx tsx stress-test/index.ts stress-test/generated",
+    "Phase concept removed from skill per DECISION-2026-07-05; generated corpus phases preserved as",
+    "  historical artifacts for legacy-compat search testing only."
   ]
 }

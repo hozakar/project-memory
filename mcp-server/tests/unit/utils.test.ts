@@ -1,6 +1,5 @@
 import { describe, it, expect } from "vitest";
 import {
-  buildPhaseText,
   buildDecisionText,
   buildDiscussionText,
   buildCommitText,
@@ -12,52 +11,6 @@ import {
   cosine,
   mmrRerank,
 } from "../../src/utils";
-
-describe("buildPhaseText", () => {
-  it("joins title, tags, planText, implementationText, and commit diffs", () => {
-    const result = buildPhaseText({
-      id: "phase-20260614-test",
-      title: "Test Phase",
-      tags: ["mcp", "test"],
-      planText: "plan content",
-      implementationText: "impl content",
-      commitDiffs: [{ hash: "abc123", message: "feat: add X", files: ["src/a.ts"], diffSnippet: "+line" }],
-      status: "completed",
-    });
-    expect(result).toContain("Test Phase");
-    expect(result).toContain("mcp test");
-    expect(result).toContain("plan content");
-    expect(result).toContain("impl content");
-    expect(result).toContain("feat: add X");
-    expect(result).toContain("src/a.ts");
-  });
-
-  it("handles undefined tags without throwing (null-safe join)", () => {
-    const result = buildPhaseText({
-      id: "phase-test",
-      title: "No Tags",
-      tags: undefined as unknown as string[],
-      planText: "",
-      implementationText: "",
-      commitDiffs: [],
-      status: "completed",
-    });
-    expect(result).toContain("No Tags");
-  });
-
-  it("truncates output to 6000 characters", () => {
-    const result = buildPhaseText({
-      id: "phase-test",
-      title: "T",
-      tags: [],
-      planText: "x".repeat(7000),
-      implementationText: "",
-      commitDiffs: [],
-      status: "completed",
-    });
-    expect(result.length).toBe(6000);
-  });
-});
 
 describe("buildDecisionText", () => {
   it("joins title, status, context, and decision body", () => {
@@ -233,7 +186,6 @@ describe("buildAssignmentText", () => {
       rejectionReason: null,
       completedAt: null,
       completionNote: null,
-      completedPhaseId: null,
       completedDecisionId: null,
       completedDiscussionId: null,
       remindCount: 0,
@@ -259,7 +211,6 @@ describe("buildAssignmentText", () => {
       rejectionReason: null,
       completedAt: null,
       completionNote: null,
-      completedPhaseId: null,
       completedDecisionId: null,
       completedDiscussionId: null,
       remindCount: 0,
@@ -283,7 +234,6 @@ describe("buildAssignmentText", () => {
       rejectionReason: "not my area",
       completedAt: null,
       completionNote: null,
-      completedPhaseId: null,
       completedDecisionId: null,
       completedDiscussionId: null,
       remindCount: 1,

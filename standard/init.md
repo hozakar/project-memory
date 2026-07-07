@@ -1,16 +1,14 @@
 ---
-name: project-memory-init-lite
-description: First-run initialization for lite profile. Scaffolds .project-memory/ with 2 summaries (roadmap, current-state), no discussions/assignments/eras dirs (created on first use). Writes profile: lite and profile_history into config.yml.
+name: project-memory-init
+description: First-run initialization instructions for the standard profile. Scaffolds .project-memory/ with 2 summaries (roadmap, current-state), no phases/discussions/assignments/eras dirs (created on first use as needed). Writes profile: standard and profile_history into config.yml.
 ---
 
-# First-Run Initialization (lite)
+# First-Run Initialization (standard)
 
-Read only when the user picked `lite` in the SKILL.md init UX. Create this directory structure (compared to full, several directories are omitted — they appear on first use of their feature, not at init):
+Read only when the user picked `standard` in the SKILL.md init UX. Create this directory structure:
 
 ```
 .project-memory/
-├── phases/
-│   └── index.yml
 ├── decisions/
 │   └── index.md
 ├── summaries/
@@ -25,17 +23,14 @@ Read only when the user picked `lite` in the SKILL.md init UX. Create this direc
 - `instructions/` — created on first user instruction.
 - `notes/` — created on first note.
 - `assignments/` — created on first assignment.
-- `eras/` — created on first era (maintainer-only, rare in lite).
+- `eras/` — created on first era (maintainer-only, rare).
 - `maintainers.md` — optional; create only if the user opts into the maintainer role.
 
-This keeps a fresh lite project visually clean — empty dirs aren't created speculatively.
+This keeps a fresh project visually clean — empty dirs aren't created speculatively.
+
+> **Historical phases/ archive:** if `.project-memory/phases/` already exists (from a pre-2026-07 project), it is a frozen archive. Do NOT modify it, do NOT create new phase files. New work uses records (DECISION, DISCUSSION, NOTE) and summary updates, not phases.
 
 ---
-
-**`phases/index.yml`** — start empty:
-```yaml
-phases: []
-```
 
 **`decisions/index.md`** — start with the standard header:
 ```md
@@ -43,11 +38,11 @@ phases: []
 
 ## Active
 | Date | ID | Status | Scope | Touches | Claim |
-|---|---|---|---|---|---|
+|---|---|---|---|---|---|--|
 
 ## Superseded
 | Date | ID | Status | Scope | Touches | Claim | Superseded By |
-|---|---|---|---|---|---|---|
+|---|---|---|---|---|---|---|---|
 ```
 
 ---
@@ -55,21 +50,23 @@ phases: []
 **`config.yml`** — write the profile block first:
 
 ```yaml
-profile: lite
+profile: standard
 
 profile_history:
-  - profile: lite
+  - profile: standard
     effective_date: <today YYYY-MM-DD>
     reason: initial
 
 adr_enabled: false
 ```
 
-Lite's default is `adr_enabled: false`. If the user wants ADR support, they can flip it later via `config.yml` and Cat 8 audit will scaffold ADRs for any pre-existing decisions on the next pass. Do NOT prompt the user at init — keeping init friction low is part of the lite contract.
+Standard's default is `adr_enabled: false`. If the user wants ADR support, they can flip it later via `config.yml` and Cat 8 audit will scaffold ADRs for any pre-existing decisions on the next pass. Do NOT prompt the user at init — keeping init friction low is part of the standard contract.
+
+**Backward compatibility:** Legacy config.yml files from the previous profile system (containing `profile: full` or `profile: lite`) continue to work. At read time, both `full` and `lite` are treated as `profile: standard`. The `profile_history` carries the original values for audit and migration-aware checks. No migration action is needed.
 
 ---
 
-**Summaries** — create 2 files, each with a stub header and `Last Updated: <today>`. Use the templates in `lite/templates-config.md` → Summary Templates for section headings. Do not fill content yet — wait until you have session context.
+**Summaries** — create 2 files, each with a stub header and `Last Updated: <today>`. Use the templates in `standard/templates-config.md` → Summary Templates for section headings. Do not fill content yet — wait until you have session context.
 
 - `summaries/current-state.md` — sections: What Exists / What's In Progress / Known Debt / Risks.
 - `summaries/roadmap.md` — sections: Next / Later / Considered but not now.
@@ -102,22 +99,20 @@ Only show this on first run.
 ---
 
 **Git identity advisory (non-blocking).** Run `git config user.name` and `git config user.email`. If either is empty or the command fails, print:
+
 ```
 [ℹ] Git identity not configured — project-memory records will be attributed to "unknown".
     To enable attribution, run:
       git config --global user.name "Your Name"
       git config --global user.email "you@example.com"
 ```
+
 Installation proceeds normally either way. Never block, never prompt, never escalate.
-
----
-
-**Phase creation:** After scaffolding, create the first phase directory for whatever work is about to begin. In lite, that means `phase.yml` (required) and `plan.md` (optional, only if planning content exists). Read `lite/templates-phase.md` for the schema.
 
 ---
 
 Output:
 ```
-[✅] .project-memory/ initialized in lite profile — first run detected.
-    Profile can be changed later: just say "switch project-memory to full" (or minimal).
+[✅] .project-memory/ initialized in standard profile — first run detected.
+    Profile can be changed later: just say "switch project-memory to minimal" (or back).
 ```

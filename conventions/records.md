@@ -23,7 +23,7 @@ status: open | closed
 area: pipeline | git | ui | config | ...
 discovered: YYYY-MM-DD
 resolved: YYYY-MM-DD          # set when closing
-resolved_in: phase-id (commit hash)   # set when closing
+resolved_in: <commit-hash>            # set when closing
 created_by:                   # required — see Author Attribution section
   name: "Hakan Ozakar"
   email: "hozakar@gmail.com"
@@ -47,7 +47,7 @@ Instruction records capture user workflow preferences as short prompts. They are
 - Date first — chronological sort order
 - Slug describes the instruction topic, not the state
 - Use kebab-case
-- Example: `INSTRUCTION-2026-06-13-branch-per-phase.md`
+- Example: `INSTRUCTION-2026-06-13-branch-per-era.md`
 
 **Frontmatter (required):**
 ```yaml
@@ -71,7 +71,7 @@ origin_updated: false     # true when origin modified since fork
 - At session start, current user's active instructions are loaded:
   - MCP available: `search_memory(query="<topic or relevant keywords>", type="instruction")` with `created_by_email` filter.
   - MCP unavailable: scan `.project-memory/instructions/` for INSTRUCTION-*.md files, filter by `created_by.email`.
-- At every gate checkpoint (Pre-Implementation Gate, Pre-Close Gate, Discussion trigger, Topic Shift), active instructions are re-loaded and prepended to gate context. This ensures instructions survive compaction and long contexts. See `gates/implementation.md` GATE 0.
+- At every gate checkpoint (Pre-Implementation Gate, Discussion trigger), active instructions are re-loaded and prepended to gate context. This ensures instructions survive compaction and long contexts. See `standard/gates.md` GATE 0 (Pre-Implementation Gate).
 - ≥5 active instructions triggers a warning
 - Other users' instructions are never loaded without explicit request
 
@@ -107,7 +107,7 @@ See `templates.md` for the full schema. Key fields:
 - `status`: `pending` | `accepted` | `rejected` | `ongoing` | `completed`
 - `type`: `direct` (linked to existing record) or `freeform` (standalone task)
 - `assigned_to` / `assigned_by`: `{ name, email }` objects
-- `target_type` / `target_id`: link to existing record (null for freeform)
+- `target_type` / `target_id`: link to existing record — `issue`, `discussion`, `roadmap_item`, or `null` (null for freeform). Legacy `phase` target_type is still parsed but never written.
 - `remind_count`: incremented on each `remind me later` action
 
 **State machine:**
@@ -143,7 +143,7 @@ Completed assignments are shown ONCE (not persistent). Options:
 
 **Completion rules:**
 - Only the assignee can mark `completed` (assigner uses "Do It Yourself" for their side)
-- At least one evidence field required: `completion_note`, `completed_phase_id`, `completed_decision_id`, or `completed_discussion_id`
+- At least one evidence field required: `completion_note`, `completed_decision_id`, or `completed_discussion_id`
 
 **Permission model:**
 Open — anyone can assign to anyone. Maintainer role is not extended (scope remains era creation gating). Rejection mechanism is the safety net against misuse.

@@ -24,7 +24,7 @@ The rules below describe the `full` behavior. Under `lite`, ignore every mention
 
 ---
 
-All phase / decision / discussion / issue records carry author attribution via two required frontmatter fields:
+All decision / discussion / issue records carry author attribution via two required frontmatter fields:
 
 ```yaml
 created_by:
@@ -50,14 +50,13 @@ The pair becomes the current identity. If either command fails or returns an emp
 
 | Record     | Triggers that append the current identity to `contributors` |
 |------------|-------------------------------------------------------------|
-| phase      | first or substantive write of `implementation.md` / `review-and-fixes.md` / `followup.md`; phase close (status: completed) |
 | decision   | initial write; status change (active → superseded / amended) |
 | discussion | initial write; resume update; close (status: concluded) |
 | issue      | initial write; status change (open → closed) |
 
-**In scope:** `phase.yml`, `DECISION-YYYY-MM-DD-*.md`, `DISCUSSION-YYYY-MM-DD-*.md`, `ISSUE-YYYY-MM-DD-*.md`.
+**In scope:** `DECISION-YYYY-MM-DD-*.md`, `DISCUSSION-YYYY-MM-DD-*.md`, `ISSUE-YYYY-MM-DD-*.md`.
 
-**Out of scope (do NOT add these fields):** `era-NNN.md` (project-wide), `summaries/*.md` (project-wide), `MEMORY.md` (single-user), `adr/NNNN-*.md` (MADR has no Author field — DECISION is canonical), index files (`phases/index.yml`, `decisions/index.md`, `discussions/index.md` — token economy).
+**Out of scope (do NOT add these fields):** `era-NNN.md` (project-wide), `summaries/*.md` (project-wide), `MEMORY.md` (single-user), `adr/NNNN-*.md` (MADR has no Author field — DECISION is canonical), index files (`decisions/index.md`, `discussions/index.md` — token economy).
 
 **No audit category.** Soft-fall to `unknown` makes "missing field" impossible by construction; the drift audit does not check attribution.
 
@@ -68,7 +67,7 @@ The pair becomes the current identity. If either command fails or returns an emp
 Project-memory uses a lightweight two-role system for era creation gating only. All other operations are unrestricted.
 
 **Roles:**
-- **Maintainer** — receives era creation prompts when ~25 phases accumulate. Can decide to create an era.
+- **Maintainer** — receives era creation prompts when ~6 weeks have passed since the last era OR ~30 significant commits have landed since the last era, maintainer-confirmed as today. Can decide to create an era.
 - **Developer** — default role. No era prompts. Everything else is identical to maintainer.
 
 **Source of truth:** `.project-memory/maintainers.md` — a flat YAML file:
@@ -94,8 +93,28 @@ maintainers:
 | Action | Developer | Maintainer |
 |--------|-----------|------------|
 | Audit | ✅ | ✅ |
-| Phase management | ✅ | ✅ |
 | Era creation decision | ❌ (silent) | ✅ (prompted) |
+
+## Era Frontmatter Schema
+
+New era files (era-NNN.md) use the following frontmatter. The `phases` field from legacy era files is replaced by `records` and `date_range`:
+
+```yaml
+id: era-NNN
+title: "Era N — Short Title"
+date_range: "YYYY-MM-DD to YYYY-MM-DD"
+records:
+  - DECISION-YYYY-MM-DD-slug
+  - DISCUSSION-YYYY-MM-DD-slug
+created_by:
+  name: "Your Name"
+  email: "your@email.com"
+contributors:
+  - name: "Your Name"
+    email: "your@email.com"
+```
+
+**Legacy note:** Existing era files under `.project-memory/eras/` carry a `phases:` field (listing phase IDs that comprised the era). This field is historical metadata — the `phases` field is no longer part of the schema for new eras. Do not remove or modify `phases:` in existing era files.
 
 **What this is NOT:**
 - NOT a security boundary (git handles that)

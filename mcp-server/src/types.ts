@@ -89,7 +89,6 @@ export interface AssignmentIndexData {
   rejectionReason: string | null;
   completedAt: string | null;
   completionNote: string | null;
-  completedPhaseId: string | null;
   completedDecisionId: string | null;
   completedDiscussionId: string | null;
   remindCount: number;
@@ -110,7 +109,6 @@ export interface SearchResult {
 
 export interface CommitSearchResult {
   hash: string;
-  phaseId: string;
   message: string;
   similarity: number;
 }
@@ -133,8 +131,9 @@ export interface AuditFinding {
   data: Record<string, unknown>;
 }
 
+// removed: 'create_phase_stub' from PendingFix.type in 2026-07-06 phase-removal
 export interface PendingFix {
-  type: "annotate_orphan" | "assign_commit" | "add_decision_index_row" | "fix_decision_index_status" | "assign_adr_id" | "create_adr_file" | "create_phase_stub";
+  type: "annotate_orphan" | "assign_commit" | "add_decision_index_row" | "fix_decision_index_status" | "assign_adr_id" | "create_adr_file";
   // annotate_orphan fields
   phase_id?: string;
   hash?: string;
@@ -154,16 +153,12 @@ export interface PendingFix {
   decisionContent?: string;
   decisionStatus?: string;
   adrStatus?: string;
-  // create_phase_stub fields
-  missingFile?: string;
 }
 
 export interface AuditReport {
   auto_fixed: string[];
   pending_fixes: PendingFix[];
   escalations: AuditFinding[];
-  /** Present only when raise_cat4=false. Count of Cat 4 findings suppressed server-side. */
-  cat4_gap_count?: number;
 }
 
 export interface AppliedFix {
@@ -209,51 +204,5 @@ export interface LanceRecord {
   primaryScope?: string;     // decision primary_scope — supports exact WHERE filter via scope_filter
   outcomeType?: string;      // derived discussion outcome category (none, phase, decision, roadmap) — supports exact WHERE filter via outcomeTypeFilter
   status?: string;            // record status (e.g. decision: active | superseded | amended)
-}
-
-export interface PhaseCommitMatch {
-  hash: string;          // full git commit hash (40 chars)
-  shortHash: string;     // 7-char short hash
-  message: string;       // commit message subject line
-  date: string;          // ISO date string from git
-}
-
-export interface TouchingPhase {
-  phaseId: string;
-  title: string;
-  status: string;
-  startedAt: string;
-  closedAt?: string;
-  matchingCommits: PhaseCommitMatch[];
-}
-
-export interface TouchingPhasesResult {
-  file: string;
-  phases: TouchingPhase[];
-  unmatchedCommits: PhaseCommitMatch[];  // commits not in any phase
-}
-
-export interface PhaseDependencyInfo {
-  phaseId: string;
-  title: string;
-  status: string;
-  dependsOn: string[];
-  enables: string[];
-  conflictsWith: string[];
-}
-
-export interface DependencyGraphResult {
-  phase: PhaseDependencyInfo;
-  upstream: PhaseDependencyInfo[];     // phases this one depends on
-  downstream: PhaseDependencyInfo[];   // phases that depend on this one
-  conflicts: PhaseDependencyInfo[];    // phases that conflict with this one
-  transitiveUpstream: PhaseDependencyInfo[];  // all phases needed (BFS)
-  transitiveDownstream: PhaseDependencyInfo[]; // all phases unblocked by this (BFS)
-}
-
-export interface AllDependenciesResult {
-  phases: PhaseDependencyInfo[];
-  blocked: string[];   // phase IDs where depends_on has incomplete items
-  unblocked: string[]; // phase IDs where all depends_on are complete
-  cycles: string[][];  // detected circular dependency chains
+  body?: string;              // instruction only: "THIS IS A NON-NEGOTIABLE BINDING USER INSTRUCTION:\n{prompt}"
 }

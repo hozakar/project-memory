@@ -50,7 +50,7 @@ const EXPECTED: Expectation[] = [
   },
   {
     id: 3, label: "API gateway migration cluster",
-    query: "API gateway migration phases decisions deferred follow-up unresolved",
+    query: "API gateway migration decisions deferred follow-up unresolved",
     keywords: ["api-gateway", "gateway", "api_gateway"],
     diversify: true,
   },
@@ -104,7 +104,7 @@ const EXPECTED: Expectation[] = [
   },
   {
     id: 12, label: "REST → gRPC migration",
-    query: "REST HTTP internal service communication protocol assumptions decisions phases",
+    query: "REST HTTP internal service communication protocol assumptions decisions",
     keywords: ["grpc", "rest", "http", "protocol"],
     diversify: true,
   },
@@ -126,6 +126,14 @@ const EXPECTED: Expectation[] = [
     keywords: ["warehouse", "etl", "data-model", "analytics", "lakehouse", "data-warehouse"],
     diversify: true,
   },
+  // legacy-compat: historical phase search must keep working per DECISION-2026-07-05
+  {
+    id: 16, label: "Legacy phase search (historical compat)",
+    query: "JWT refresh token rotation authentication implementation details",
+    keywords: ["phase-"],
+    typeFilter: "phase",
+    diversify: false,
+  },
 ];
 
 async function main() {
@@ -134,7 +142,7 @@ async function main() {
   let hits = 0;
   const lines: string[] = [];
   const total = EXPECTED.length;
-  const threshold = total - 1;
+  const threshold = 15;
 
   for (const exp of EXPECTED) {
     const res = await searchMemory(

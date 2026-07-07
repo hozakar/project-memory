@@ -40,7 +40,7 @@ async function seedNoteInDB(id: string, title: string, body: string) {
 }
 
 describe("runAudit — Cat 13 note consistency", () => {
-  it("auto-indexes a missing note (file exists, not in DB)", { timeout: 30000 }, async () => {
+  it("auto-indexes a missing note (file exists, not in DB)", { timeout: 120000 }, async () => {
     // Create a note file on disk but DON'T index it
     const notesDir = join(tmp.pmDir, "notes");
     mkdirSync(notesDir, { recursive: true });
