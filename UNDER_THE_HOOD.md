@@ -22,7 +22,7 @@ overhead I introduce automatically. Choose at first run; switch at any time.
 | | `standard` | `minimal` |
 |---|---|---|
 | Pre-Impl Gate | Steps 0–3 (GATE 0 + Steps 1–3) | Step 0 only |
-| Drift audit | 10 categories | none |
+| Drift audit | 8 categories | none |
 | Summaries | `roadmap.md` + `current-state.md` | inline in `MEMORY.md` |
 | Author attribution | `created_by` only | none |
 | Topic-shift detection | off | n/a |
@@ -210,11 +210,10 @@ at any time via `.project-memory/config.yml`.
 
 ## Drift audit
 
-I run a 9-category drift audit each session, deferred to after the first user response so it doesn't add latency to session start. One exception runs synchronously: explicit `Skill project-memory audit` invocation. With the MCP companion server, all 9 categories are fully deterministic — no LLM judgment involved. Without MCP, the same categories run via file-system detection with the same deterministic logic.
+I run an 8-category drift audit each session, deferred to after the first user response so it doesn't add latency to session start. One exception runs synchronously: explicit `Skill project-memory audit` invocation. With the MCP companion server, all 8 categories are fully deterministic — no LLM judgment involved. Without MCP, the same categories run via file-system detection with the same deterministic logic.
 
 | Category | Description | Resolution |
 |---|---|---|
-| 2 | Stale summary files | Auto-fix if aged >3d; escalate if fresh |
 | 3 | Stub placeholders in summary files | Auto-fix |
 | 5 | Issue files in wrong directory | Auto-fix (file move) |
 | 6 | Decision index drift | Auto-fix if aged >3d; escalate if fresh |
@@ -240,7 +239,7 @@ and past work with high accuracy, even when keyword overlap is low.
 
 **Tools provided:**
 - `search_memory` — semantic search across all record types with filters
-- `run_audit` — all 10 audit categories in a single deterministic call
+- `run_audit` — all 8 audit categories in a single deterministic call
 - `index_decision`, `index_discussion`, `index_era`,
   `index_instruction`, `index_assignment`, `index_note`, `delete_note` — upsert and
   delete records in the vector index

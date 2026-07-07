@@ -1,7 +1,7 @@
 import * as fs from "fs";
 import * as path from "path";
-import { execSync, spawnSync } from "child_process";
-// execSync used by git() helper; spawnSync used by cat7 for stdin piping
+import { spawnSync } from "child_process";
+// spawnSync used by cat7 for stdin piping
 import type { AuditReport, AuditFinding, PendingFix } from "../types";
 import { checkConsistency } from "./check_consistency";
 import { indexNote } from "./index_note";
@@ -20,14 +20,6 @@ function daysDiff(dateStr: string): number {
   const d = new Date(dateStr);
   const now = new Date();
   return Math.floor((now.getTime() - d.getTime()) / (1000 * 60 * 60 * 24));
-}
-
-function git(cmd: string, cwd: string): string {
-  try {
-    return execSync(cmd, { cwd, encoding: "utf-8", stdio: ["pipe", "pipe", "pipe"] }).trim();
-  } catch {
-    return "";
-  }
 }
 
 function readFile(filePath: string): string {
@@ -147,33 +139,6 @@ function levenshtein(a: string, b: string): number {
 // ---------------------------------------------------------------------------
 // Audit categories
 // ---------------------------------------------------------------------------
-
-function cat2SummaryStaleness(
-  projectRoot: string,
-  projectMemoryDir: string,
-  ignored: AuditIgnoreSet
-): string[] {
-  const latestDate = git("git log -1 --format=%cs", projectRoot);
-  if (!latestDate) return [];
-  const summariesDir = path.join(projectMemoryDir, "summaries");
-  if (!fs.existsSync(summariesDir)) return [];
-
-  const autoFixed: string[] = [];
-  for (const filename of fs.readdirSync(summariesDir)) {
-    if (!filename.endsWith(".md")) continue;
-    if (ignored.has(`summary:${filename}`)) continue;
-    const content = readFile(path.join(summariesDir, filename));
-    const luMatch = content.match(/Last Updated:\s*(\d{4}-\d{2}-\d{2})/);
-    if (!luMatch) {
-      autoFixed.push(`Summary ${filename} has no 'Last Updated:' field. Add one with today's date.`);
-      continue;
-    }
-    if (luMatch[1] < latestDate) {
-      autoFixed.push(`Summary ${filename} is stale (Last Updated ${luMatch[1]}, project commit ${latestDate}). Bump date to today.`);
-    }
-  }
-  return autoFixed;
-}
 
 function cat3StubPlaceholders(projectMemoryDir: string, ignored: AuditIgnoreSet): AuditFinding[] {
   const summariesDir = path.join(projectMemoryDir, "summaries");
@@ -659,9 +624,6 @@ export async function runAudit(
   // Auto-fix categories (silent)
   autoFixed.push(...cat5MisplacedIssues(projectMemoryDir));
   autoFixed.push(...cat11DiscussionExpiry(projectMemoryDir));
-
-  // Cat 2: always auto-fix (returns string[])
-  autoFixed.push(...cat2SummaryStaleness(projectRoot, projectMemoryDir, ignored));
 
   // Cat 6: auto-fix + pending fixes
   const cat6Result = cat6DecisionDrift(projectMemoryDir, ignored);

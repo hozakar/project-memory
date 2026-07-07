@@ -36,6 +36,14 @@ All notable changes to the project-memory skill and MCP companion server.
   commit). Hook-enforceable where turn/session hooks exist; LLM-enforced
   turn-end self-check as fallback. Decision-moment awareness (decisions
   captured when made, mid-turn) and session-start load are unchanged.
+- **Cat 2 (summary staleness) dropped.** Auto-fix bumped the `Last Updated:`
+  date without refreshing content — masking staleness (a stale-content summary
+  with a fresh date misleads readers). Redundant with the turn-boundary sweep
+  (prevents staleness) and the session-start LLM self-check in
+  `standard/protocol.md` (catches sweep failure, triggers re-derivation — no
+  harmful date-lie). Resolves two item-3 drift findings (run_audit vs
+  audit-fs.md scope mismatch; auto_fixed semantics mismatch). Audit category
+  set 9 → 8 active. See DECISION-2026-07-07-cat2-summary-staleness-dropped.
 
 ## [0.1.2] — 2026-07-07 — Post-carveout MCP companion alignment
 
