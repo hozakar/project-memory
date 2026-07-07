@@ -19,7 +19,7 @@ The right axis for choosing a profile is **longevity × revisit frequency × rea
 |---|---|---|---|---|
 | 1 | Pre-Implementation Gate | Step 0 + 1 + 2 + 3 (Step 4 skipped) | Step 0 only (instruction inject, then continue) |
 | 2 | Turn-boundary sweep | Turn-end check: "did this turn commit?" → update current-state.md (always) + roadmap.md (on scope change). One judgment per turn. | n/a |
-| 3 | Drift Audit | 7 categories (5,6,7,8,12,13,14). Phase-related categories retired. **Off:** 9, 11 | none |
+| 3 | Drift Audit | 5 categories (5,6,8,13,14). Phase-related categories retired. **Off:** 9, 11 | none |
 | 4 | Summaries | 2 files (`roadmap.md` + `current-state.md`) | inline sections of `MEMORY.md` |
 | 5 | Gate instruction re-injection | Pre-Impl Gate Step 0 only | Pre-Impl Gate Step 0 only (the only gate that exists) |
 | 6 | Author attribution | `created_by` only | none |
@@ -78,7 +78,7 @@ First-run init asks one question with inline guidance:
 ```
 How do you want to run project-memory in this project?
 
-  1) standard — lean ceremony, 2 summaries, 10-category audit, for most projects
+  1) standard — lean ceremony, 2 summaries, 5-category audit, for most projects
   2) minimal  — single MEMORY.md file, for short or throwaway work
 
 Things to consider:

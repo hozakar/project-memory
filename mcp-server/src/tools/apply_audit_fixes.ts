@@ -40,65 +40,6 @@ function readConfigField(projectMemoryDir: string, key: string): string | null {
 }
 
 // ---------------------------------------------------------------------------
-// annotate_orphan — replace bare hash with "<hash> [orphaned YYYY-MM-DD]"
-// in phases/index.yml AND phases/<phase_id>/phase.yml. Idempotent.
-// ---------------------------------------------------------------------------
-
-function applyAnnotateOrphan(
-  fix: PendingFix,
-  projectMemoryDir: string,
-): AppliedFix | FailedFix {
-  const phaseId = fix.phase_id;
-  const hash = fix.hash;
-  const date = fix.date;
-  if (!phaseId || !hash || !date) {
-    return { fix_type: "annotate_orphan", reason: "schema_mismatch", details: "missing phase_id/hash/date" };
-  }
-
-  validateMemoryId(phaseId, "phaseId");
-  const indexPath = path.join(projectMemoryDir, "phases", "index.yml");
-  const phasePath = path.join(projectMemoryDir, "phases", phaseId, "phase.yml");
-  if (!fileExists(indexPath) || !fileExists(phasePath)) {
-    return { fix_type: "annotate_orphan", reason: "file_not_found", details: `${indexPath} or ${phasePath}` };
-  }
-
-  const annotated = `${hash} [orphaned ${date}]`;
-  // Hex boundary lookahead: the next char must NOT be a hex digit (so a 7-char
-  // abbrev does not match the prefix of a stored 40-char hash and corrupt it).
-  // The annotated form ends with `]` so `(?![0-9a-f])` also blocks re-matching
-  // an already-annotated hash on a second run.
-  const re = new RegExp(`(- )${hash}(?![0-9a-f])(?! \\[)`, "g");
-  let mutations = 0;
-
-  for (const target of [indexPath, phasePath]) {
-    const before = readFile(target);
-    const after = before.replace(re, `$1${annotated}`);
-    if (after !== before) {
-      fs.writeFileSync(target, after, "utf-8");
-      mutations++;
-    }
-    // Also handle merge_commit: scalar form
-    if (fix.location === "merge_commit") {
-      const before2 = readFile(target);
-      const mcRe = new RegExp(`(merge_commit:\\s+)${hash}(?![0-9a-f])(?! \\[)`, "g");
-      const after2 = before2.replace(mcRe, `$1${annotated}`);
-      if (after2 !== before2) {
-        fs.writeFileSync(target, after2, "utf-8");
-        mutations++;
-      }
-    }
-  }
-
-  return {
-    fix_type: "annotate_orphan",
-    target_file: path.relative(path.dirname(projectMemoryDir), phasePath),
-    summary: mutations > 0
-      ? `Annotated orphan hash ${hash} in ${phaseId}`
-      : `Hash ${hash} already annotated in ${phaseId} (no-op)`,
-  };
-}
-
-// ---------------------------------------------------------------------------
 // assign_commit — append commit hash to phases/<phase_id>/phase.yml `commits:`
 // list AND mirror to phases/index.yml entry. Idempotent.
 // ---------------------------------------------------------------------------
@@ -503,9 +444,6 @@ export async function applyAuditFixes(
   for (const fix of pendingFixes) {
     let result: AppliedFix | PartialFix | FailedFix;
     switch (fix.type) {
-      case "annotate_orphan":
-        result = applyAnnotateOrphan(fix, projectMemoryDir);
-        break;
       case "assign_commit":
         result = applyAssignCommit(fix, projectMemoryDir);
         break;

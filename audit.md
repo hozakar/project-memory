@@ -52,9 +52,9 @@ The model has 1 effective tier:
 
 | Severity | Categories | Behavior |
 |----------|-----------|----------|
-| **auto-fix** | 5,6,7,8,12,13,14 | Applied silently; logged in drift report. |
+| **auto-fix** | 5,6,8,13,14 | Applied silently; logged in drift report. |
 
-In standard, phase-related categories retired, Cat 9 and 11 are not detected at all (not "auto-fixed silently" — simply absent).
+In standard, phase-related categories retired, Cat 7 and 12 dropped, Cat 9 and 11 are not detected at all (not "auto-fixed silently" — simply absent).
 
 ---
 
@@ -79,22 +79,13 @@ Before escalating any finding, check the `audit_ignore` list in `.project-memory
 | 6 | `decision-drift:<DECISION-ID>:<missing-row|orphan-row|status-mismatch>` |
 | 8 | `adr-drift:<DECISION-ID>:<missing-adr_id|missing-file|status-mismatch>` |
 | 9 | `discussion-drift:<DISCUSSION-ID>:<missing-row|orphan-row|status-mismatch>` |
-| 12 | `tag-typo:<phase-id>:<tag-value>` |
 | 14 | `assignment-orphan:<ASSIGNMENT-ID>` / `assignment-stale:<ASSIGNMENT-ID>` / `assignment-no-evidence:<ASSIGNMENT-ID>` |
 
 **`config.yml` format:**
 
 ```yaml
 audit_ignore:
-  - category: 12
-    key: "phase-20260611-skill-md-refactor:skil-md"
-    reason: "legacy typo, accepted as-is"
-    ignored_at: 2026-06-12
-  # Pattern-based example — suppresses tag typo "skil-md" across ALL phases:
-  - category: 12
-    key: "tag-typo:*:skil-md"
-    reason: "recurring typo, suppressed globally"
-    ignored_at: 2026-06-13
+
 ```
 
 **Phase-keyed `audit_ignore` entries:** Existing phase-keyed ignore entries in `.project-memory/config.yml` (e.g. Cat 10 phase-completeness or Cat 4 phase-gap entries) stay put — they only ever match frozen phase artifacts, are harmless, and act as a historical record of past audit suppressions. There is no need to remove them.
@@ -141,7 +132,6 @@ When an era (`era-NNN.md`) is created or updated in `.project-memory/eras/`:
   • Renamed N tag typo(s): "<old>" → "<new>" across M historical phase record(s)
   • Synced N decision index drift(s)
   • Synced N ADR drift(s)
-  • Auto-annotated: N orphan commit reference(s) across M historical phase record(s) → [orphaned YYYY-MM-DD]
   • Auto-archived: DISCUSSION-xxx → discussions/archive/
   • Auto-fixed: moved <filename> to closed/
   • MCP sync: N entries updated
@@ -169,6 +159,6 @@ When the skill is invoked as `Skill project-memory audit` (standard only):
 
 **Question shapes per category:**
 
-No interactive categories remain. All active categories (5,6,7,8,12,13,14) are auto-fixed silently. Phase-related categories have been retired. Cat 9 and 11 remain disabled.
+No interactive categories remain. All active categories (5,6,8,13,14) are auto-fixed silently. Phase-related categories have been retired. Cat 7 and 12 dropped. Cat 9 and 11 remain disabled.
 
 When the user chooses `"mark ignored (permanent)"` for any finding: write the corresponding `audit_ignore` entry to `.project-memory/config.yml` immediately, then move to the next finding.

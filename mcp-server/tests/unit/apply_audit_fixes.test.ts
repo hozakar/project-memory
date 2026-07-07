@@ -28,41 +28,6 @@ afterEach(() => {
   fs.rmSync(tmpRoot, { recursive: true, force: true });
 });
 
-describe("apply_audit_fixes — annotate_orphan", () => {
-  it("annotates a bare commit hash in both index.yml and phase.yml", async () => {
-    w("phases/index.yml", `phases:\n  - id: phase-x\n    commits:\n      - deadbee\n`);
-    w("phases/phase-x/phase.yml", `id: phase-x\ncommits:\n  - deadbee\n`);
-
-    const fix: PendingFix = { type: "annotate_orphan", phase_id: "phase-x", hash: "deadbee", location: "commits", date: "2026-06-17" };
-    const result = await applyAuditFixes(pmDir, [fix]);
-
-    expect(result.applied).toHaveLength(1);
-    expect(r("phases/phase-x/phase.yml")).toContain("deadbee [orphaned 2026-06-17]");
-    expect(r("phases/index.yml")).toContain("deadbee [orphaned 2026-06-17]");
-  });
-
-  it("is idempotent — already-annotated hash is a no-op", async () => {
-    w("phases/index.yml", `phases:\n  - id: phase-x\n    commits:\n      - deadbee [orphaned 2026-06-17]\n`);
-    w("phases/phase-x/phase.yml", `id: phase-x\ncommits:\n  - deadbee [orphaned 2026-06-17]\n`);
-
-    const fix: PendingFix = { type: "annotate_orphan", phase_id: "phase-x", hash: "deadbee", location: "commits", date: "2026-06-17" };
-    const result = await applyAuditFixes(pmDir, [fix]);
-
-    expect(result.applied).toHaveLength(1);
-    expect(result.applied[0].summary).toMatch(/already annotated/);
-    expect(r("phases/phase-x/phase.yml").match(/deadbee \[orphaned/g)?.length).toBe(1);
-  });
-
-  it("fails cleanly if the phase file does not exist", async () => {
-    w("phases/index.yml", `phases:\n  - id: phase-x\n    commits: []\n`);
-    const fix: PendingFix = { type: "annotate_orphan", phase_id: "phase-missing", hash: "deadbee", location: "commits", date: "2026-06-17" };
-    const result = await applyAuditFixes(pmDir, [fix]);
-
-    expect(result.failed).toHaveLength(1);
-    expect(result.failed[0].reason).toBe("file_not_found");
-  });
-});
-
 describe("apply_audit_fixes — assign_commit", () => {
   it("appends a commit to phase.yml commits: [] and index.yml", async () => {
     w("phases/index.yml", `phases:\n  - id: phase-x\n    commits: []\n`);
@@ -254,22 +219,6 @@ describe("apply_audit_fixes — create_adr_file", () => {
 });
 
 describe("apply_audit_fixes — regression guards from review", () => {
-  it("annotate_orphan: abbreviated hash does not corrupt a stored full-length hash", async () => {
-    const fullHash = "deadbee" + "abcdef0123456789012345678901234"; // 41 char? actually need 40 total
-    const trueFull = "deadbeeabcdef0123456789012345678901234567"; // 41 — let's use 40
-    const fortyHash = "deadbee0123456789abcdef0123456789abcdef0"; // 40 hex chars
-    w("phases/index.yml", `phases:\n  - id: phase-x\n    commits:\n      - ${fortyHash}\n`);
-    w("phases/phase-x/phase.yml", `id: phase-x\ncommits:\n  - ${fortyHash}\n`);
-    // Fix payload carries abbreviated hash; must NOT match the 40-char one.
-    const fix: PendingFix = { type: "annotate_orphan", phase_id: "phase-x", hash: "deadbee", location: "commits", date: "2026-06-17" };
-    void fullHash; void trueFull;
-    const result = await applyAuditFixes(pmDir, [fix]);
-    // No corruption: 40-char hash still intact, no partial annotation injected
-    expect(r("phases/phase-x/phase.yml")).toContain(fortyHash);
-    expect(r("phases/phase-x/phase.yml")).not.toMatch(/deadbee \[orphaned/);
-    expect(result.applied[0].summary).toMatch(/already annotated|no-op/);
-  });
-
   it("assign_commit: hash appearing in unrelated field (notes) is not mistaken for already-present", async () => {
     w("phases/index.yml", `phases:\n  - id: phase-x\n    commits: []\n`);
     w("phases/phase-x/phase.yml", `id: phase-x\nnotes: "see abc1234 for context"\ncommits: []\n`);
@@ -351,22 +300,9 @@ describe("apply_audit_fixes — batch + flags", () => {
     expect(result.rerun_audit_recommended).toBe(true);
   });
 
-  it("rerun_audit_recommended is false for annotate_orphan only", async () => {
-    w("phases/index.yml", `phases:\n  - id: phase-x\n    commits:\n      - deadbee\n`);
-    w("phases/phase-x/phase.yml", `id: phase-x\ncommits:\n  - deadbee\n`);
-    const fix: PendingFix = { type: "annotate_orphan", phase_id: "phase-x", hash: "deadbee", location: "commits", date: "2026-06-17" };
-    const result = await applyAuditFixes(pmDir, [fix]);
-    expect(result.rerun_audit_recommended).toBe(false);
-  });
 });
 
 describe("apply_audit_fixes — path traversal hardening", () => {
-  it("annotate_orphan: rejects phaseId with traversal sequence", async () => {
-    w("phases/index.yml", `phases: []\n`);
-    const fix: PendingFix = { type: "annotate_orphan", phase_id: "../../etc/passwd", hash: "deadbee", location: "commits", date: "2026-06-17" };
-    await expect(applyAuditFixes(pmDir, [fix])).rejects.toThrow("Invalid memory ID");
-  });
-
   it("assign_commit: rejects phaseId with traversal sequence", async () => {
     const fix: PendingFix = { type: "assign_commit", phaseId: "../../etc/passwd", commitHash: "abc1234", files: [] };
     await expect(applyAuditFixes(pmDir, [fix])).rejects.toThrow("Invalid memory ID");
@@ -390,11 +326,6 @@ describe("apply_audit_fixes — path traversal hardening", () => {
 
   it("fix_decision_index_status: rejects decisionId with traversal sequence", async () => {
     const fix: PendingFix = { type: "fix_decision_index_status", decisionId: "../../etc/passwd", correctStatus: "active" };
-    await expect(applyAuditFixes(pmDir, [fix])).rejects.toThrow("Invalid memory ID");
-  });
-
-  it("annotate_orphan: rejects phaseId with forward slash", async () => {
-    const fix: PendingFix = { type: "annotate_orphan", phase_id: "foo/bar", hash: "deadbee", location: "commits", date: "2026-06-17" };
     await expect(applyAuditFixes(pmDir, [fix])).rejects.toThrow("Invalid memory ID");
   });
 

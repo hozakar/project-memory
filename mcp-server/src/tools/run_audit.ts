@@ -1,7 +1,5 @@
 import * as fs from "fs";
 import * as path from "path";
-import { spawnSync } from "child_process";
-// spawnSync used by cat7 for stdin piping
 import type { AuditReport, AuditFinding, PendingFix } from "../types";
 import { checkConsistency } from "./check_consistency";
 import { indexNote } from "./index_note";
@@ -76,65 +74,7 @@ function readAuditIgnore(projectMemoryDir: string): AuditIgnoreSet {
   return ignored;
 }
 
-interface PhaseEntry {
-  phaseId: string;
-  commits: Set<string>;
-  mergeCommit: string | null;
-  status: string;
-  block: string;
-  startedAt: string | null;
-}
 
-function parsePhasesFromIndex(indexContent: string): PhaseEntry[] {
-  const entries: PhaseEntry[] = [];
-  const phaseBlockRe = /^\s{2}-\s+id:\s+(.+)$/gm;
-  let m: RegExpExecArray | null;
-
-  while ((m = phaseBlockRe.exec(indexContent)) !== null) {
-    const phaseId = m[1].trim().replace(/^['"]|['"]$/g, "");
-    const blockStart = m.index;
-    const nextRe = /^\s{2}-\s+id:/gm;
-    nextRe.lastIndex = blockStart + 1;
-    const next = nextRe.exec(indexContent);
-    const block = next ? indexContent.slice(blockStart, next.index) : indexContent.slice(blockStart);
-
-    const commits = new Set<string>();
-    const commitsSection = block.match(/commits:([\s\S]*?)(?=\n\s{4}\w|\n\s{2}\w|$)/);
-    if (commitsSection) {
-      const hashRe = /^\s+-\s+([0-9a-f]{7,40})/gm;
-      let hm: RegExpExecArray | null;
-      while ((hm = hashRe.exec(commitsSection[1])) !== null) commits.add(hm[1]);
-    }
-
-    const mergeMatch = block.match(/merge_commit:\s+([0-9a-f]{7,40})/);
-    const mergeCommit = mergeMatch ? mergeMatch[1] : null;
-    if (mergeCommit) commits.add(mergeCommit);
-
-    const statusMatch = block.match(/status:\s+(\S+)/);
-    const status = statusMatch ? statusMatch[1].replace(/^['"]|['"]$/g, "") : "";
-
-    const startedAtMatch = block.match(/started_at:\s+(\d{4}-\d{2}-\d{2})/);
-    const startedAt = startedAtMatch ? startedAtMatch[1] : null;
-
-    entries.push({ phaseId, commits, mergeCommit, status, block, startedAt });
-  }
-  return entries;
-}
-
-function levenshtein(a: string, b: string): number {
-  const m = a.length, n = b.length;
-  const dp: number[][] = Array.from({ length: m + 1 }, (_, i) =>
-    Array.from({ length: n + 1 }, (_, j) => (i === 0 ? j : j === 0 ? i : 0))
-  );
-  for (let i = 1; i <= m; i++) {
-    for (let j = 1; j <= n; j++) {
-      dp[i][j] = a[i - 1] === b[j - 1]
-        ? dp[i - 1][j - 1]
-        : 1 + Math.min(dp[i - 1][j - 1], dp[i - 1][j], dp[i][j - 1]);
-    }
-  }
-  return dp[m][n];
-}
 
 // ---------------------------------------------------------------------------
 // Audit categories
@@ -218,54 +158,6 @@ function cat6DecisionDrift(projectMemoryDir: string, ignored: AuditIgnoreSet): {
   }
 
   return { autoFixed, pendingFixes };
-}
-
-function cat7OrphanCommitRefs(projectRoot: string, phases: PhaseEntry[]): PendingFix[] {
-  const allHashes: { hash: string; phaseId: string; isMerge: boolean }[] = [];
-  for (const p of phases) {
-    for (const hash of p.commits) {
-      allHashes.push({ hash, phaseId: p.phaseId, isMerge: hash === p.mergeCommit });
-    }
-  }
-  if (allHashes.length === 0) return [];
-
-  // Use spawnSync to pass hashes via stdin — avoids shell redirection and temp files
-  const hashInput = allHashes.map(h => h.hash).join("\n");
-  const result = spawnSync("git", ["cat-file", "--batch-check"], {
-    cwd: projectRoot,
-    input: hashInput,
-    encoding: "utf-8",
-  });
-  if (result.error || result.status !== 0) return [];
-  const checkResult = result.stdout || "";
-
-  // git cat-file outputs the input hash as-is (may be abbreviated) followed by type or "missing"
-  // Index both the full output token and its first 7 chars to match stored abbreviated hashes
-  const missing = new Set<string>();
-  for (const line of checkResult.split("\n")) {
-    if (line.includes(" missing")) {
-      const h = line.split(" ")[0].trim();
-      missing.add(h);
-      missing.add(h.slice(0, 7));
-    }
-  }
-
-  const fixes: PendingFix[] = [];
-  const seen = new Set<string>();
-  for (const entry of allHashes) {
-    const isOrphaned = missing.has(entry.hash) || missing.has(entry.hash.slice(0, 7));
-    if (isOrphaned && !seen.has(entry.hash)) {
-      seen.add(entry.hash);
-      fixes.push({
-        type: "annotate_orphan",
-        phase_id: entry.phaseId,
-        hash: entry.hash,
-        location: entry.isMerge ? "merge_commit" : "commits",
-        date: today(),
-      });
-    }
-  }
-  return fixes;
 }
 
 function cat8AdrDrift(projectMemoryDir: string, ignored: AuditIgnoreSet): { autoFixed: string[]; pendingFixes: PendingFix[] } {
@@ -436,48 +328,6 @@ function cat11DiscussionExpiry(projectMemoryDir: string): string[] {
   return autoFixed;
 }
 
-function cat12TagInconsistency(phases: PhaseEntry[], ignored: AuditIgnoreSet): AuditFinding[] {
-  const tagsByPhase = new Map<string, string[]>();
-  for (const phase of phases) {
-    const tagsSection = phase.block.match(/tags:([\s\S]*?)(?=\n\s{4}\w|\n\s{2}[-\w]|$)/);
-    if (!tagsSection) continue;
-    const tags: string[] = [];
-    const tagRe = /^\s+-\s+(\S+)/gm;
-    let tm: RegExpExecArray | null;
-    while ((tm = tagRe.exec(tagsSection[1])) !== null) tags.push(tm[1]);
-    if (tags.length > 0) tagsByPhase.set(phase.phaseId, tags);
-  }
-
-  const allUnique = [...new Set([...tagsByPhase.values()].flat())];
-  if (allUnique.length < 5) return [];
-
-  const findings: AuditFinding[] = [];
-  for (const [phaseId, tags] of tagsByPhase) {
-    const phase = phases.find(p => p.phaseId === phaseId);
-    const closedMatch = phase?.block.match(/closed_at:\s+(\d{4}-\d{2}-\d{2})/);
-    const ageDays = closedMatch ? daysDiff(closedMatch[1]) : 0;
-
-    for (const tag of tags) {
-      if (tag.length < 4) continue;
-      let best: { other: string; dist: number } | null = null;
-      for (const other of allUnique) {
-        if (other === tag || other.length < 4) continue;
-        if (Math.abs(tag.length - other.length) > 3) continue;
-        const dist = levenshtein(tag, other);
-        if (dist > 0 && dist <= 2 && (!best || dist < best.dist)) best = { other, dist };
-      }
-      if (best && !ignored.has(`tag-typo:${phaseId}:${tag}`)) {
-        findings.push({
-          category: 12, severity: "low", interactive: false,
-          description: `Tag "${tag}" in ${phaseId} resembles "${best.other}" (distance ${best.dist})`,
-          data: { tag, phase_id: phaseId, similar_tag: best.other, distance: best.dist, age_days: ageDays },
-        });
-      }
-    }
-  }
-  return findings;
-}
-
 function cat14AssignmentIntegrity(
   projectMemoryDir: string,
   ignored: AuditIgnoreSet,
@@ -586,9 +436,7 @@ export async function runAudit(
     return { auto_fixed: [], pending_fixes: [], escalations: [] };
   }
 
-  const projectRoot = path.dirname(projectMemoryDir);
   const ignored = readAuditIgnore(projectMemoryDir);
-  const phases = parsePhasesFromIndex(readFile(path.join(projectMemoryDir, "phases", "index.yml")));
 
   const autoFixed: string[] = [];
   const pendingFixes: PendingFix[] = [];
@@ -607,12 +455,6 @@ export async function runAudit(
   const cat8Result = cat8AdrDrift(projectMemoryDir, ignored);
   autoFixed.push(...cat8Result.autoFixed);
   pendingFixes.push(...cat8Result.pendingFixes);
-
-  // Cat 7: pending fixes (YAML annotations — LLM applies these)
-  pendingFixes.push(...cat7OrphanCommitRefs(projectRoot, phases));
-
-  // Cat 12: report-only escalations
-  escalations.push(...cat12TagInconsistency(phases, ignored));
   // Cat 9 (discussion index drift)
   escalations.push(...cat9DiscussionDrift(projectMemoryDir, ignored));
   // Cat 13: FS is source of truth.

@@ -4,6 +4,19 @@ All notable changes to the project-memory skill and MCP companion server.
 
 ## Unreleased
 
+### Cat 7 + Cat 12 drop
+
+- **Cat 7 (orphan commit references) dropped + Cat 12 (tag inconsistency) dropped.**
+  Cat 7's one-time value was a 2-orphan annotate pass already applied to the working
+  tree (folded into this commit); Cat 12 produced 49 findings on this repo, ALL false
+  positives, ALL suppressed via `tag-typo:*:<tag>` ignore wildcards — and the phase
+  population is frozen (phase concept dropped per DECISION-2026-07-05), so neither
+  category can ever produce future true positives. Delete `parsePhasesFromIndex`/
+  `PhaseEntry`/`levenshtein`/`spawnSync` residue from `run_audit.ts`; drop
+  `annotate_orphan` PendingFix variant from `types.ts`/`server.ts`/`apply_audit_fixes.ts`;
+  remove 20 `tag-typo:*` ignore entries from `config.yml`. Category count 7 → 5 active
+  across all skill + MCP docs.
+
 ### Cat 3 drop + init deterministic defaults
 
 - **Cat 3 (stub placeholders) dropped.** Its detection targets
