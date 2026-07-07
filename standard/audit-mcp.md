@@ -10,17 +10,15 @@ description: MCP-driven drift audit fast path for the standard profile. Calls ru
 **When `run_audit` is in available MCP tools:**
 
 1. Read `.project-memory/config.yml` to confirm `profile: standard`.
-2. Call `run_audit(project_memory_dir, { profile: "standard", raise_cat4: false })` on on-load, or `run_audit(project_memory_dir, { profile: "standard", raise_cat4: true })` when invoked as `Skill project-memory audit`. The MCP server will:
+2. Call `run_audit(project_memory_dir, { profile: "standard" })` for both on-load and explicit `Skill project-memory audit` invocation. The MCP server will:
    - Internally skip phase-related and discussion-specific categories.
-3. Receive `{ auto_fixed, pending_fixes, escalations, cat4_gap_count }`:
+3. Receive `{ auto_fixed, pending_fixes, escalations }`:
    - `auto_fixed`: file-move operations already executed by the MCP server (Cat 5 misplaced-issue moves). Log them in the auto-fix line.
    - `pending_fixes`: deterministic fixes detected but not yet applied. If `apply_audit_fixes` is in available tools, forward the **entire** array (no filtering) to `apply_audit_fixes(project_memory_dir, pending_fixes)`. **If `apply_audit_fixes` is NOT available** (older MCP server): fall back to applying each fix manually via `Edit`. The tool returns `{ applied, partial, failed, rerun_audit_recommended }`. In standard, the most common pending type is `annotate_orphan` (Cat 7). Decision-related pending types (`add_decision_index_row`, etc.) still appear if decisions exist — handle them per the standard flow.
-   - `escalations`: remaining findings. Each carries `category`, `severity`, `description`, `interactive` (bool), and `data`. When `raise_cat4: false`, phase-gap findings do NOT appear here — suppressed server-side, reflected in `cat4_gap_count`.
-   - `cat4_gap_count` *(present only when `raise_cat4: false`)*: count of phase-gap findings the server suppressed. Phase-gap category is retired — this value is expected to be 0 for standard profile projects.
+   - `escalations`: remaining findings. Each carries `category`, `severity`, `description`, `interactive` (bool), and `data`.
 4. For each escalation where `interactive: true` → enter interactive triage using the question shapes in `audit.md` → Interactive Mode.
 5. For each escalation where `interactive: false` → these are pre-classified for auto-fix. Report them in the auto-fix log (not interactive triage).
-6. If `cat4_gap_count > 0` → add to the drift report Info section: `• Phase-gap: N open-phase gap(s) — commit(s) couldn't be auto-assigned. Run \`audit\` to resolve.` (Phase-gap category is retired, so this line should not appear in practice for standard projects.)
-7. Skip the file-based Detection Procedure in `standard/audit-fs.md` entirely — `run_audit` with `profile: "standard"` has already covered all active categories.
+6. Skip the file-based Detection Procedure in `standard/audit-fs.md` entirely — `run_audit` with `profile: "standard"` has already covered all active categories.
 
 **Backward compatibility with older MCP server versions:**
 

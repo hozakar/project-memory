@@ -19,7 +19,7 @@ Optional MCP companion server for the [project-memory](../) skill. Provides sema
 - `apply_audit_fixes(project_memory_dir, pending_fixes[])` — deterministically execute `PendingFix` variants returned by `run_audit`; source-of-truth-safe (reads `.project-memory/` files only, no LanceDB reads, no prose synthesis); idempotent; returns {applied, partial, failed, rerun_audit_recommended}
 - `list_contributors()` — walk all project-memory records, deduplicate contributors by email, return sorted list
 
-**Version:** 0.1.1
+**Version:** 0.1.2
 
 **Record types indexed:** decisions, discussions, eras, instructions, assignments, notes, and legacy phase rows (all previously indexed record types). Notes are user-scoped and private — broad searches exclude them; `search_memory` auto-applies `created_by_email` when `type_filter="note"`.
 

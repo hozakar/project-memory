@@ -40,11 +40,16 @@ export function buildCommitText(diff: CommitDiff): string {
 }
 
 export function buildEraText(data: EraIndexData): string {
+  const content = (data.records && data.records.length > 0)
+    ? data.records.join(" ")
+    : (data.phases && data.phases.length > 0)
+      ? data.phases.join(" ")
+      : "";
   return [
     data.id,
     data.title,
     data.dateRange,
-    data.phases.join(" "),
+    content,
     data.narrative,
   ]
     .join("\n")

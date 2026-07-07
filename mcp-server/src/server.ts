@@ -286,11 +286,12 @@ srv.tool(
 
 srv.tool(
   "index_era",
-  "Index or update an era summary in the vector DB. Call when a new era-NNN.md is written. Upsert by ID.",
+  "Index or update an era summary in the vector DB. Call when a new era-NNN.md is written. New eras pass `records` (list of DECISION/DISCUSSION IDs) + `dateRange`; legacy eras may pass `phases` for backward-compat re-indexing. Upsert by ID.",
   {
     id: z.string().regex(/^era-[0-9]{3,}$/).describe("Era ID, e.g. era-001"),
     title: z.string(),
-    phases: z.array(z.string()),
+    records: z.array(z.string()).optional().default([]).describe("Primary record IDs (DECISION/DISCUSSION) covered by this era. Omit (or pass []) for legacy eras that use phases instead."),
+    phases: z.array(z.string()).optional().describe("Legacy: frozen historical era phase IDs for backward-compat re-indexing"),
     dateRange: z.string(),
     narrative: z.string(),
   },

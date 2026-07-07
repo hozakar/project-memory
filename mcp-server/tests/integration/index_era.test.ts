@@ -19,14 +19,13 @@ afterAll(() => {
 });
 
 describe("indexEra + searchMemory roundtrip", () => {
-  it("indexes an era and retrieves it via semantic search", async () => {
+  it("indexes a new-era (records) and retrieves it via semantic search", async () => {
     const result = await indexEra({
       id: "era-099-test",
       title: "Test Era — Vector Index Hardening",
-      phases: [
-        "phase-20260620-fake-one",
-        "phase-20260621-fake-two",
-        "phase-20260622-fake-three",
+      records: [
+        "DECISION-2026-06-20-fake-one",
+        "DISCUSSION-2026-06-21-fake-two",
       ],
       dateRange: "2026-06-20 to 2026-06-22",
       narrative:
@@ -45,6 +44,36 @@ describe("indexEra + searchMemory roundtrip", () => {
     );
 
     const match = results.find((r) => r.id === "era-099-test");
+    expect(match).toBeDefined();
+    expect(match!.similarity).toBeGreaterThan(0.3);
+  });
+
+  it("indexes a legacy era (phases) for backward compatibility", async () => {
+    const result = await indexEra({
+      id: "era-099-legacy",
+      title: "Test Legacy Era — Phase-Based",
+      phases: [
+        "phase-20260620-fake-one",
+        "phase-20260621-fake-two",
+        "phase-20260622-fake-three",
+      ],
+      dateRange: "2026-06-20 to 2026-06-22",
+      narrative:
+        "This legacy era uses phases instead of records for backward compatibility testing.",
+    });
+
+    expect(result.success).toBe(true);
+
+    const results = await searchMemory(
+      "phase-based legacy era backward compatibility",
+      5,
+      false,
+      undefined,
+      undefined,
+      "era"
+    );
+
+    const match = results.find((r) => r.id === "era-099-legacy");
     expect(match).toBeDefined();
     expect(match!.similarity).toBeGreaterThan(0.3);
   });

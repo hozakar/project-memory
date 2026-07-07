@@ -61,7 +61,7 @@ The session-start work happens in this order. Each step may be a no-op depending
    - MCP unavailable fallback: scan `.project-memory/assignments/` ASSIGNMENT-*.md files, filter by frontmatter email fields.
 6. **Era prompt** — same as full (orthogonal, maintainer-only).
 7. **Header emission** — output `🧠 PROJECT MEMORY LOADED` (memory loaded indicator only).
-8. **Post-First-Response Drift Audit** — deferred to after the LLM answers the user's first message. Run the drift audit (standard category set, raise_cat4: false) via `audit.md` (MCP fast path if available, otherwise file-based detection from `standard/audit-fs.md`). Emit the drift report as a follow-up block. Exceptions (audit runs synchronously): (a) explicit `Skill project-memory audit` or natural-language trigger per `DECISION-2026-06-17-audit-implicit-triggers`; (b) first user message is itself an audit trigger — run synchronously; (c) `minimal` profile — no audit, no deferral.
+8. **Post-First-Response Drift Audit** — deferred to after the LLM answers the user's first message. Run the drift audit (standard category set) via `audit.md` (MCP fast path if available, otherwise file-based detection from `standard/audit-fs.md`). Emit the drift report as a follow-up block. Exceptions (audit runs synchronously): (a) explicit `Skill project-memory audit` or natural-language trigger per `DECISION-2026-06-17-audit-implicit-triggers`; (b) first user message is itself an audit trigger — run synchronously; (c) `minimal` profile — no audit, no deferral.
 
 ---
 

@@ -1,6 +1,6 @@
 ---
 name: project-memory
-version: 0.1.1
+version: 0.1.2
 description: Project memory system. Loads at every session start to provide engineering context → history, decisions, active tensions, anti-patterns. Use when planning, implementing, or reviewing. Always active in this project.
 ---
 
@@ -135,7 +135,7 @@ Records carry author attribution via `created_by` and `contributors` frontmatter
 
 ```
 .project-memory/
-├── phases/           # frozen archive — see phases/README.md
+├── phases/           # frozen archive (legacy, pre-2026-07) — do not modify; see standard/init.md
 ├── decisions/        DECISION-YYYY-MM-DD-slug.md + index.md
 ├── discussions/      DISCUSSION-YYYY-MM-DD-slug.md + index.md
 ├── issues/           open/ + closed/

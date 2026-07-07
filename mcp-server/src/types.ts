@@ -51,7 +51,8 @@ export interface DiscussionIndexData {
 export interface EraIndexData {
   id: string;              // e.g. "era-001"
   title: string;
-  phases: string[];        // phase IDs covered
+  records: string[];       // primary record IDs (DECISION/DISCUSSION) covered
+  phases?: string[];       // legacy: frozen historical eras use phases instead of records
   dateRange: string;       // e.g. "2026-06-08 to 2026-06-11"
   narrative: string;       // full body text, up to 3000 chars
 }

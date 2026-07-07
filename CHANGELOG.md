@@ -2,6 +2,36 @@
 
 All notable changes to the project-memory skill and MCP companion server.
 
+## [0.1.2] — 2026-07-07 — Post-carveout MCP companion alignment
+
+### Fixes
+
+- **`index_era` aligned to the new era schema.** The tool still required a
+  `phases` array and accepted no `records`, so new era files (which use
+  `records` + `date_range` per `conventions/maintainer.md`) could not be
+  indexed. `records` (DECISION/DISCUSSION IDs) is now the primary field
+  (optional, defaults to `[]`); `phases` remains optional for re-indexing
+  frozen historical eras. `EraIndexData` and `buildEraText` updated; the
+  latter falls back to `phases` when `records` is empty. Integration test
+  covers both new-era and legacy-era paths.
+- **Dead `raise_cat4` removed.** The parameter and the `cat4_gap_count`
+  response field (retired with Cat 4 in 0.1.1) were still referenced in
+  `standard/audit-mcp.md`, `audit.md`, `standard/cheatsheet.md`, and
+  `standard/protocol.md`. All references removed; `run_audit` is now called
+  as `run_audit(project_memory_dir, { profile: "standard" })` uniformly.
+- **`dist/` rebuilt** — stale compiled `index_phase.js`,
+  `find_touching_phases.js`, `find_phase_dependencies.js` (whose sources were
+  deleted in 0.1.1) removed from the gitignored build output.
+- **SKILL.md `phases/` pointer fixed** — the structure listing pointed to a
+  non-existent `phases/README.md`; re-pointed to `standard/init.md`, which
+  documents the frozen phases archive.
+
+### Documentation
+
+- `mcp-integration.md`: `index_era` row notes the `records`/`phases` split.
+
+MCP server version bumped to `0.1.2`.
+
 ## [0.1.1] — 2026-07-06 — Phase concept removed (breaking)
 
 ### Breaking changes

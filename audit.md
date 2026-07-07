@@ -20,7 +20,7 @@ Run when the skill is invoked with the `audit` argument OR when the user phrases
 
 # Post-Response Drift Audit
 
-On-load drift audit is deferred to post-first-response. The LLM answers the user's first message first; the drift audit (active categories, raise_cat4: false) runs AFTER the first user-facing response is delivered. The drift report is emitted as a follow-up block with header `[🧠] POST-RESPONSE DRIFT AUDIT — N auto-fixed`.
+On-load drift audit is deferred to post-first-response. The LLM answers the user's first message first; the drift audit (active categories) runs AFTER the first user-facing response is delivered. The drift report is emitted as a follow-up block with header `[🧠] POST-RESPONSE DRIFT AUDIT — N auto-fixed`.
 
 Exceptions (audit runs synchronously):
 1. Explicit invocation: `Skill project-memory audit` (or any natural-language audit trigger per `DECISION-2026-06-17-audit-implicit-triggers`).
@@ -35,7 +35,7 @@ Exceptions (audit runs synchronously):
 
 1. Read the active `profile` from `.project-memory/config.yml`. If `profile=minimal`, exit (no audit).
 2. Check if `run_audit` is in available MCP tools.
-3. **If yes:** read `<profile>/audit-mcp.md` and follow its MCP Fast Path. Pass `raise_cat4: false` when running as post-first-response audit (SKILL.md step 5); pass `raise_cat4: true` when running from `Skill project-memory audit`. Skip `<profile>/audit-fs.md`.
+3. **If yes:** read `<profile>/audit-mcp.md` and follow its MCP Fast Path (the same `run_audit(project_memory_dir, { profile: "standard" })` call shape applies to both on-load and explicit invocation). Skip `<profile>/audit-fs.md`.
 4. **If no:** read `<profile>/audit-fs.md` and follow its file-based Detection Procedure.
 
 `<profile>` is `standard`. The standard profile uses a reduced category set (Cat 1, 2, 3, 5, 6, 7, 8 (conditional), 12, 13 (conditional), 14 — phase-related categories retired, Cat 9 and 11 omitted).

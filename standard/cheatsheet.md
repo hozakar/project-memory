@@ -61,8 +61,8 @@ Standard does not split "significant" vs "ambiguous". Everything non-trivial tri
 | Discussion resumed | Load existing file, update at close. |
 | Significant commit | Pre-Commit Gate: update `summaries/current-state.md` unconditionally; also update `summaries/roadmap.md` on scope change. |
 | User asks about past decisions/discussions (MCP available) | `search_memory` per `mcp-integration.md`. Pass `include_superseded: true` only when explicitly researching past/superseded decisions. |
-| Drift audit (post-first-response) — `run_audit` available | Default: deferred. Call `run_audit(project_memory_dir, { profile: "standard", raise_cat4: false })`. Apply pending_fixes; triage escalations. |
-| Drift audit (post-first-response) — `run_audit` NOT available | Default: deferred. Run file-based detection (10 active categories, raise_cat4: false). |
+| Drift audit (post-first-response) — `run_audit` available | Default: deferred. Call `run_audit(project_memory_dir, { profile: "standard" })`. Apply pending_fixes; triage escalations. |
+| Drift audit (post-first-response) — `run_audit` NOT available | Default: deferred. Run file-based detection (10 active categories). |
 | User mentions lost commits after squash/rebase | `find_similar_commit` per `mcp-integration.md`. |
 | ~6 weeks since last era OR ~30 significant commits since last era | Maintainer-only prompt. |
 | Assignment created / status changed | Update `assignments/index.yml`, re-call `index_assignment` if MCP. |
