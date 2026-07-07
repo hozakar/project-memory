@@ -144,57 +144,9 @@ function levenshtein(a: string, b: string): number {
   return dp[m][n];
 }
 
-const TRIVIAL_RE = /^(docs|chore\(lint|chore\(format|chore\(deps|chore\(memory|chore\(audit|fix\(lint|phase:)/;
-
 // ---------------------------------------------------------------------------
 // Audit categories
 // ---------------------------------------------------------------------------
-
-function cat1CommitOrphans(
-  projectRoot: string,
-  ignored: AuditIgnoreSet
-): { autoFixed: string[]; pendingFixes: PendingFix[]; escalations: AuditFinding[] } {
-  // Re-targeted: Cat 1 now checks for significant commits with no memory trace.
-  // A significant commit is one that does NOT touch any of:
-  //   - .project-memory/summaries/current-state.md
-  //   - A DECISION-*.md, DISCUSSION-*.md, or NOTE-*.md file
-  // If none of these memory-related files were changed, it's flagged.
-  const autoFixed: string[] = [];
-  const pendingFixes: PendingFix[] = [];
-  const escalations: AuditFinding[] = [];
-
-  const logOutput = git("git log --format=%h%x20%ae%x20%aI%x20%s -30", projectRoot);
-  if (!logOutput) return { autoFixed, pendingFixes, escalations };
-
-  for (const line of logOutput.split("\n")) {
-    const lm = line.match(/^([0-9a-f]{7,40})\s+(\S+)\s+(\S+)\s+(.+)$/);
-    if (!lm) continue;
-    const [, hash, , , subject] = lm;
-    if (TRIVIAL_RE.test(subject)) continue;
-    if (ignored.has(`commit:${hash}`)) continue;
-
-    // Check what files this commit touched
-    const filesOutput = git(`git diff-tree --no-commit-id --name-only -r ${hash}`, projectRoot);
-    const files = filesOutput ? filesOutput.split("\n").filter(Boolean) : [];
-
-    const touchedMemory = files.some(f =>
-      f.includes("summaries/current-state.md") ||
-      f.match(/DECISION-.+\.md/) ||
-      f.match(/DISCUSSION-.+\.md/) ||
-      f.match(/NOTE-.+\.md/)
-    );
-
-    if (!touchedMemory) {
-      escalations.push({
-        category: 1, severity: "medium", interactive: false,
-        description: `Significant commit ${hash} has no memory trace. No update to summaries/current-state.md and no new/updated DECISION/DISCUSSION/NOTE in its changed files. Subject: ${subject}`,
-        data: { hash, subject, files },
-      });
-    }
-  }
-
-  return { autoFixed, pendingFixes, escalations };
-}
 
 function cat2SummaryStaleness(
   projectRoot: string,
@@ -723,10 +675,6 @@ export async function runAudit(
 
   // Cat 7: pending fixes (YAML annotations — LLM applies these)
   pendingFixes.push(...cat7OrphanCommitRefs(projectRoot, phases));
-
-  // Cat 1: significant commits with no memory trace
-  const cat1Result = cat1CommitOrphans(projectRoot, ignored);
-  escalations.push(...cat1Result.escalations);
 
   // Cat 3, 12: report-only escalations
   escalations.push(...cat3StubPlaceholders(projectMemoryDir, ignored));

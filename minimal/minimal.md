@@ -15,7 +15,7 @@ Use this profile when project longevity, revisit frequency, and reasoning densit
 └── MEMORY.md        ← four sections: ## Roadmap, ## Decisions, ## Notes, ## Log
 ```
 
-Same detection as full and lite: `.project-memory/` exists → installed; absent → first-run. User-triggered features (discussions, issues, instructions, assignments, notes) create their own subdirectories inside `.project-memory/` on first use, exactly as in other profiles.
+Detection: `.project-memory/config.yml` exists → installed; absent → first-run (see SKILL.md step 3). User-triggered features (discussions, issues, instructions, assignments, notes) create their own subdirectories inside `.project-memory/` on first use, exactly as in other profiles.
 
 ## MEMORY.md template
 

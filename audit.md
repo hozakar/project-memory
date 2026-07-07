@@ -38,7 +38,7 @@ Exceptions (audit runs synchronously):
 3. **If yes:** read `<profile>/audit-mcp.md` and follow its MCP Fast Path (the same `run_audit(project_memory_dir, { profile: "standard" })` call shape applies to both on-load and explicit invocation). Skip `<profile>/audit-fs.md`.
 4. **If no:** read `<profile>/audit-fs.md` and follow its file-based Detection Procedure.
 
-`<profile>` is `standard`. The standard profile uses a reduced category set (Cat 1, 2, 3, 5, 6, 7, 8 (conditional), 12, 13 (conditional), 14 — phase-related categories retired, Cat 9 and 11 omitted).
+`<profile>` is `standard`. The standard profile uses a reduced category set (Cat 2, 3, 5, 6, 7, 8 (conditional), 12, 13 (conditional), 14 — phase-related categories retired, Cat 9 and 11 omitted).
 
 **Semantic Conflict Scan (`semantic-conflict-scan`)** was a legacy full-only optional stage. It is no longer available in the standard profile.
 
@@ -52,7 +52,7 @@ The model has 1 effective tier:
 
 | Severity | Categories | Behavior |
 |----------|-----------|----------|
-| **auto-fix** | Cat 1,2,3,5,6,7,8,12,13,14 | Applied silently; logged in drift report. |
+| **auto-fix** | Cat 2,3,5,6,7,8,12,13,14 | Applied silently; logged in drift report. |
 
 In standard, phase-related categories retired, Cat 9 and 11 are not detected at all (not "auto-fixed silently" — simply absent).
 
@@ -67,7 +67,7 @@ Before escalating any finding, check the `audit_ignore` list in `.project-memory
 - Pattern match: `key` contains `*` as a wildcard. A `*` matches any sequence of characters in that segment. Examples:
   - `tag-typo:*:skil-md` — matches any phase with tag typo "skil-md"
   - `phase-completeness:phase-2026*:*.md` — matches missing files across a cohort of phases
-  - `commit:*` — matches ALL orphan commit findings in category 1
+  - `assignment-orphan:ASSIGNMENT-*` — matches all orphan-target assignment findings (Cat 14)
 - Patterns are checked AFTER exact matches. If an exact match exists, pattern matching is skipped for that finding.
 - Pattern matching is glob-style: `*` matches within a single segment (between `:` delimiters). To match across segments, use multiple `*` wildcards.
 
@@ -75,7 +75,6 @@ Before escalating any finding, check the `audit_ignore` list in `.project-memory
 
 | # | Key format |
 |---|---|
-| 1 | `commit:<hash>` |
 | 2 | `summary:<filename>` |
 | 3 | `stub:<filename>:<section-heading>` |
 | 6 | `decision-drift:<DECISION-ID>:<missing-row|orphan-row|status-mismatch>` |
@@ -150,8 +149,6 @@ When an era (`era-NNN.md`) is created or updated in `.project-memory/eras/`:
   • Auto-fixed: moved <filename> to closed/
   • MCP sync: N entries updated
 
-  Info:
-  • Cat 1: N significant commit(s) with no memory trace (last 3 days). Run `audit` to review.
 ```
 
 Replace `N` with the count of auto-fixed items. Omit any bullet that has no findings.
@@ -175,6 +172,6 @@ When the skill is invoked as `Skill project-memory audit` (standard only):
 
 **Question shapes per category:**
 
-No interactive categories remain. All active categories (Cat 1,2,3,5,6,7,8,12,13,14) are auto-fixed silently. Phase-related categories have been retired. Cat 9 and 11 remain disabled.
+No interactive categories remain. All active categories (Cat 2,3,5,6,7,8,12,13,14) are auto-fixed silently. Phase-related categories have been retired. Cat 9 and 11 remain disabled.
 
 When the user chooses `"mark ignored (permanent)"` for any finding: write the corresponding `audit_ignore` entry to `.project-memory/config.yml` immediately, then move to the next finding.

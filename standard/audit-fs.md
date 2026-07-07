@@ -1,15 +1,15 @@
 ---
 name: project-memory-audit-fs
-description: File-system drift audit detection procedure for the standard profile. 10 active categories (phase-related categories retired, Cat 9, 11 disabled).
+description: File-system drift audit detection procedure for the standard profile. 9 active categories (phase-related categories retired, Cat 9, 11 disabled).
 ---
 
 # Detection Procedure (standard)
 
 **Invocation:** at post-first-response hook (default), or on explicit `Skill project-memory audit` (sync), or when first user message is an audit-implicit-trigger (sync).
 
-Run all 10 active categories on every audit pass. Collect findings before acting. Check `audit_ignore` (see `audit.md` → Permanent Skip) before escalating any finding — suppressed findings are omitted entirely.
+Run all 9 active categories on every audit pass. Collect findings before acting. Check `audit_ignore` (see `audit.md` → Permanent Skip) before escalating any finding — suppressed findings are omitted entirely.
 
-**Active categories in standard:** 1, 2, 3, 5, 6, 7, 8 (conditional on `adr_enabled`), 12, 13 (conditional on MCP), 14.
+**Active categories in standard:** 2, 3, 5, 6, 7, 8 (conditional on `adr_enabled`), 12, 13 (conditional on MCP), 14.
 
 **Disabled in standard:** Phase-related categories retired (open-phase gaps, phase file completeness), Cat 9 (discussion index drift), Cat 11 (discussion expiry). If you use discussions in a project, you are responsible for index hygiene and archival manually. The features are still available — only the automated checks are dropped.
 
@@ -19,8 +19,7 @@ Run all 10 active categories on every audit pass. Collect findings before acting
 
 | # | Category | Detection Rule | Tool Calls | Classification | Severity |
 |---|---|---|---|---|---|
-| 1 | **Significant commit with no memory trace** | Detect significant commits (per Pre-Commit Gate significance rules in `standard/gates.md` — everything that is not a typo/rename/import cleanup). For each significant commit, check whether it left a trace in `.project-memory/`: an update to `summaries/current-state.md`, a new/updated DECISION, DISCUSSION, or NOTE. If no trace found, flag it. *Weaker signal than the phase-based check* (misses commits whose rationale was implicit or captured outside the skill), but catches unrecorded rationale — the core purpose of the skill. | `Bash: git log --format='%h %ae %aI %s' -30`; `Read: current-state.md`; `Glob: *.md` in decisions/ discussions/ notes/ | **Auto-fix** | — |
-| 2 | **Summary staleness** | Bump `Last Updated:` if older than most recent project commit. **Only checks 2 summaries:** `summaries/roadmap.md`, `summaries/current-state.md`. *Write trigger (anchored to commit-boundary writes per `gates.md`):* "The Pre-Commit Gate fires before every significant commit. It updates `.project-memory/summaries/current-state.md` unconditionally, and also updates `.project-memory/summaries/roadmap.md` when the commit changes scope." | `Bash: git log -1 --format=%cs`; `Read summaries/*.md` | **Auto-fix** | — |
+| 2 | **Summary staleness** | Bump `Last Updated:` if older than most recent project commit. **Only checks 2 summaries:** `summaries/roadmap.md`, `summaries/current-state.md`. *Write trigger (anchored to turn-boundary sweep per `gates.md`):* "The turn-boundary sweep fires at turn end; if the turn included a commit it updates `.project-memory/summaries/current-state.md` once (covering the turn's commits) and `.project-memory/summaries/roadmap.md` when the turn changed scope." | `Bash: git log -1 --format=%cs`; `Read summaries/*.md` | **Auto-fix** | — |
 | 3 | **Stub placeholders** | Grep `summaries/*.md` for `None recorded yet`, `TBD`, `system just initialized`, `first run detected` → replace with `*(none)*`. **Only operates on 2 summaries.** | `Grep` over `.project-memory/summaries/*.md` | **Auto-fix** | **low** |
 | 5 | **Misplaced issue files** | `issues/open/*.md` with `status: closed` → move to `issues/closed/`. **No-op when issues feature unused.** | `Glob: issues/open/*.md`; `Read` frontmatter | **Auto-fix** | — |
 | 6 | **Decision index drift** | DECISION files vs `decisions/index.md` rows; missing rows → pendingFix; orphan rows → auto-remove; status mismatch → auto-resolve from file. | `Glob: decisions/DECISION-*.md`; `Read: decisions/index.md` | **Auto-fix** | — |

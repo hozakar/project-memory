@@ -1,16 +1,16 @@
 ---
 name: project-memory-gates
-description: Pre-Implementation Gate and Pre-Commit Gate for the standard profile. No phase ceremony. Summary writes are commit-boundary-driven.
+description: Pre-Implementation Gate and turn-boundary sweep for the standard profile. No phase ceremony. Summary writes are turn-boundary-driven.
 ---
 
 # CRITICAL GATES (standard profile)
 
 ```
 BEFORE IMPLEMENTATION → Pre-Implementation Gate (GATE 0 + Steps 1–3)
-BEFORE COMMIT         → Pre-Commit Gate (significance → update summaries → capture decision)
+TURN END             → turn-boundary sweep (did this turn include a commit? yes → update current-state + roadmap)
 ```
 
-> **Commit-boundary-driven writes (T6 contract):** The Pre-Commit Gate below is the sole trigger for summary file updates. Every significant commit fires the gate, which updates `current-state.md` (always) and `roadmap.md` (on scope change). No phase-close or phase-open step triggers these writes — they are now entirely commit-boundary-driven. T6 (audit re-anchor) may quote this paragraph as the authoritative trigger definition.
+> **Turn-boundary-driven writes (T6 contract):** The turn-boundary sweep below is the sole trigger for summary file updates. At turn end, the sweep asks "did this turn include a commit?" — if yes, it updates `current-state.md` (always) and `roadmap.md` (on scope change). One judgment per turn, not N per commit. No per-commit gate fires. Decision-moment awareness (DECISION-2026-06-25-decision-moment-awareness) is independent — decisions are captured when made, mid-turn. T6 (audit re-anchor) may quote this paragraph as the authoritative trigger definition.
 
 ---
 
@@ -90,54 +90,50 @@ If the user says "skip decision questions for now" (or similar phrasing), suspen
 
 ---
 
-# Pre-Commit Gate
+# Turn-Boundary Sweep (replaces Pre-Commit Gate)
 
-> **Write trigger (T6 contract):** The Pre-Commit Gate fires before every significant commit. It updates `.project-memory/summaries/current-state.md` unconditionally, and also updates `.project-memory/summaries/roadmap.md` when the commit changes scope (new area of work, new area retired, new external constraint). These writes are the only automated summary-update path — there is no phase-close or phase-open trigger for summary files. Decision capture also occurs at this gate when a decision-moment happened during the work (per DECISION-2026-06-25-decision-moment-awareness).
+> **Write trigger (T6 contract):** The turn-boundary sweep fires at the end of each turn (after the user's turn is handled / before responding to the next user prompt). It is the sole trigger for automated summary file updates. The exact hook timing is tool-dependent: where turn/session hooks exist, the sweep is hook-enforced; otherwise it is an LLM-enforced turn-end self-check.
 
-Before executing ANY commit, run these steps in order.
+One judgment per turn — not N per commit.
 
-## Step 1 — Classify significance
+## Step 1 — Did this turn include a commit?
 
-| Class | Examples | Action |
-|---|---|---|
-| **Trivial** | unused import/var removal, typo fix, formatting, `console.log` cleanup, single-line comment edit | Skip Steps 2–3. No summary update, no decision capture. |
-| **Everything else** | features, bugfixes, refactors, schema/type changes, dependency upgrades, test additions, config tweaks, doc updates with runtime effect | Proceed to Step 2. |
+Check mechanically via `git log --since=<turn-start>` or equivalent. A commit existing during this turn is the only significance signal — no per-commit significant/trivial classification is needed.
+
+- **No commit this turn** → move on. No memory writes.
+- **Yes, at least one commit this turn** → proceed to Step 2.
 
 ## Step 2 — Update summaries
 
-**Always — current-state.md:**
-Update `.project-memory/summaries/current-state.md` to reflect the new state after this commit. Cover at minimum:
-- What changed (the commit's effect on features, components)
+Write `summaries/current-state.md` **once**, covering all the turn's commits (with all of them in context). Cover at minimum:
+- What changed across the turn's commits (features, components affected)
 - Any new debt or risks discovered
 - Updated recommended next actions
 
 **On scope change — roadmap.md:**
-Also update `.project-memory/summaries/roadmap.md` if the commit:
-- Introduces a new area of work (new module, new capability not previously planned)
-- Retires an area of work (module removed, feature completed and decommissioned)
-- Introduces a new external constraint (new dependency, new platform requirement, new compliance boundary)
+Also update `summaries/roadmap.md` if the turn:
+- Introduced a new area of work (new module, new capability not previously planned)
+- Retired an area of work (module removed, feature completed and decommissioned)
+- Introduced a new external constraint (new dependency, new platform requirement, new compliance boundary)
 
 Update the relevant section (`### Short-term` / `### Medium-term` / `### Later`) to reflect the change. Add new entries for new work areas; strike through or remove retired entries.
 
-## Step 3 — Capture DECISION at decision-moment
+**Significance definition reference** (what counts as scope-change for roadmap):
+- New area of work: module, capability, or feature not previously represented in the roadmap.
+- Retired area: module removed, feature completed and decommissioned, or explicitly abandoned.
+- New external constraint: dependency, platform requirement, or compliance boundary that was not previously a factor.
 
-If during this commit's work a decision-moment occurred — i.e. the conversation involved comparing architectural alternatives and the user selected a direction — apply the loss heuristic from `conventions/discussions.md`:
+If unsure whether a scope change occurred, err on the side of updating roadmap.md — a minor duplication is better than a stale roadmap.
 
-> *"If this decision is never saved, what specifically goes wrong in a future session?"*
+## Decision capture is NOT part of this sweep
 
-If save-worthy, create a DECISION record immediately (write `DECISION-YYYY-MM-DD-slug.md` + update `decisions/index.md`). Do NOT ask — this is a silent capture. See `DECISION-2026-06-25-decision-moment-awareness` for the full rule.
-
-If no decision-moment occurred, skip this step silently.
-
-## Commit grouping
-
-- Multiple significant commits in the same session on related work: update summaries incrementally with each commit.
-- If unsure whether a scope change occurred, err on the side of updating roadmap.md — a minor duplication is better than a stale roadmap.
+Decision-moment awareness (DECISION-2026-06-25-decision-moment-awareness) is independent of the turn boundary. Decisions are captured **when made** (mid-turn), not batched at the sweep. The sweep only carries rolling summaries (current-state + roadmap).
 
 ---
 
 # What was removed
 
-- **Pre-Close Gate** — removed. Phase lifecycle and phase-close ceremony no longer exist as gate concepts. Summary writes are commit-boundary-driven (see Pre-Commit Gate).
-- **Topic-shift-to-new-phase logic** — removed. Topic tracking no longer gates on phase creation. The Pre-Commit Gate's scope-change detection in Step 2 handles roadmap updates when work shifts areas.
-- **Phase-close write triggers** — removed. All automated summary updates are now commit-boundary-driven via the Pre-Commit Gate above.
+- **Pre-Commit Gate** — replaced by the turn-boundary sweep above. The per-commit significance classifier (trivial vs everything else) and per-commit summary writes are retired in favor of one judgment per turn: "did this turn include a commit?" — yes/no — and a single summary write covering the turn's commits.
+- **Pre-Close Gate** — removed. Phase lifecycle and phase-close ceremony no longer exist as gate concepts. Summary writes are turn-boundary-driven (see Turn-Boundary Sweep).
+- **Topic-shift-to-new-phase logic** — removed. Topic tracking no longer gates on phase creation. The turn-boundary sweep's scope-change detection handles roadmap updates when work shifts areas.
+- **Phase-close write triggers** — removed. All automated summary updates are now turn-boundary-driven via the sweep above.

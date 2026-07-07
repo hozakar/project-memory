@@ -56,7 +56,7 @@ Standard scaffolds **2 summary files** in `.project-memory/summaries/`:
 
 ## current-state.md
 
-Snapshot of where the project stands right now. Updated at every commit-boundary.
+Snapshot of where the project stands right now. Updated at turn end by the turn-boundary sweep when the turn included a commit.
 
 ```md
 # Current State

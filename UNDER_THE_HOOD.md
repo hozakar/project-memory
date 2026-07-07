@@ -87,12 +87,12 @@ The skill acts at three kinds of moments, not at phase boundaries:
   assignments), cross-reference active decisions against the working tree, log the
   session. No phase ceremony — just memory loading and conflict detection.
 
-- **Commit boundary** — every `git commit` triggers a significance check. Significant
-  commits (features, refactors, schema changes, dep upgrades, tests, docs) update
-  `summaries/current-state.md`; trivial commits (typos, formatting, imports,
-  single-line bugfixes) pass silently. Scope changes also update `summaries/roadmap.md`.
-  The Pre-Commit Gate is the only write trigger for summary files — no separate
-  phase-open or phase-close ceremony.
+- **Turn boundary** — at the end of each turn, a sweep asks "did this turn include
+  a commit?". If no → move on (no memory writes). If yes → update
+  `summaries/current-state.md` once (covering the turn's commits) and
+  `summaries/roadmap.md` when the turn changed scope. This is the only write trigger
+  for summary files — one judgment per turn, not per commit. Decisions are captured
+  when made (mid-turn) per decision-moment awareness, not by this sweep.
 
 - **Decision moment** — whenever an architectural or design choice is made, a
   `DECISION-YYYY-MM-DD-slug.md` is created, indexed, and cross-referenced. This is
@@ -210,11 +210,10 @@ at any time via `.project-memory/config.yml`.
 
 ## Drift audit
 
-I run a 10-category drift audit each session, deferred to after the first user response so it doesn't add latency to session start. One exception runs synchronously: explicit `Skill project-memory audit` invocation. With the MCP companion server, all 10 categories are fully deterministic — no LLM judgment involved. Without MCP, the same categories run via file-system detection with the same deterministic logic.
+I run a 9-category drift audit each session, deferred to after the first user response so it doesn't add latency to session start. One exception runs synchronously: explicit `Skill project-memory audit` invocation. With the MCP companion server, all 9 categories are fully deterministic — no LLM judgment involved. Without MCP, the same categories run via file-system detection with the same deterministic logic.
 
 | Category | Description | Resolution |
 |---|---|---|
-| 1 | Orphan commits (not attached to any record) | Auto-classify if aged >3d; notice if fresh |
 | 2 | Stale summary files | Auto-fix if aged >3d; escalate if fresh |
 | 3 | Stub placeholders in summary files | Auto-fix |
 | 5 | Issue files in wrong directory | Auto-fix (file move) |

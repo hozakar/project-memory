@@ -18,8 +18,8 @@ The right axis for choosing a profile is **longevity × revisit frequency × rea
 | # | Feature | `standard` | `minimal` |
 |---|---|---|---|---|
 | 1 | Pre-Implementation Gate | Step 0 + 1 + 2 + 3 (Step 4 skipped) | Step 0 only (instruction inject, then continue) |
-| 2 | Pre-Commit Gate | Step 0 + 2-file verify + scope-change→roadmap transfer | n/a |
-| 3 | Drift Audit | 10 categories (Cat 1,2,3,5,6,7,8,12,13,14). Phase-related categories retired. **Off:** 9, 11 | none |
+| 2 | Turn-boundary sweep | Turn-end check: "did this turn commit?" → update current-state.md (always) + roadmap.md (on scope change). One judgment per turn. | n/a |
+| 3 | Drift Audit | 9 categories (Cat 2,3,5,6,7,8,12,13,14). Phase-related categories retired. **Off:** 9, 11 | none |
 | 4 | Summaries | 2 files (`roadmap.md` + `current-state.md`) | inline sections of `MEMORY.md` |
 | 5 | Gate instruction re-injection | Pre-Impl Gate Step 0 only | Pre-Impl Gate Step 0 only (the only gate that exists) |
 | 6 | Author attribution | `created_by` only | none |
@@ -90,6 +90,12 @@ You can change this choice later — just say so.
 ```
 
 Default cursor: `standard`. No automatic recommendation logic — user reads guidance and chooses.
+
+After the user picks:
+- `standard` → read `standard/init.md` and follow it.
+- `minimal` → read `minimal/minimal.md` and follow it.
+
+Each init writes `config.yml` (or `MEMORY.md` for minimal) with `profile` and seeds `profile_history` with `{profile, effective_date: today, reason: initial}`.
 
 ---
 

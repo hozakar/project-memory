@@ -10,11 +10,13 @@ description: Standard-profile agent thinking protocol, simplified memory loading
 - What commits have landed since the last session?
 - Is `summaries/roadmap.md` or `summaries/current-state.md` stale relative to recent git commits?
 
-**Before committing:**
-- If the work is non-trivial (anything beyond typo/formatting/import cleanup): update `summaries/current-state.md` before the commit lands.
-- If work scope changed during this session, update `summaries/roadmap.md`.
-- Trivial commits (typo, formatting): commit silently, no summary updates.
-- This is the Pre-Commit Gate — commit boundaries are the natural checkpoint for recording what changed and why.
+**At turn end (turn-boundary sweep):**
+- Did this turn include a commit? Check via `git log --since=<turn-start>` or equivalent.
+- If YES: update `summaries/current-state.md` **once** (covering the turn's commits, with all of them in context).
+- If scope changed during this turn, also update `summaries/roadmap.md`.
+- If NO commits this turn: move on — no memory writes.
+- Decision-moment awareness (DECISION-2026-06-25-decision-moment-awareness) handles decisions independently, captured when made, mid-turn — unchanged.
+- This is the turn-boundary sweep — the per-commit Pre-Commit Gate is retired in favor of one judgment per turn.
 
 **Before writing any plan:**
 - List the concrete entities (`touches` candidates) this plan affects.

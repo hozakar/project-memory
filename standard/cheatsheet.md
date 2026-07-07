@@ -7,19 +7,17 @@ description: Quick reference cheatsheet and event-based trigger table for projec
 
 # Quick Reference Cheatsheet (standard)
 
-**About to commit?**
+**Turn ending with commits?**
 
 ```
-Trivial (typo, formatting, import cleanup, single-line bugfix)
-  → commit silently, no summary updates
-
-Everything else (feature, bugfix, refactor, schema change, dep upgrade, test, doc)
-  → update summaries/current-state.md (what changed and why)
-  → if work scope changed: also update summaries/roadmap.md
-  → THEN commit
+Did this turn include a commit? (check via git log --since=<turn-start>)
+  No  → move on, no memory writes
+  Yes → update summaries/current-state.md once (covering the turn's commits)
+       → if scope changed: also update summaries/roadmap.md
+       → THEN move to next turn
 ```
 
-Standard does not split "significant" vs "ambiguous". Everything non-trivial triggers summary updates per the Pre-Commit Gate.
+One judgment per turn, not N per commit. Decision-moment awareness (DECISION-2026-06-25) handles decisions independently, captured when made, mid-turn.
 
 **About to implement something non-trivial?**
 → GATE 0: load active instructions (EXECUTE search_memory — standard re-injects here only, not at every gate).
@@ -47,7 +45,7 @@ Standard does not split "significant" vs "ambiguous". Everything non-trivial tri
 | Event | Action required now |
 |---|---|
 | User requests significant implementation | Load `current-state.md` for context; ensure Pre-Impl Gate (instruction re-injection + decision cross-reference) fires before starting work |
-| `submit_implementation` about to be called | Pre-Commit Gate must run first: update `current-state.md` (always), update `roadmap.md` if scope change |
+| `submit_implementation` about to be called | Turn-boundary sweep runs at turn end: update `current-state.md` (once, covering the turn's commits), update `roadmap.md` if scope changed |
 | DECISION-* file created | Add row to `decisions/index.md`. ADR mirror NOT created (default `adr_enabled: false`). |
 | Decision superseded | Update superseded DECISION frontmatter; move row to Superseded section of `decisions/index.md`. |
 | New feature or component shipped | Update `current-state.md` → What Exists. |
@@ -59,10 +57,10 @@ Standard does not split "significant" vs "ambiguous". Everything non-trivial tri
 | Status-changing write on decision / discussion / issue | Standard does NOT track `contributors`. Skip this step. |
 | Discussion concluded | Write `DISCUSSION-*.md` to `discussions/` (create dir on first use); add row to `discussions/index.md`. If MCP: call `index_discussion`. |
 | Discussion resumed | Load existing file, update at close. |
-| Significant commit | Pre-Commit Gate: update `summaries/current-state.md` unconditionally; also update `summaries/roadmap.md` on scope change. |
+| Turn with a commit | Turn-boundary sweep: update `summaries/current-state.md` (once, covering the turn's commits); also update `summaries/roadmap.md` on scope change. |
 | User asks about past decisions/discussions (MCP available) | `search_memory` per `mcp-integration.md`. Pass `include_superseded: true` only when explicitly researching past/superseded decisions. |
 | Drift audit (post-first-response) — `run_audit` available | Default: deferred. Call `run_audit(project_memory_dir, { profile: "standard" })`. Apply pending_fixes; triage escalations. |
-| Drift audit (post-first-response) — `run_audit` NOT available | Default: deferred. Run file-based detection (10 active categories). |
+| Drift audit (post-first-response) — `run_audit` NOT available | Default: deferred. Run file-based detection (9 active categories). |
 | User mentions lost commits after squash/rebase | `find_similar_commit` per `mcp-integration.md`. |
 | ~6 weeks since last era OR ~30 significant commits since last era | Maintainer-only prompt. |
 | Assignment created / status changed | Update `assignments/index.yml`, re-call `index_assignment` if MCP. |
@@ -73,5 +71,5 @@ Standard does not split "significant" vs "ambiguous". Everything non-trivial tri
 **Stub placeholders to clear on sight:** `"None recorded yet"`, `"TBD"`, `"system just initialized"`, `"first run detected"`, or any `*(none)*` in a section that now has content.
 
 **Standard reminders (often forgotten):**
-- `current-state.md` Last Updated MUST be bumped on every significant commit.
+- `current-state.md` Last Updated MUST be bumped after every turn that includes commits.
 - Roadmap items go into `roadmap.md` as you discover them, not batched at arbitrary boundaries.

@@ -1,6 +1,5 @@
 ---
 name: project-memory
-version: 0.1.2
 description: Project memory system. Loads at every session start to provide engineering context → history, decisions, active tensions, anti-patterns. Use when planning, implementing, or reviewing. Always active in this project.
 ---
 
@@ -12,30 +11,12 @@ When this skill activates:
    🧠 PROJECT MEMORY LOADED
 
 2. **Determine active profile.**
-   - **DO NOT use glob or directory listing to detect project memory.** Read `.project-memory/config.yml` directly using the Read tool. Do not infer existence from search results or file listings — they can miss hidden directories.
-   - If the Read succeeds → parse the `profile` field. Route to `standard` or `minimal` accordingly. **Backward compatibility:** `profile: full` and `profile: lite` from legacy configs are treated as `profile: standard` at read time — route to `standard/`. If the `profile` field is absent (legacy project), treat as `standard` and offer the user a one-time non-blocking profile choice after on-load completes.
+   - Read `.project-memory/config.yml` directly using the Read tool.
+   - If the Read succeeds → parse the `profile` field. Valid values are `standard` and `minimal`. If the profile field does not exist or is not valid then the profile is `standard`.
    - If the Read fails (file not found) → first-run (see step 3).
 
-3. **First-run init UX (only when `.project-memory/` does not exist):**
-
-   Ask the user:
-   ```
-   How do you want to run project-memory in this project?
-     1) standard — lean ceremony, 2 summaries, 10-category audit, for most projects
-     2) minimal  — single MEMORY.md file, for short or throwaway work
-
-   Things to consider:
-     • Will the project last 3+ months?
-     • Will more than one person contribute?
-     • Are "why did we do X?" architectural questions likely to come up?
-
-   You can change this choice later — just say so.
-   ```
-   Default cursor: `standard`. After the user picks:
-   - `standard` → read `standard/init.md` and follow it.
-   - `minimal` → read `minimal/minimal.md` and follow it.
-
-   Each init writes `config.yml` (or `MEMORY.md` for minimal) with `profile` and seeds `profile_history` with `{profile, effective_date: today, reason: initial}`.
+3. **First-run init (only when `.project-memory/config.yml` does not exist):**
+   Read `profiles.md` → Init UX for the profile-selection prompt, then follow its routing (`standard` → `standard/init.md`; `minimal` → `minimal/minimal.md`).
 
 4. **Steady-state on-load** (profile known, project memory exists):
    - `profile=standard` → read `standard/protocol.md` for the Memory Loading Strategy and follow it. Then proceed to step 5.
@@ -106,7 +87,7 @@ The optional `mcp-server/` subdirectory provides semantic search and determinist
 
 ```
 BEFORE IMPLEMENTATION → Pre-Implementation Gate (GATE 0 + Steps 1–3) per standard/gates.md
-BEFORE COMMIT         → Pre-Commit Gate (significance → update summaries → capture decision) per standard/gates.md
+TURN END             → turn-boundary sweep (did this turn include a commit? yes → update current-state + roadmap) per standard/gates.md
 ```
 
 For detailed gate procedures → read standard/gates.md.
@@ -164,7 +145,7 @@ Records carry author attribution via `created_by` and `contributors` frontmatter
 │   ├── templates-config.md
 │   ├── init.md
 │   ├── cheatsheet.md
-│   └── gates.md              ← Pre-Implementation Gate + Pre-Commit Gate
+│   └── gates.md              ← Pre-Implementation Gate + turn-boundary sweep
 │
 ├── minimal/                   ← Files used when profile=minimal
 │   └── minimal.md             ← Single-file spec (covers everything)
@@ -203,7 +184,7 @@ For language policy, author attribution, maintainer role → `conventions/mainta
 # Quick Reference
 
 ```
-About to commit?          → update current-state.md (and roadmap.md on scope-change) per standard/gates.md (Pre-Commit Gate)
+Turn ending with commits?  → turn-boundary sweep: update current-state.md (once, covering the turn's commits) + roadmap.md on scope-change per standard/gates.md
 About to close discussion?→ Determine outcome, write file, update index (all profiles)
 About to assign work?     → Create ASSIGNMENT-YYYY-MM-DD-slug.md + index entry (all profiles)
 About to implement?       → Pre-Implementation Gate (standard/gates.md)

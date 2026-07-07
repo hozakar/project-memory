@@ -2,6 +2,41 @@
 
 All notable changes to the project-memory skill and MCP companion server.
 
+## Unreleased
+
+### Skill slimming
+
+- `SKILL.md` on-load procedure trimmed: profile-detection step shortened
+  (dropped the glob/directory-listing rationale and the verbose
+  backward-compat paragraph; "profile field does not exist or is not valid
+  → `standard`" implicitly covers legacy `full`/`lite` values); the
+  first-run init UX (profile-selection prompt + routing) moved out of
+  `SKILL.md` into `profiles.md` (which already held the prompt) so the LLM
+  reads it only on first run, not every session. First-run trigger changed
+  from "`.project-memory/` does not exist" to "`.project-memory/config.yml`
+  does not exist" (config is the real signal; minimal also writes
+  `config.yml`).
+- `minimal/minimal.md`: stale directory-based detection line updated to
+  match the config-based first-run trigger.
+
+### Drift detection + gate rework
+
+- **Cat 1 (commit-drift) dropped.** Empirically a noise machine on this
+  repo (23 false positives / 0 true positives): per-commit attribution
+  is impossible with a rolling summary file, and a post-hoc audit (next
+  session, post-compaction) cannot recover rationale that already
+  evaporated. Cat 1's current-state dimension duplicated Cat 2; its
+  DECISION/DISCUSSION-as-trace dimension was a non-signal (most commits
+  have no decision-moment). See
+  DECISION-2026-07-07-commit-boundary-to-turn-boundary.
+- **Commit-boundary Pre-Commit Gate retired; turn-boundary sweep
+  adopted.** At turn end: "did this turn include a commit?" — no → move
+  on; yes → write `current-state.md` once (covering the turn's commits)
+  and `roadmap.md` on scope change. One judgment per turn (was N per
+  commit). Hook-enforceable where turn/session hooks exist; LLM-enforced
+  turn-end self-check as fallback. Decision-moment awareness (decisions
+  captured when made, mid-turn) and session-start load are unchanged.
+
 ## [0.1.2] — 2026-07-07 — Post-carveout MCP companion alignment
 
 ### Fixes
