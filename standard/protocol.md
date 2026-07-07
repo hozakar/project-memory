@@ -105,7 +105,7 @@ The session-start work happens in this order. Each step may be a no-op depending
 |---|---|---|
 | Tier 3 contradiction detection | ≥ 30 days since closure | Offer the user an override path on old decisions |
 
-Standard does NOT use the era-back threshold (eras are an orthogonal maintainer feature). Discussion expiry is handled by Cat 11 audit — which is OFF in standard (see `standard/audit-fs.md`), so discussion expiry is on the user to manage manually.
+Standard does NOT use the era-back threshold (eras are an orthogonal maintainer feature). Discussion expiry is handled by Cat 11 audit (auto-archive of DISCUSSION files with `outcome: none` older than 30 days into `discussions/archive/`).
 
 ---
 
@@ -135,7 +135,7 @@ See `mcp-integration.md` for the full tool catalog. MCP behavior in standard is 
 - **Constraint search rule** (Discussion Mode trigger): same — call `search_memory("engineering constraints and principles", scope_filter=["constraint"], type_filter="decision")` when discussion mode engages. Does NOT set `include_superseded` — only active constraints shape design direction.
 - **Assignment search:** same (orthogonal feature).
 - **Squash/rebase recovery:** same (`find_similar_commit`).
-- **Drift audit via MCP:** same — `run_audit` if available. The standard category set is enforced by `standard/audit-mcp.md` (Cat 9, 11 dropped from the returned findings).
+- **Drift audit via MCP:** same — `run_audit` if available. The standard category set is enforced by `standard/audit-mcp.md` (Cat 9, 11 included — discussion index drift and expiry).
 - **Era creation prompt:** same (maintainer-only, orthogonal).
 
 When MCP is unavailable: identical behavior using the file-based fallbacks. MCP is an accelerator, never a requirement.

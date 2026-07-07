@@ -38,7 +38,7 @@ Exceptions (audit runs synchronously):
 3. **If yes:** read `<profile>/audit-mcp.md` and follow its MCP Fast Path (the same `run_audit(project_memory_dir, { profile: "standard" })` call shape applies to both on-load and explicit invocation). Skip `<profile>/audit-fs.md`.
 4. **If no:** read `<profile>/audit-fs.md` and follow its file-based Detection Procedure.
 
-`<profile>` is `standard`. The standard profile uses a reduced category set (5, 6, 7, 8 (conditional), 12, 13 (conditional), 14 — phase-related categories retired, Cat 9 and 11 omitted).
+`<profile>` is `standard`. The standard profile uses a reduced category set (5, 6, 8 (conditional), 9, 11, 13 (conditional), 14 — phase-related categories retired, Cat 7 and 12 dropped).
 
 **Semantic Conflict Scan (`semantic-conflict-scan`)** was a legacy full-only optional stage. It is no longer available in the standard profile.
 
@@ -52,9 +52,9 @@ The model has 1 effective tier:
 
 | Severity | Categories | Behavior |
 |----------|-----------|----------|
-| **auto-fix** | 5,6,8,13,14 | Applied silently; logged in drift report. |
+| **auto-fix** | 5,6,8,9,11,13,14 | Applied silently; logged in drift report. |
 
-In standard, phase-related categories retired, Cat 7 and 12 dropped, Cat 9 and 11 are not detected at all (not "auto-fixed silently" — simply absent).
+In standard, phase-related categories retired, Cat 7 and 12 dropped, Cat 9 is detected as low/non-interactive drift reports, and Cat 11 auto-archives expired discussions.
 
 ---
 
@@ -159,6 +159,6 @@ When the skill is invoked as `Skill project-memory audit` (standard only):
 
 **Question shapes per category:**
 
-No interactive categories remain. All active categories (5,6,8,13,14) are auto-fixed silently. Phase-related categories have been retired. Cat 7 and 12 dropped. Cat 9 and 11 remain disabled.
+No interactive categories remain. All active categories (5,6,8,9,11,13,14) are auto-fixed silently. Phase-related categories retired. Cat 7 and 12 dropped.
 
 When the user chooses `"mark ignored (permanent)"` for any finding: write the corresponding `audit_ignore` entry to `.project-memory/config.yml` immediately, then move to the next finding.

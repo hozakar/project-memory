@@ -4,6 +4,19 @@ All notable changes to the project-memory skill and MCP companion server.
 
 ## Unreleased
 
+### Cat 9 + Cat 11 active; audit category index tidy
+
+- **Cat 9 (discussion index drift) and Cat 11 (discussion expiry) corrected to ACTIVE in standard.**
+  The docs said "disabled/manual hygiene" but `run_audit.ts` always ran both — Cat 9 as
+  low/non-interactive drift reports (severity: low, interactive: false), Cat 11 as silent
+  auto-archive of discussions with outcome: none older than 30 days. Neither ever escalates
+  to the user. No code changes — the code was already correct. Doc files corrected across
+  all skill docs + MCP docs. Category count 5 → 7 active ({5, 6, 8, 9, 11, 13, 14}).
+- **Dead `audit_ignore` entries removed.** 18 dead Cat 1 blocks + 1 retired Cat 4 block
+  removed from `.project-memory/config.yml`.
+- **Stale category list fixed.** `audit.md:41` still listed Cat 7 and Cat 12 (the Cat 7/12
+  drop commit missed it).
+
 ### Cat 7 + Cat 12 drop
 
 - **Cat 7 (orphan commit references) dropped + Cat 12 (tag inconsistency) dropped.**

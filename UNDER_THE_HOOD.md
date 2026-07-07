@@ -22,7 +22,7 @@ overhead I introduce automatically. Choose at first run; switch at any time.
 | | `standard` | `minimal` |
 |---|---|---|
 | Pre-Impl Gate | Steps 0–3 (GATE 0 + Steps 1–3) | Step 0 only |
-| Drift audit | 5 categories | none |
+| Drift audit | 7 categories | none |
 | Summaries | `roadmap.md` + `current-state.md` | inline in `MEMORY.md` |
 | Author attribution | `created_by` only | none |
 | Topic-shift detection | off | n/a |
@@ -210,15 +210,15 @@ at any time via `.project-memory/config.yml`.
 
 ## Drift audit
 
-I run a 5-category drift audit each session, deferred to after the first user response so it doesn't add latency to session start. One exception runs synchronously: explicit `Skill project-memory audit` invocation. With the MCP companion server, all 5 categories are fully deterministic — no LLM judgment involved. Without MCP, the same categories run via file-system detection with the same deterministic logic.
+I run a 7-category drift audit each session, deferred to after the first user response so it doesn't add latency to session start. One exception runs synchronously: explicit `Skill project-memory audit` invocation. With the MCP companion server, all 7 categories are fully deterministic — no LLM judgment involved. Without MCP, the same categories run via file-system detection with the same deterministic logic.
 
 | Category | Description | Resolution |
 |---|---|---|
 | 5 | Issue files in wrong directory | Auto-fix (file move) |
 | 6 | Decision index drift | Auto-fix if aged >3d; escalate if fresh |
 | 8 | ADR sync drift (when ADR enabled) | Auto-fix if aged >3d; escalate if fresh |
-| 9 | **DISABLED in standard** | — |
-| 11 | **DISABLED in standard** | — |
+| 9 | Active | Discussion index drift (low, non-interactive report) |
+| 11 | Active | Discussion expiry auto-archive |
 | 13 | DB/filesystem consistency | Auto-index missing entries |
 | 14 | Assignment orphans / stale pending | Escalate |
 
@@ -236,7 +236,7 @@ and past work with high accuracy, even when keyword overlap is low.
 
 **Tools provided:**
 - `search_memory` — semantic search across all record types with filters
-- `run_audit` — all 5 audit categories in a single deterministic call
+- `run_audit` — all 7 audit categories in a single deterministic call
 - `index_decision`, `index_discussion`, `index_era`,
   `index_instruction`, `index_assignment`, `index_note`, `delete_note` — upsert and
   delete records in the vector index
