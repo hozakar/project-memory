@@ -48,7 +48,7 @@ export function buildEraText(data: EraIndexData): string {
   return [
     data.id,
     data.title,
-    data.dateRange,
+    data.date_range,
     content,
     data.narrative,
   ]

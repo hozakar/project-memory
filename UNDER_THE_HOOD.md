@@ -215,8 +215,8 @@ I run a 7-category drift audit each session, deferred to after the first user re
 | Category | Description | Resolution |
 |---|---|---|
 | 5 | Issue files in wrong directory | Auto-fix (file move) |
-| 6 | Decision index drift | Auto-fix if aged >3d; escalate if fresh |
-| 8 | ADR sync drift (when ADR enabled) | Auto-fix if aged >3d; escalate if fresh |
+|| 6 | Decision index drift | Auto-fix (orphan rows) + pending fixes (missing rows, status mismatches) |
+|| 8 | ADR sync drift (when ADR enabled) | Pending fixes (missing adr_id, missing ADR files) |
 | 9 | Active | Discussion index drift (low, non-interactive report) |
 | 11 | Active | Discussion expiry auto-archive |
 | 13 | DB/filesystem consistency | Auto-index missing entries |

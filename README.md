@@ -96,7 +96,7 @@ No commands to learn. Just ask naturally:
 Not every project needs the same level of ceremony. When we first work together
 on a new project, I'll ask you to choose one:
 
-- **standard** — lean ceremony: 10-category drift audit, 2 summary files
+- **standard** — lean ceremony: 7-category drift audit, 2 summary files
   (`roadmap.md` and `current-state.md`), Pre-Impl Gate with decision cross-reference.
   For most solo and small-team projects where architectural reasoning matters.
 

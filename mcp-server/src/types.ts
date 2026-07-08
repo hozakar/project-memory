@@ -53,7 +53,7 @@ export interface EraIndexData {
   title: string;
   records: string[];       // primary record IDs (DECISION/DISCUSSION) covered
   phases?: string[];       // legacy: frozen historical eras use phases instead of records
-  dateRange: string;       // e.g. "2026-06-08 to 2026-06-11"
+  date_range: string;       // e.g. "2026-06-08 to 2026-06-11"
   narrative: string;       // full body text, up to 3000 chars
 }
 

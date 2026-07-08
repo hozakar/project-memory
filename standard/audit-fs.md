@@ -25,7 +25,7 @@ Run all 7 active categories on every audit pass. Collect findings before acting.
 | 9 | **Discussion index drift** | DISCUSSION files vs discussions/index.md rows; missing row / status mismatch / orphan row. | Glob: discussions/DISCUSSION-*.md; Read: discussions/index.md | **Report (low, non-interactive)** | low |
 | 11 | **Discussion expiry** | DISCUSSION with outcome: none and age > 30 days → archive. | Glob: discussions/DISCUSSION-*.md; Read frontmatter | **Auto-fix** | — |
 | 13 | **MCP consistency (conditional)** | Runs only if MCP `check_consistency` tool is available. Indexes any IDs found on disk but not in DB. | MCP: `check_consistency`; `Read` files for missing IDs; MCP: `index_*` tools | **Auto-fix** | — |
-| 14 | **Assignment integrity** | 14a (target_id orphan), 14b (stale pending), 14c (completed without evidence). **No-op when assignments feature unused.** | `Glob: assignments/*.md`; `Read` frontmatter | **Auto-fix** | **low/medium** |
+|| 14 | **Assignment integrity** | 14a (target_id orphan: interactive ≤3d, auto-fix >3d), 14b (stale pending: auto-fix), 14c (completed without evidence: non-interactive escalation). **No-op when assignments feature unused.** | `Glob: assignments/*.md`; `Read` frontmatter | **Auto-fix / Escalate** | **medium** (14a ≤3d); **low** (14c) |
 
 ---
 

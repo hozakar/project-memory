@@ -27,7 +27,7 @@ describe("indexEra + searchMemory roundtrip", () => {
         "DECISION-2026-06-20-fake-one",
         "DISCUSSION-2026-06-21-fake-two",
       ],
-      dateRange: "2026-06-20 to 2026-06-22",
+      date_range: "2026-06-20 to 2026-06-22",
       narrative:
         "During this fictional era we hardened the LanceDB vector index against schema drift, added integration tests for every index_* tool, and reduced session-start cost by introducing a fast path for the audit MCP call.",
     });
@@ -57,7 +57,7 @@ describe("indexEra + searchMemory roundtrip", () => {
         "phase-20260621-fake-two",
         "phase-20260622-fake-three",
       ],
-      dateRange: "2026-06-20 to 2026-06-22",
+      date_range: "2026-06-20 to 2026-06-22",
       narrative:
         "This legacy era uses phases instead of records for backward compatibility testing.",
     });

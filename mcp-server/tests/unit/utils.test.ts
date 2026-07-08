@@ -72,12 +72,12 @@ describe("buildCommitText", () => {
 });
 
 describe("buildEraText", () => {
-  it("includes id, title, dateRange, phases, and narrative", () => {
+  it("includes id, title, date_range, phases, and narrative", () => {
     const result = buildEraText({
       id: "era-001",
       title: "Era 1",
       phases: ["phase-a", "phase-b"],
-      dateRange: "2026-06-08 to 2026-06-11",
+      date_range: "2026-06-08 to 2026-06-11",
       narrative: "narrative text",
     });
     expect(result).toContain("era-001");

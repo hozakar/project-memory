@@ -117,7 +117,12 @@ export async function upsert(record: LanceRecord): Promise<void> {
 }
 
 export function escapeLike(value: string): string {
-  return value.replace(/'/g, "''");
+  // Order matters: escape backslash first, then LIKE wildcards, then SQL quotes
+  return value
+    .replace(/\\/g, "\\\\")
+    .replace(/%/g, "\\%")
+    .replace(/_/g, "\\_")
+    .replace(/'/g, "''");
 }
 
 export async function search(
@@ -150,7 +155,7 @@ export async function search(
       whereClauses.push(`createdByEmail = '${escapeLike(createdByEmail)}'`);
     }
     if (createdByName) {
-      whereClauses.push(`createdByName LIKE '%${escapeLike(createdByName)}%'`);
+      whereClauses.push(`createdByName LIKE '%${escapeLike(createdByName)}%' ESCAPE '\\'`);
     }
     if (assignedToEmail) {
       whereClauses.push(`assignedToEmail = '${assignedToEmail.replace(/'/g, "''")}'`);
@@ -160,12 +165,12 @@ export async function search(
     }
     if (touchesFilter && touchesFilter.length > 0) {
       for (const touch of touchesFilter) {
-        whereClauses.push(`touchesJson LIKE '%"${escapeLike(touch)}"%'`);
+        whereClauses.push(`touchesJson LIKE '%"${escapeLike(touch)}"%' ESCAPE '\\'`);
       }
     }
     if (tagsFilter && tagsFilter.length > 0) {
       for (const tag of tagsFilter) {
-        whereClauses.push(`tagsJson LIKE '%"${escapeLike(tag)}"%'`);
+        whereClauses.push(`tagsJson LIKE '%"${escapeLike(tag)}"%' ESCAPE '\\'`);
       }
     }
     if (scopeFilter && scopeFilter.length > 0) {
