@@ -18,6 +18,8 @@ description: MCP-driven drift audit fast path for the standard profile. Calls ru
    - `escalations`: remaining findings. Each carries `category`, `severity`, `description`, `interactive` (bool), and `data`.
 4. For each escalation where `interactive: true` → enter interactive triage using the question shapes in `audit.md` → Interactive Mode.
 5. For each escalation where `interactive: false` → these are pre-classified for auto-fix. Report them in the auto-fix log (not interactive triage).
+
+> **Note:** In the current implementation, no categories produce interactive escalations (Cat 14a is now fully auto-fix) and no categories produce non-interactive escalations (Cat 9 and 14c are now auto-fix). The interactive triage mechanism remains in place for future categories but currently receives no findings.
 6. Skip the file-based Detection Procedure in `standard/audit-fs.md` entirely — `run_audit` with `profile: "standard"` has already covered all active categories.
 
 **Backward compatibility with older MCP server versions:**

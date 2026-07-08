@@ -48,15 +48,13 @@ The shared sections below (Severity, Permanent Skip, Era Auto-Clean, Output Form
 
 # Severity
 
-The model has 3 effective behavioral tiers, derived from the `severity` and `interactive` fields assigned by `run_audit.ts`:
+The model has 2 effective behavioral tiers, derived from the `severity` and `interactive` fields assigned by `run_audit.ts`:
 
 | Behavioral Tier | Severity | Categories | Behavior |
 |-----------------|----------|-----------|----------|
-| **Interactive triage** | medium | 14a (orphaned assignment targets aged ≤3 days) | Raised to the LLM for human decision via question shapes in Interactive Mode below. |
-| **Low-severity non-interactive escalation** | low | 9 (discussion index drift), 14c (assignment completed without evidence) | Reported in the auto-fix log; no interactive prompt. |
-| **Auto-fix pending** | — | 5 (misplaced issues), 6 (decision index drift), 8 (ADR sync drift, conditional on `adr_enabled`), 11 (discussion expiry auto-archive), 13 (MCP consistency, conditional) | Applied silently by `apply_audit_fixes` or direct MCP operations; logged in drift report. |
+| **Auto-fix pending** | — | 5 (misplaced issues), 6 (decision index drift), 8 (ADR sync drift, conditional on `adr_enabled`), 9 (discussion index drift), 11 (discussion expiry auto-archive), 13 (MCP consistency, conditional), 14 (assignment integrity: 14a target orphan, 14b stale pending, 14c completed without evidence) | Applied silently by `apply_audit_fixes` or direct MCP operations; logged in drift report. |
 
-In standard, phase-related categories retired, Cat 7 and 12 dropped. Cat 14b (stale pending >30d) auto-increments its remind_count. Cat 14a targets aged >3 days auto-fix via annotation (no interactive triage).
+No interactive triage tier remains — Cat 14a is now fully auto-fix (writes `target_orphaned_at` to frontmatter). Cat 9 no longer produces escalations (missing rows and status mismatches become pending fixes; orphan rows are auto-removed from the index). Cat 14c writes `completed_without_evidence_at` to frontmatter instead of escalating. Cat 14b uses a one-shot `reminded: true` flag (no `remind_count` increment).
 
 ---
 

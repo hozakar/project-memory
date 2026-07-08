@@ -42,7 +42,7 @@ completed_decision_id: null
 completed_discussion_id: null
 
 # Reminder tracking
-remind_count: 0
+reminded: false   # one-shot flag set to true when stale pending audit auto-fires; never reset
 last_reminded_at: null
 
 # Attribution
@@ -78,10 +78,10 @@ contributors:
 ```
 pending → accepted → ongoing → completed
 pending → rejected → (assigner loop: assign to another / do it yourself / remind me later)
-pending → remind me later → pending (remind_count incremented)
+pending → remind me later → pending (reminded set to true)
 rejected → assign to another → new ASSIGNMENT (new ID)
 rejected → do it yourself → completed (by assigner)
-rejected → remind me later → pending (remind_count++)
+rejected → remind me later → pending (reminded set to true)
 ```
 
 **Completion rules:**

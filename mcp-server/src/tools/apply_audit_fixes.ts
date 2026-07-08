@@ -23,6 +23,7 @@ import { validateMemoryId } from "../validation.js";
 // ---------------------------------------------------------------------------
 
 const CLAIM_PLACEHOLDER = "<!-- TODO: claim -->";
+const SUMMARY_PLACEHOLDER = "<!-- TODO: summary -->";
 
 function readFile(p: string): string {
   try { return fs.readFileSync(p, "utf-8"); } catch { return ""; }
@@ -325,6 +326,116 @@ function applyAssignAdrId(
 }
 
 // ---------------------------------------------------------------------------
+// add_discussion_index_row — prepend a row to discussions/index.md table.
+// Summary cell is left as TODO placeholder for LLM to fill.
+// Returns PartialFix.
+// ---------------------------------------------------------------------------
+
+function applyAddDiscussionIndexRow(
+  fix: PendingFix,
+  projectMemoryDir: string,
+): PartialFix | FailedFix {
+  const discussionId = fix.discussionId;
+  const status = fix.status || "open";
+  const date = fix.date || new Date().toISOString().slice(0, 10);
+  if (!discussionId) {
+    return { fix_type: "add_discussion_index_row", reason: "schema_mismatch", details: "missing discussionId" };
+  }
+  validateMemoryId(discussionId, "discussionId");
+  const indexPath = path.join(projectMemoryDir, "discussions", "index.md");
+  if (!fileExists(indexPath)) {
+    return { fix_type: "add_discussion_index_row", reason: "file_not_found", details: indexPath };
+  }
+
+  const indexContent = readFile(indexPath);
+  if (indexContent.includes(`| ${discussionId} |`)) {
+    return {
+      fix_type: "add_discussion_index_row",
+      target_file: path.relative(path.dirname(projectMemoryDir), indexPath),
+      llm_must_do: `Row for ${discussionId} already present. Verify Summary cell is filled.`,
+      context: { discussionId, already_present: true },
+    };
+  }
+
+  // Read outcome + tags from the DISCUSSION file
+  const discussionPath = path.join(projectMemoryDir, "discussions", `${discussionId}.md`);
+  const fm = parseFrontmatter(readFile(discussionPath));
+  // Derive outcome from frontmatter — avoids body-text regex pollution
+  const outcomeRaw = fm["outcome"];
+  const outcome = (!outcomeRaw || outcomeRaw === "none" || outcomeRaw === "") ? "none" : outcomeRaw;
+  const tagsRaw = fm["tags"] || "";
+  const tags = tagsRaw ? tagsRaw.replace(/[\[\]"]/g, "").split(/[,;\s]+/).filter(Boolean).join(", ") : "-";
+
+  const newRow = `| ${date} | ${discussionId} | ${status} | ${outcome} | ${tags} | ${SUMMARY_PLACEHOLDER} |`;
+
+  // Find the discussions table by header | Date | ID | Status | + separator row
+  const lines = indexContent.split("\n");
+  let headerIdx = -1;
+  for (let i = 0; i < lines.length; i++) {
+    if (/^\|\s*Date\s*\|\s*ID\s*\|\s*Status\s*\|/.test(lines[i]) && i + 1 < lines.length && /^\|[\-\s|]+\|$/.test(lines[i + 1])) {
+      headerIdx = i + 1; // points to separator row
+      break;
+    }
+  }
+  if (headerIdx < 0) {
+    return { fix_type: "add_discussion_index_row", reason: "schema_mismatch", details: "could not locate discussions table header" };
+  }
+  lines.splice(headerIdx + 1, 0, newRow);
+  fs.writeFileSync(indexPath, lines.join("\n"), "utf-8");
+
+  return {
+    fix_type: "add_discussion_index_row",
+    target_file: path.relative(path.dirname(projectMemoryDir), indexPath),
+    llm_must_do: `Row inserted with Summary placeholder. Replace "${SUMMARY_PLACEHOLDER}" in the row for ${discussionId} with a one-sentence summary derived from the DISCUSSION body.`,
+    context: { discussionId, placeholder: SUMMARY_PLACEHOLDER },
+  };
+}
+
+// ---------------------------------------------------------------------------
+// fix_discussion_index_status — change the Status cell of an existing row.
+// Discussions table: | Date | ID | Status | Outcome | Tags | Summary |
+// Status is the 3rd column.
+// ---------------------------------------------------------------------------
+
+function applyFixDiscussionIndexStatus(
+  fix: PendingFix,
+  projectMemoryDir: string,
+): AppliedFix | FailedFix {
+  const discussionId = fix.discussionId;
+  const correctStatus = fix.correctStatus;
+  if (!discussionId || !correctStatus) {
+    return { fix_type: "fix_discussion_index_status", reason: "schema_mismatch", details: "missing discussionId/correctStatus" };
+  }
+  validateMemoryId(discussionId, "discussionId");
+  const indexPath = path.join(projectMemoryDir, "discussions", "index.md");
+  if (!fileExists(indexPath)) {
+    return { fix_type: "fix_discussion_index_status", reason: "file_not_found", details: indexPath };
+  }
+  const content = readFile(indexPath);
+  // Row pattern: | Date | ID | Status | Outcome | Tags | Summary |
+  // Status is the 3rd column (after Date and ID)
+  const rowRe = new RegExp(`^(\\|\\s*\\d{4}-\\d{2}-\\d{2}\\s*\\|\\s*${discussionId}\\s*\\|\\s*)([\\w-]+)(\\s*\\|)`, "m");
+  const m = content.match(rowRe);
+  if (!m) {
+    return { fix_type: "fix_discussion_index_status", reason: "ambiguous_target", details: `row for ${discussionId} not found` };
+  }
+  if (m[2] === correctStatus) {
+    return {
+      fix_type: "fix_discussion_index_status",
+      target_file: path.relative(path.dirname(projectMemoryDir), indexPath),
+      summary: `Status for ${discussionId} already ${correctStatus} (no-op)`,
+    };
+  }
+  const updated = content.replace(rowRe, `$1${correctStatus}$3`);
+  fs.writeFileSync(indexPath, updated, "utf-8");
+  return {
+    fix_type: "fix_discussion_index_status",
+    target_file: path.relative(path.dirname(projectMemoryDir), indexPath),
+    summary: `Fixed ${discussionId} status: ${m[2]} → ${correctStatus}`,
+  };
+}
+
+// ---------------------------------------------------------------------------
 // ADR_STATUS_MAP — canonical mapping from decision/phase status → ADR status string.
 // Unknown statuses fall back to title-case (first char upper, rest lower).
 // ---------------------------------------------------------------------------
@@ -453,6 +564,12 @@ export async function applyAuditFixes(
       case "fix_decision_index_status":
         result = applyFixDecisionIndexStatus(fix, projectMemoryDir);
         break;
+      case "add_discussion_index_row":
+        result = applyAddDiscussionIndexRow(fix, projectMemoryDir);
+        break;
+      case "fix_discussion_index_status":
+        result = applyFixDiscussionIndexStatus(fix, projectMemoryDir);
+        break;
       case "assign_adr_id":
         result = applyAssignAdrId(fix, projectMemoryDir);
         break;
@@ -471,7 +588,7 @@ export async function applyAuditFixes(
   }
 
   // Recommend re-audit if any write happened that changes cross-file state.
-  const rerunTypes: PendingFix["type"][] = ["assign_commit", "add_decision_index_row", "fix_decision_index_status", "assign_adr_id"];
+  const rerunTypes: PendingFix["type"][] = ["assign_commit", "add_decision_index_row", "fix_decision_index_status", "assign_adr_id", "add_discussion_index_row"];
   const rerun_audit_recommended = applied.some(a => rerunTypes.includes(a.fix_type))
     || partial.some(p => rerunTypes.includes(p.fix_type));
 

@@ -292,6 +292,104 @@ describe("apply_audit_fixes — regression guards from review", () => {
   });
 });
 
+describe("apply_audit_fixes — add_discussion_index_row", () => {
+  it("prepends a row with TODO summary placeholder and returns partial", async () => {
+    w("discussions/DISCUSSION-2026-07-08-test.md", `---
+id: DISCUSSION-2026-07-08-test
+status: open
+---
+# Test Discussion
+
+outcome:
+  type: none
+`);
+    w("discussions/index.md", `# Discussions
+
+| Date | ID | Status | Outcome | Tags | Summary |
+|---|---|---|---|---|---|
+| 2026-07-07 | DISCUSSION-2026-07-07-prev | open | none | - | earlier |
+`);
+
+    const fix: PendingFix = { type: "add_discussion_index_row", discussionId: "DISCUSSION-2026-07-08-test", status: "open", date: "2026-07-08" };
+    const result = await applyAuditFixes(pmDir, [fix]);
+
+    expect(result.partial).toHaveLength(1);
+    const content = r("discussions/index.md");
+    expect(content).toContain("DISCUSSION-2026-07-08-test");
+    expect(content).toContain("<!-- TODO: summary -->");
+  });
+
+  it("marks already-present rows as already_present in partial", async () => {
+    w("discussions/DISCUSSION-2026-07-08-test.md", `---
+id: DISCUSSION-2026-07-08-test
+status: open
+---
+# Body
+`);
+    w("discussions/index.md", `| Date | ID | Status | Outcome | Tags | Summary |
+|---|---|---|---|---|---|
+| 2026-07-08 | DISCUSSION-2026-07-08-test | open | none | - | existing |
+`);
+    const fix: PendingFix = { type: "add_discussion_index_row", discussionId: "DISCUSSION-2026-07-08-test", status: "open", date: "2026-07-08" };
+    const result = await applyAuditFixes(pmDir, [fix]);
+    expect(result.partial).toHaveLength(1);
+    expect(result.partial[0].context.already_present).toBe(true);
+  });
+
+  it("derives outcome from discussion frontmatter", async () => {
+    w("discussions/DISCUSSION-2026-07-08-foo.md", `---
+id: DISCUSSION-2026-07-08-foo
+status: concluded
+outcome: DECISION-2026-07-08-something
+---
+# Foo
+`);
+    w("discussions/index.md", `| Date | ID | Status | Outcome | Tags | Summary |
+|---|---|---|---|---|---|
+`);
+    const fix: PendingFix = { type: "add_discussion_index_row", discussionId: "DISCUSSION-2026-07-08-foo", status: "concluded", date: "2026-07-08" };
+    const result = await applyAuditFixes(pmDir, [fix]);
+    expect(result.partial).toHaveLength(1);
+    expect(r("discussions/index.md")).toContain("DECISION-2026-07-08-something");
+  });
+});
+
+describe("apply_audit_fixes — fix_discussion_index_status", () => {
+  it("flips the Status cell of an existing row", async () => {
+    w("discussions/index.md", `| Date | ID | Status | Outcome | Tags | Summary |
+|---|---|---|---|---|---|
+| 2026-07-08 | DISCUSSION-2026-07-08-test | open | none | - | summary |
+`);
+    const fix: PendingFix = { type: "fix_discussion_index_status", discussionId: "DISCUSSION-2026-07-08-test", correctStatus: "concluded" };
+    const result = await applyAuditFixes(pmDir, [fix]);
+    expect(result.applied).toHaveLength(1);
+    expect(r("discussions/index.md")).toMatch(/\| concluded \|/);
+  });
+
+  it("is no-op when status already correct", async () => {
+    w("discussions/index.md", `| Date | ID | Status | Outcome | Tags | Summary |
+|---|---|---|---|---|---|
+| 2026-07-08 | DISCUSSION-2026-07-08-test | concluded | none | - | summary |
+`);
+    const fix: PendingFix = { type: "fix_discussion_index_status", discussionId: "DISCUSSION-2026-07-08-test", correctStatus: "concluded" };
+    const result = await applyAuditFixes(pmDir, [fix]);
+    expect(result.applied[0].summary).toMatch(/already/);
+  });
+
+  it("matches row with trailing whitespace", async () => {
+    w("discussions/index.md", `## Discussions   
+
+| Date | ID | Status | Outcome | Tags | Summary |
+|---|---|---|---|---|---|
+| 2026-07-08 | DISCUSSION-2026-07-08-test | open | none | - | s |
+`);
+    const fix: PendingFix = { type: "fix_discussion_index_status", discussionId: "DISCUSSION-2026-07-08-test", correctStatus: "concluded" };
+    const result = await applyAuditFixes(pmDir, [fix]);
+    expect(result.applied).toHaveLength(1);
+    expect(r("discussions/index.md")).toMatch(/\| concluded \|/);
+  });
+});
+
 describe("apply_audit_fixes — batch + flags", () => {
   it("rerun_audit_recommended is true when state-changing fixes applied", async () => {
     w("decisions/DECISION-2026-06-17-foo.md", `---\nid: DECISION-2026-06-17-foo\nstatus: active\n---\n`);

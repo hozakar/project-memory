@@ -37,6 +37,41 @@ export function parseFrontmatter(content: string): Record<string, string> {
   return result;
 }
 
+// ---------------------------------------------------------------------------
+// Frontmatter field setter helper
+// ---------------------------------------------------------------------------
+
+function setFrontmatterField(content: string, field: string, value: string): string {
+  // Handle CRLF line endings — normalise to LF, work, then restore CRLF if original had it
+  const crlf = content.includes("\r\n");
+  const normalized = content.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+  const hasBom = normalized.startsWith("\uFEFF");
+  const body = hasBom ? normalized.slice(1) : normalized;
+
+  const fmRe = /^(---\n)([\s\S]*?)(\n---)(\n?)/;
+  const fmMatch = body.match(fmRe);
+  if (!fmMatch) return content; // no frontmatter, return unchanged
+
+  const [, open, fmBody, close, trailingNewline] = fmMatch;
+  // Preserve everything after the frontmatter block (the body/tail)
+  const tail = body.slice((fmMatch.index ?? 0) + fmMatch[0].length);
+  const fieldRe = new RegExp(`^${field}:\\s*\\S+`, "m");
+
+  let updatedFm: string;
+  if (fieldRe.test(fmBody)) {
+    // Field exists — replace it
+    updatedFm = fmBody.replace(fieldRe, `${field}: ${value}`);
+  } else {
+    // Field does not exist — insert before closing \n---
+    updatedFm = fmBody + `\n${field}: ${value}`;
+  }
+
+  let result = open + updatedFm + close + (trailingNewline || "") + tail;
+  if (hasBom) result = "\uFEFF" + result;
+  if (crlf) result = result.replace(/\n/g, "\r\n");
+  return result;
+}
+
 // Glob-style wildcard matching: * matches any chars except : (within a single segment).
 // Spec: audit.md → Permanent Skip → Pattern match rules.
 export function matchesIgnorePattern(pattern: string, key: string): boolean {
@@ -149,7 +184,7 @@ function cat6DecisionDrift(projectMemoryDir: string, ignored: AuditIgnoreSet): {
     if (!fileIds.has(id) && !ignored.has(`decision-drift:${id}:orphan-row`)) {
       // Auto-remove the row from index.md
       const lines = indexContent.split("\n");
-      const filtered = lines.filter(l => !l.includes(id));
+      const filtered = lines.filter(l => !l.includes(`| ${id} |`));
       if (filtered.length !== lines.length) {
         fs.writeFileSync(indexPath, filtered.join("\n"), "utf-8");
         autoFixed.push(`Removed orphan decision index row for ${id} (file does not exist).`);
@@ -236,18 +271,20 @@ function cat8AdrDrift(projectMemoryDir: string, ignored: AuditIgnoreSet): { auto
   return { autoFixed, pendingFixes };
 }
 
-function cat9DiscussionDrift(projectMemoryDir: string, ignored: AuditIgnoreSet): AuditFinding[] {
+function cat9DiscussionDrift(projectMemoryDir: string, ignored: AuditIgnoreSet): { autoFixed: string[]; pendingFixes: PendingFix[] } {
   const discussionsDir = path.join(projectMemoryDir, "discussions");
-  if (!fs.existsSync(discussionsDir)) return [];
+  if (!fs.existsSync(discussionsDir)) return { autoFixed: [], pendingFixes: [] };
 
-  const indexContent = readFile(path.join(discussionsDir, "index.md"));
+  const indexPath = path.join(discussionsDir, "index.md");
+  const indexContent = readFile(indexPath);
   const indexRows = new Map<string, string>(); // id -> status
   for (const line of indexContent.split("\n")) {
     const m = line.match(/^\|\s*[\d-]+\s*\|\s*(DISCUSSION-[\w-]+)\s*\|\s*(\w+)\s*\|/);
     if (m) indexRows.set(m[1], m[2]);
   }
 
-  const findings: AuditFinding[] = [];
+  const autoFixed: string[] = [];
+  const pendingFixes: PendingFix[] = [];
   const fileIds = new Set<string>();
 
   for (const filename of fs.readdirSync(discussionsDir)) {
@@ -256,38 +293,40 @@ function cat9DiscussionDrift(projectMemoryDir: string, ignored: AuditIgnoreSet):
     fileIds.add(id);
     const fm = parseFrontmatter(readFile(path.join(discussionsDir, filename)));
     const fileStatus = fm["status"] || "unknown";
-    const dateStr = id.match(/DISCUSSION-(\d{4}-\d{2}-\d{2})/)?.[1] ?? today();
-    const ageDays = daysDiff(dateStr);
 
     if (!indexRows.has(id)) {
       if (!ignored.has(`discussion-drift:${id}:missing-row`)) {
-        findings.push({
-          category: 9, severity: "low", interactive: false,
-          description: `${id} missing from discussions/index.md`,
-          data: { discussion_id: id, issue: "missing_row", age_days: ageDays },
+        pendingFixes.push({
+          type: "add_discussion_index_row",
+          discussionId: id,
+          status: fileStatus,
+          date: today(),
         });
       }
     } else if (indexRows.get(id) !== fileStatus) {
       if (!ignored.has(`discussion-drift:${id}:status-mismatch`)) {
-        findings.push({
-          category: 9, severity: "low", interactive: false,
-          description: `${id} status mismatch: file="${fileStatus}", index="${indexRows.get(id)}"`,
-          data: { discussion_id: id, issue: "status_mismatch", file_status: fileStatus, index_status: indexRows.get(id), age_days: ageDays },
+        pendingFixes.push({
+          type: "fix_discussion_index_status",
+          discussionId: id,
+          correctStatus: fileStatus,
         });
       }
     }
   }
 
+  // Orphan rows: in index but file missing → auto-remove
   for (const [id] of indexRows) {
     if (!fileIds.has(id) && !ignored.has(`discussion-drift:${id}:orphan-row`)) {
-      findings.push({
-        category: 9, severity: "low", interactive: false,
-        description: `${id} in index.md but file missing`,
-        data: { discussion_id: id, issue: "orphan_row" },
-      });
+      const lines = indexContent.split("\n");
+      const filtered = lines.filter(l => !l.includes(`| ${id} |`));
+      if (filtered.length !== lines.length) {
+        fs.writeFileSync(indexPath, filtered.join("\n"), "utf-8");
+        autoFixed.push(`Removed orphan discussion index row for ${id} (file does not exist).`);
+      }
     }
   }
-  return findings;
+
+  return { autoFixed, pendingFixes };
 }
 
 function cat11DiscussionExpiry(projectMemoryDir: string): string[] {
@@ -321,7 +360,7 @@ function cat11DiscussionExpiry(projectMemoryDir: string): string[] {
 
     const indexPath = path.join(discussionsDir, "index.md");
     const id = filename.slice(0, -3);
-    const lines = readFile(indexPath).split("\n").filter(l => !l.includes(id));
+    const lines = readFile(indexPath).split("\n").filter(l => !l.includes(`| ${id} |`));
     fs.writeFileSync(indexPath, lines.join("\n"), "utf-8");
     autoFixed.push(`Archived ${filename} → discussions/archive/ (outcome: none, age > 30d)`);
   }
@@ -331,13 +370,12 @@ function cat11DiscussionExpiry(projectMemoryDir: string): string[] {
 function cat14AssignmentIntegrity(
   projectMemoryDir: string,
   ignored: AuditIgnoreSet,
-): { autoFixed: string[]; escalations: AuditFinding[] } {
+): string[] {
   const autoFixed: string[] = [];
-  const escalations: AuditFinding[] = [];
 
   const assignmentsDir = path.join(projectMemoryDir, "assignments");
   if (!fs.existsSync(assignmentsDir)) {
-    return { autoFixed, escalations };
+    return autoFixed;
   }
 
   const now = new Date();
@@ -348,7 +386,7 @@ function cat14AssignmentIntegrity(
 
     const assignmentId = m[1];
     const filePath = path.join(assignmentsDir, f);
-    const content = readFile(filePath);
+    let content = readFile(filePath);
     const parsed = parseFrontmatter(content);
     if (!parsed || Object.keys(parsed).length === 0) continue;
 
@@ -356,12 +394,12 @@ function cat14AssignmentIntegrity(
     const type = parsed["type"] || "";
     const targetId = parsed["target_id"] || "";
     const assignedAt = parsed["assigned_at"] || "";
-    const remindCount = parseInt(parsed["remind_count"] || "0", 10);
+    const reminded = parsed["reminded"] || "";
     const completedNote = parsed["completion_note"] || "";
     const completedDecisionId = parsed["completed_decision_id"] || "";
     const completedDiscussionId = parsed["completed_discussion_id"] || "";
 
-    // 14a: Direct assignment target orphan
+    // 14a: Direct assignment target orphan — auto-fix for ALL ages
     if (type === "direct" && targetId && status !== "completed") {
       if (!ignored.has(`assignment-orphan:${assignmentId}`)) {
         let targetExists = false;
@@ -375,49 +413,38 @@ function cat14AssignmentIntegrity(
         for (const tp of targetPaths) {
           if (fs.existsSync(tp)) { targetExists = true; break; }
         }
-        if (!targetExists) {
-          const ageDays = assignedAt ? (now.getTime() - new Date(assignedAt).getTime()) / 86400000 : 999;
-          if (ageDays <= 3) {
-            escalations.push({
-              category: 14,
-              severity: "medium",
-              interactive: true,
-              description: `Assignment ${assignmentId}: target ${targetId} not found (orphaned)`,
-              data: { assignmentId, targetId, age_days: Math.round(ageDays) },
-            });
-          } else {
-            autoFixed.push(`Assignment ${assignmentId}: target ${targetId} orphaned >3d, annotated`);
-          }
+        if (!targetExists && !parsed["target_orphaned_at"]) {
+          content = setFrontmatterField(content, "target_orphaned_at", today());
+          fs.writeFileSync(filePath, content, "utf-8");
+          autoFixed.push(`Assignment ${assignmentId}: target ${targetId} orphaned, annotated`);
         }
       }
     }
 
-    // 14b: Stale pending assignment (>30 days)
+    // 14b: Stale pending assignment (>30 days) — one-shot reminded flag
+    // Uses updated `content` (14a may have written to the same file above)
     if (status === "pending" && assignedAt) {
       const ageDays = (now.getTime() - new Date(assignedAt).getTime()) / 86400000;
       if (ageDays > 30) {
-        if (!ignored.has(`assignment-stale:${assignmentId}`)) {
-          const newCount = remindCount + 1;
-          autoFixed.push(`Assignment ${assignmentId}: stale pending (${Math.round(ageDays)}d), remind_count ${remindCount}→${newCount}`);
+        if (!ignored.has(`assignment-stale:${assignmentId}`) && reminded !== "true") {
+          content = setFrontmatterField(content, "reminded", "true");
+          fs.writeFileSync(filePath, content, "utf-8");
+          autoFixed.push(`Assignment ${assignmentId}: stale pending (${Math.round(ageDays)}d), marked reminded`);
         }
       }
     }
 
-    // 14c: Completed without evidence
+    // 14c: Completed without evidence — auto-annotate
     if (status === "completed" && !completedNote && !completedDecisionId && !completedDiscussionId) {
-      if (!ignored.has(`assignment-no-evidence:${assignmentId}`)) {
-        escalations.push({
-          category: 14,
-          severity: "low",
-          interactive: false,
-          description: `Assignment ${assignmentId}: completed without evidence (no note or link)`,
-          data: { assignmentId },
-        });
+      if (!ignored.has(`assignment-no-evidence:${assignmentId}`) && !parsed["completed_without_evidence_at"]) {
+        content = setFrontmatterField(content, "completed_without_evidence_at", today());
+        fs.writeFileSync(filePath, content, "utf-8");
+        autoFixed.push(`Assignment ${assignmentId}: completed without evidence, annotated`);
       }
     }
   }
 
-  return { autoFixed, escalations };
+  return autoFixed;
 }
 
 // ---------------------------------------------------------------------------
@@ -457,8 +484,10 @@ export async function runAudit(
   const cat8Result = cat8AdrDrift(projectMemoryDir, ignored);
   autoFixed.push(...cat8Result.autoFixed);
   pendingFixes.push(...cat8Result.pendingFixes);
-  // Cat 9 (discussion index drift)
-  escalations.push(...cat9DiscussionDrift(projectMemoryDir, ignored));
+  // Cat 9 (discussion index drift) — auto-fix + pending fixes
+  const cat9Result = cat9DiscussionDrift(projectMemoryDir, ignored);
+  autoFixed.push(...cat9Result.autoFixed);
+  pendingFixes.push(...cat9Result.pendingFixes);
   // Cat 13: FS is source of truth.
   // Missing (FS has file, DB doesn't) → re-index from FS.
   // Orphaned (DB has record, FS doesn't) → delete from DB. Never modify FS.
@@ -503,10 +532,8 @@ export async function runAudit(
     autoFixed.push(`Cat 13: deleted orphaned ${id} from DB`);
   }
 
-  // Cat 14: Assignment integrity
-  const cat14 = cat14AssignmentIntegrity(projectMemoryDir, ignored);
-  autoFixed.push(...cat14.autoFixed);
-  escalations.push(...cat14.escalations);
+  // Cat 14: Assignment integrity — auto-fix only (no escalations)
+  autoFixed.push(...cat14AssignmentIntegrity(projectMemoryDir, ignored));
 
   const report: AuditReport = { auto_fixed: autoFixed, pending_fixes: pendingFixes, escalations };
   return report;

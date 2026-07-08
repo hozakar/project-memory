@@ -22,10 +22,10 @@ Run all 7 active categories on every audit pass. Collect findings before acting.
 | 5 | **Misplaced issue files** | `issues/open/*.md` with `status: closed` → move to `issues/closed/`. **No-op when issues feature unused.** | `Glob: issues/open/*.md`; `Read` frontmatter | **Auto-fix** | — |
 | 6 | **Decision index drift** | DECISION files vs `decisions/index.md` rows; missing rows → pendingFix; orphan rows → auto-remove; status mismatch → auto-resolve from file. | `Glob: decisions/DECISION-*.md`; `Read: decisions/index.md` | **Auto-fix** | — |
 | 8 | **ADR sync drift (conditional)** | Only fires if `config.yml.adr_enabled: true`. Default is `adr_enabled: false` (no ADR scaffolding), so Cat 8 is typically a no-op. | `Read: config.yml`; `Glob/Read: decisions/`; `Glob: <adr_dir>` | **Auto-fix** | — |
-| 9 | **Discussion index drift** | DISCUSSION files vs discussions/index.md rows; missing row / status mismatch / orphan row. | Glob: discussions/DISCUSSION-*.md; Read: discussions/index.md | **Report (low, non-interactive)** | low |
+| 9 | **Discussion index drift** | DISCUSSION files vs discussions/index.md rows; missing row / status mismatch / orphan row. Missing rows and status mismatches become pending fixes; orphan rows auto-removed from index. | Glob: discussions/DISCUSSION-*.md; Read: discussions/index.md | **Auto-fix** | — |
 | 11 | **Discussion expiry** | DISCUSSION with outcome: none and age > 30 days → archive. | Glob: discussions/DISCUSSION-*.md; Read frontmatter | **Auto-fix** | — |
 | 13 | **MCP consistency (conditional)** | Runs only if MCP `check_consistency` tool is available. Indexes any IDs found on disk but not in DB. | MCP: `check_consistency`; `Read` files for missing IDs; MCP: `index_*` tools | **Auto-fix** | — |
-|| 14 | **Assignment integrity** | 14a (target_id orphan: interactive ≤3d, auto-fix >3d), 14b (stale pending: auto-fix), 14c (completed without evidence: non-interactive escalation). **No-op when assignments feature unused.** | `Glob: assignments/*.md`; `Read` frontmatter | **Auto-fix / Escalate** | **medium** (14a ≤3d); **low** (14c) |
+|| 14 | **Assignment integrity** | 14a (target_id orphan: auto-fix writes `target_orphaned_at` to frontmatter, any age), 14b (stale pending >30d: one-shot `reminded: true` flag), 14c (completed without evidence: auto-fix writes `completed_without_evidence_at` to frontmatter). **No-op when assignments feature unused.** | `Glob: assignments/*.md`; `Read` frontmatter | **Auto-fix** | — |
 
 ---
 
