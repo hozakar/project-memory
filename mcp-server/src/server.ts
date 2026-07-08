@@ -10,9 +10,7 @@ import { indexEra } from "./tools/index_era";
 import { indexInstruction } from "./tools/index_instruction";
 import { indexAssignment } from "./tools/index_assignment";
 import { indexNote } from "./tools/index_note";
-import { runAudit } from "./tools/run_audit";
-import { applyAuditFixes } from "./tools/apply_audit_fixes";
-import { startBackgroundAudit } from "./tools/background_audit";
+import { startBackgroundAudit, runAuditLocked, applyAuditFixesLocked } from "./tools/background_audit";
 import { listContributors } from "./tools/list_contributors";
 import { deleteNote } from "./tools/delete_note";
 import type { IndexEntry, PendingFix } from "./types";
@@ -269,7 +267,7 @@ srv.tool(
       const r = await startBackgroundAudit(args.project_memory_dir, args.profile);
       return { content: [{ type: "text" as const, text: JSON.stringify(r) }] };
     }
-    const result = await runAudit(args.project_memory_dir, args.profile);
+    const result = await runAuditLocked(args.project_memory_dir, args.profile);
     return { content: [{ type: "text" as const, text: JSON.stringify(result) }] };
   }
 );
@@ -286,7 +284,7 @@ srv.tool(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async (args: any) => {
     const fixes = args.pending_fixes as PendingFix[];
-    const result = await applyAuditFixes(args.project_memory_dir, fixes);
+    const result = await applyAuditFixesLocked(args.project_memory_dir, fixes);
     return { content: [{ type: "text" as const, text: JSON.stringify(result) }] };
   }
 );

@@ -8,7 +8,9 @@ description: MCP-driven drift audit fast path for the standard profile. Calls ru
 **Invocation:** at post-first-response hook (default), or on explicit `Skill project-memory audit` (sync), or when first user message is an audit-implicit-trigger (sync).
 
 **Auto-run (On-Load) uses background mode:**
-At session open (SKILL.md On-Load step 5), the LLM calls `run_audit(project_memory_dir, { profile: 'standard', background: true })`. The server runs the full pipeline silently in the background: `run_audit → apply_audit_fixes → re-run until clean` (max 5 iterations). Returns `{ status: 'running' }` immediately. No retrieval, no report. The LLM emits a single instant-ack line.
+At session open (SKILL.md On-Load step 5), the LLM calls `run_audit(project_memory_dir, { profile: 'standard', background: true })`. The server runs the full pipeline silently in the background: `run_audit → apply_audit_fixes → re-run until clean` (max 5 iterations). Returns `{ status: 'running' }` (audit starting/in-progress) or `{ status: 'done' }` (audit already completed moments ago). No retrieval, no report. The LLM emits a single instant-ack line.
+
+> **Concurrency guarantees:** Concurrent triggers (server head-start + SKILL.md call) deduplicate via a normalized in-flight guard — different path strings pointing to the same physical directory collapse to one key. Manual `run_audit` / `apply_audit_fixes` calls serialize against the background pipeline via a per-directory async mutex.
 
 **Manual invocation (explicit `Skill project-memory audit`) uses synchronous form:**
 

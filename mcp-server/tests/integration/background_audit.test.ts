@@ -1,12 +1,14 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach } from "vitest";
 import * as fs from "fs";
-import { join } from "path";
+import { join, sep } from "path";
 import { createTmpDir, type TmpDir } from "./helpers/tmp-db";
 import { runAudit } from "../../src/tools/run_audit";
 import {
   startBackgroundAudit,
   getBackgroundAuditState,
   clearBackgroundAuditState,
+  __getPipelineStartCount,
+  runAuditLocked,
 } from "../../src/tools/background_audit";
 
 let tmp: TmpDir;
@@ -173,5 +175,140 @@ describe("background_audit", () => {
     // Minimal profile returns empty report
     expect(state!.result!.auto_fixed).toHaveLength(0);
     expect(state!.result!.pending_fixes).toHaveLength(0);
+  });
+
+  // -----------------------------------------------------------------------
+  // New: Gap 1 – mismatched dir key normalization
+  // -----------------------------------------------------------------------
+  it("mismatched-dir dedup: trailing-slash and clean paths produce one pipeline run", async () => {
+    const myTmp = createTmpDir();
+    try {
+      const decisionsDir = join(myTmp.pmDir, "decisions");
+      fs.mkdirSync(decisionsDir, { recursive: true });
+      const phasesDir = join(myTmp.pmDir, "phases");
+      fs.mkdirSync(phasesDir, { recursive: true });
+      fs.writeFileSync(join(phasesDir, "index.yml"), "phases: []\n");
+      fs.writeFileSync(join(myTmp.pmDir, "config.yml"), "adr_enabled: false\naudit_ignore: []\n");
+
+      // Create a DECISION file with a missing index.md row
+      fs.writeFileSync(join(decisionsDir, "DECISION-2026-07-08-gap1-test.md"), [
+        "---",
+        "id: DECISION-2026-07-08-gap1-test",
+        "title: Gap1 Test Decision",
+        "status: active",
+        "touches: conventions_md",
+        "primary_scope: workflow",
+        "---",
+        "# Gap1 Test",
+        "",
+        "Test for dir-key normalization dedup.",
+      ].join("\n"));
+
+      fs.writeFileSync(join(decisionsDir, "index.md"), [
+        "| Date | ID | Scope | Status | Global | Touches | Claim |",
+        "|---|---|---|---|---|---|---|",
+      ].join("\n"));
+
+      // Call with the clean path, then with a trailing-sep path
+      const r1 = await startBackgroundAudit(myTmp.pmDir, "standard");
+      expect(r1).toEqual({ status: "running" });
+      const r2 = await startBackgroundAudit(myTmp.pmDir + sep, "standard");
+      expect(r2).toEqual({ status: "running" });
+
+      await waitForDone(myTmp.pmDir);
+
+      // Only ONE pipeline should have run
+      expect(__getPipelineStartCount()).toBe(1);
+
+      // The single run must have applied the fix
+      const indexContent = fs.readFileSync(join(decisionsDir, "index.md"), "utf-8");
+      expect(indexContent).toContain("DECISION-2026-07-08-gap1-test");
+    } finally {
+      try { myTmp.cleanup(); } catch { /* Windows cleanup edge cases */ }
+    }
+  });
+
+  // -----------------------------------------------------------------------
+  // New: Gap 3 – background vs. manual serialization
+  // -----------------------------------------------------------------------
+  it("manual audit waits for background run via per-dir lock (serialization)", async () => {
+    const myTmp = createTmpDir();
+    try {
+      const decisionsDir = join(myTmp.pmDir, "decisions");
+      fs.mkdirSync(decisionsDir, { recursive: true });
+      const phasesDir = join(myTmp.pmDir, "phases");
+      fs.mkdirSync(phasesDir, { recursive: true });
+      fs.writeFileSync(join(phasesDir, "index.yml"), "phases: []\n");
+      fs.writeFileSync(join(myTmp.pmDir, "config.yml"), "adr_enabled: false\naudit_ignore: []\n");
+
+      // Create a DECISION file with a missing index.md row
+      fs.writeFileSync(join(decisionsDir, "DECISION-2026-07-08-gap3-test.md"), [
+        "---",
+        "id: DECISION-2026-07-08-gap3-test",
+        "title: Gap3 Test Decision",
+        "status: active",
+        "touches: conventions_md",
+        "primary_scope: workflow",
+        "---",
+        "# Gap3 Test",
+        "",
+        "Test for background vs manual serialization.",
+      ].join("\n"));
+
+      fs.writeFileSync(join(decisionsDir, "index.md"), [
+        "| Date | ID | Scope | Status | Global | Touches | Claim |",
+        "|---|---|---|---|---|---|---|",
+      ].join("\n"));
+
+      // Start background run
+      await startBackgroundAudit(myTmp.pmDir, "standard");
+
+      // Immediately call the locked manual path — must wait for background to finish
+      const result = await runAuditLocked(myTmp.pmDir, "standard");
+
+      // Full AuditReport shape (not {status:...})
+      expect(result).toHaveProperty("auto_fixed");
+      expect(result).toHaveProperty("pending_fixes");
+
+      // Background run should have already fixed the missing row, so
+      // the re-detect inside the locked manual run finds nothing.
+      expect(result.pending_fixes).toHaveLength(0);
+
+      // Verify the fix was applied to the filesystem
+      const indexContent = fs.readFileSync(join(decisionsDir, "index.md"), "utf-8");
+      expect(indexContent).toContain("DECISION-2026-07-08-gap3-test");
+    } finally {
+      try { myTmp.cleanup(); } catch { /* Windows cleanup edge cases */ }
+    }
+  });
+
+  // -----------------------------------------------------------------------
+  // New: Gap 2 – recently-done skip returns {status:"done"} without re-run
+  // -----------------------------------------------------------------------
+  it("recently-done skip does not start a second pipeline within 60s", async () => {
+    // We need a tmp dir with minimal structure so the pipeline completes quickly
+    const myTmp = createTmpDir();
+    try {
+      const phasesDir = join(myTmp.pmDir, "phases");
+      fs.mkdirSync(phasesDir, { recursive: true });
+      fs.writeFileSync(join(phasesDir, "index.yml"), "phases: []\n");
+      fs.writeFileSync(join(myTmp.pmDir, "config.yml"), "adr_enabled: false\naudit_ignore: []\n");
+
+      // First run
+      const r1 = await startBackgroundAudit(myTmp.pmDir, "standard");
+      expect(r1).toEqual({ status: "running" });
+
+      await waitForDone(myTmp.pmDir);
+      expect(__getPipelineStartCount()).toBe(1);
+
+      // Immediate second call — should skip because <60s have passed
+      const r2 = await startBackgroundAudit(myTmp.pmDir, "standard");
+      expect(r2).toEqual({ status: "done" });
+
+      // Pipeline counter must NOT have increased
+      expect(__getPipelineStartCount()).toBe(1);
+    } finally {
+      try { myTmp.cleanup(); } catch { /* Windows cleanup edge cases */ }
+    }
   });
 });

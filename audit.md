@@ -10,7 +10,9 @@ Emit `🧠 PROJECT MEMORY LOADED` as a synchronous indicator at session open. Th
 
 **Context A2 — Post-first-response drift audit (async):**
 After the LLM answers the user's first message, run the drift audit automatically (standard only — minimal skips audit entirely).
-- **MCP present:** The LLM calls `run_audit(project_memory_dir, { profile: 'standard', background: true })` at session open (SKILL.md On-Load step 5). The server runs the full audit pipeline (`run_audit → apply_audit_fixes → re-run until clean`) silently in the background and returns `{ status: 'running' }` immediately. The LLM emits a single instant-ack line (e.g. `🧠 PROJECT MEMORY AUDIT — running in background`) and moves on. **NO drift report block is emitted**; all fixes apply silently to disk. No retrieval.
+- **MCP present:** The LLM calls `run_audit(project_memory_dir, { profile: 'standard', background: true })` at session open (SKILL.md On-Load step 5). The server runs the full audit pipeline (`run_audit → apply_audit_fixes → re-run until clean`) silently in the background and returns `{ status: 'running' }` (audit starting/in-progress) or `{ status: 'done' }` (audit already completed moments ago). The LLM emits a single instant-ack line (e.g. `🧠 PROJECT MEMORY AUDIT — running in background`) and moves on. **NO drift report block is emitted**; all fixes apply silently to disk. No retrieval.
+  
+  > **Concurrency guarantees:** Concurrent triggers (server head-start + SKILL.md call) deduplicate via a normalized in-flight guard. Manual `run_audit` / `apply_audit_fixes` calls serialize against the background run via a per-dir async mutex.
 - **No MCP:** Fall back to the deferred file-based audit per On-Load step 5 (requires the LLM to emit the drift report as a follow-up block after the first user response).
 
 **Context B — On-demand (standard profile), via `Skill project-memory audit` or natural-language triggers:**
