@@ -1,6 +1,6 @@
 import * as fs from "fs";
 import * as path from "path";
-import type { AuditReport, AuditFinding, PendingFix } from "../types";
+import type { AuditReport, PendingFix } from "../types";
 import { checkConsistency } from "./check_consistency";
 import { indexNote } from "./index_note";
 import { deleteNote } from "./delete_note";
@@ -462,14 +462,14 @@ export async function runAudit(
 
   // Minimal profile has no audit by design — return empty report immediately.
   if (effectiveProfile === "minimal") {
-    return { auto_fixed: [], pending_fixes: [], escalations: [] };
+    return { auto_fixed: [], pending_fixes: [] };
   }
 
   const ignored = readAuditIgnore(projectMemoryDir);
 
   const autoFixed: string[] = [];
   const pendingFixes: PendingFix[] = [];
-  const escalations: AuditFinding[] = [];
+
 
   // Auto-fix categories (silent)
   autoFixed.push(...cat5MisplacedIssues(projectMemoryDir));
@@ -535,6 +535,6 @@ export async function runAudit(
   // Cat 14: Assignment integrity — auto-fix only (no escalations)
   autoFixed.push(...cat14AssignmentIntegrity(projectMemoryDir, ignored));
 
-  const report: AuditReport = { auto_fixed: autoFixed, pending_fixes: pendingFixes, escalations };
+  const report: AuditReport = { auto_fixed: autoFixed, pending_fixes: pendingFixes };
   return report;
 }

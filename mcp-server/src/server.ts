@@ -256,7 +256,7 @@ srv.tool(
 
 srv.tool(
   "run_audit",
-  "Run deterministic audit checks on a project-memory directory. Returns structured findings: auto_fixed (Cat 5/11 file moves executed), pending_fixes (Cat 6 decision index drift and Cat 8 ADR drift), escalations (all other findings with severity and interactive flag). Profile-aware: profile=minimal returns an empty report.",
+  "Run deterministic audit checks on a project-memory directory. Returns structured findings: auto_fixed (Cat 5/11 file moves executed), pending_fixes (Cat 6 decision index drift, Cat 8 ADR drift, Cat 9 discussion index drift). No escalations — all findings are auto-fixed directly or queued as deterministic pending_fixes. Profile-aware: profile=minimal returns an empty report.",
   {
     project_memory_dir: z.string().describe("Absolute path to the .project-memory/ directory"),
     profile: z.enum(["standard", "minimal", "full", "lite"]).optional().default("standard").describe("Active project-memory profile. Default 'standard'. 'full' and 'lite' are normalized to 'standard'. 'minimal' returns empty findings (no audit by design)."),

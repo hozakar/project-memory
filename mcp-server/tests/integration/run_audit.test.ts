@@ -31,19 +31,16 @@ describe("runAudit — basic structure", () => {
     const report = await runAudit(tmp.pmDir);
     expect(report).toHaveProperty("auto_fixed");
     expect(report).toHaveProperty("pending_fixes");
-    expect(report).toHaveProperty("escalations");
     expect(Array.isArray(report.auto_fixed)).toBe(true);
     expect(Array.isArray(report.pending_fixes)).toBe(true);
-    expect(Array.isArray(report.escalations)).toBe(true);
     // No cat4_gap_count — Cat 4 was removed in phase-removal
     expect(report).not.toHaveProperty("cat4_gap_count");
   });
 
-  it("returns empty auto_fixed, pending_fixes, escalations for an empty project memory with no git history", async () => {
+  it("returns empty auto_fixed and pending_fixes for an empty project memory with no git history", async () => {
     const report = await runAudit(tmp.pmDir);
     expect(report.auto_fixed).toHaveLength(0);
     expect(report.pending_fixes).toHaveLength(0);
-    expect(report.escalations).toHaveLength(0);
   });
 });
 
@@ -53,7 +50,6 @@ describe("runAudit — minimal profile", () => {
     expect(report).toEqual({
       auto_fixed: [],
       pending_fixes: [],
-      escalations: [],
     });
   });
 });
@@ -92,9 +88,6 @@ describe("runAudit — Cat 9: discussion index drift", () => {
     const rowFix = report.pending_fixes.find(f => f.type === "add_discussion_index_row");
     expect(rowFix).toBeDefined();
     expect(rowFix!.discussionId).toBe("DISCUSSION-2026-07-08-test");
-    // Must NOT appear in escalations
-    const cat9Esc = report.escalations.find(e => e.category === 9);
-    expect(cat9Esc).toBeUndefined();
 
     // Cleanup
     try { fs.rmSync(join(dDir(), "DISCUSSION-2026-07-08-test.md")); } catch {}
@@ -118,8 +111,6 @@ describe("runAudit — Cat 9: discussion index drift", () => {
     expect(statusFix).toBeDefined();
     expect(statusFix!.discussionId).toBe("DISCUSSION-2026-07-08-abc");
     expect(statusFix!.correctStatus).toBe("concluded");
-    const cat9Esc = report.escalations.find(e => e.category === 9);
-    expect(cat9Esc).toBeUndefined();
 
     // Cleanup
     try { fs.rmSync(join(dDir(), "DISCUSSION-2026-07-08-abc.md")); } catch {}
@@ -141,8 +132,6 @@ describe("runAudit — Cat 9: discussion index drift", () => {
     // The row must be gone from the file
     const indexContent = fs.readFileSync(join(dDir(), "index.md"), "utf-8");
     expect(indexContent).not.toContain("DISCUSSION-2026-07-08-ghost");
-    const cat9Esc = report.escalations.find(e => e.category === 9);
-    expect(cat9Esc).toBeUndefined();
 
     // Cleanup
     try { fs.rmSync(join(dDir(), "index.md")); } catch {}
@@ -180,9 +169,6 @@ describe("runAudit — Cat 14: assignment integrity auto-fix", () => {
     const content2 = fs.readFileSync(filePath, "utf-8");
     expect(content2).toBe(content1); // exactly same content
 
-    // Must NOT produce escalations
-    const cat14Esc = report1.escalations.find(e => e.category === 14);
-    expect(cat14Esc).toBeUndefined();
 
     try { fs.rmSync(filePath); } catch {}
   });
@@ -257,10 +243,6 @@ describe("runAudit — Cat 14: assignment integrity auto-fix", () => {
 
     const content1 = fs.readFileSync(filePath, "utf-8");
     expect(content1).toContain("completed_without_evidence_at:");
-
-    // Must NOT produce escalations
-    const cat14Esc = report1.escalations.find(e => e.category === 14);
-    expect(cat14Esc).toBeUndefined();
 
     // Second run: idempotent
     const report2 = await runAudit(tmp.pmDir);

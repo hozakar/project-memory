@@ -48,19 +48,23 @@ The shared sections below (Severity, Permanent Skip, Era Auto-Clean, Output Form
 
 # Severity
 
-The model has 2 effective behavioral tiers, derived from the `severity` and `interactive` fields assigned by `run_audit.ts`:
+All findings use a single Auto-fix tier — they are either auto-fixed directly or queued as deterministic `pending_fixes` (applied by `apply_audit_fixes`):
 
-| Behavioral Tier | Severity | Categories | Behavior |
-|-----------------|----------|-----------|----------|
-| **Auto-fix pending** | — | 5 (misplaced issues), 6 (decision index drift), 8 (ADR sync drift, conditional on `adr_enabled`), 9 (discussion index drift), 11 (discussion expiry auto-archive), 13 (MCP consistency, conditional), 14 (assignment integrity: 14a target orphan, 14b stale pending, 14c completed without evidence) | Applied silently by `apply_audit_fixes` or direct MCP operations; logged in drift report. |
-
-No interactive triage tier remains — Cat 14a is now fully auto-fix (writes `target_orphaned_at` to frontmatter). Cat 9 no longer produces escalations (missing rows and status mismatches become pending fixes; orphan rows are auto-removed from the index). Cat 14c writes `completed_without_evidence_at` to frontmatter instead of escalating. Cat 14b uses a one-shot `reminded: true` flag (no `remind_count` increment).
+| Category | Behavior |
+|----------|----------|
+| 5 (misplaced issues) | Auto-fixed: moved from `open/` to `closed/` |
+| 6 (decision index drift) | Queued as `pending_fixes` (missing rows, status mismatches); orphan rows auto-removed |
+| 8 (ADR sync drift, conditional on `adr_enabled`) | Queued as `pending_fixes` (missing ADR IDs, missing ADR files) |
+| 9 (discussion index drift) | Queued as `pending_fixes` (missing rows, status mismatches); orphan rows auto-removed |
+| 11 (discussion expiry auto-archive) | Auto-fixed: archived to `discussions/archive/` |
+| 13 (MCP consistency, conditional) | Auto-fixed: missing notes re-indexed, orphaned records deleted from DB |
+| 14 (assignment integrity: 14a target orphan, 14b stale pending, 14c completed without evidence) | Auto-fixed: frontmatter annotated with `target_orphaned_at`, `reminded: true`, or `completed_without_evidence_at` |
 
 ---
 
 # Permanent Skip
 
-Before escalating any finding, check the `audit_ignore` list in `.project-memory/config.yml`. If a finding's fingerprint matches an entry's `key`, suppress it entirely — omit from both the report and interactive triage.
+Before suppressing any finding (auto-fix or pending fix), check the `audit_ignore` list in `.project-memory/config.yml`. If a finding's fingerprint matches an entry's `key`, suppress it — omit from `auto_fixed`/`pending_fixes`.
 
 **Matching rules:**
 - Exact match: `key` equals the finding fingerprint exactly (backward-compatible).

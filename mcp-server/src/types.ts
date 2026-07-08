@@ -124,14 +124,6 @@ export interface IndexEntry {
   data: PhaseIndexData | DecisionIndexData | DiscussionIndexData | EraIndexData | InstructionIndexData | AssignmentIndexData | NoteIndexData;
 }
 
-export interface AuditFinding {
-  category: number;
-  severity: "high" | "medium" | "low";
-  description: string;
-  interactive: boolean; // true = enters interactive triage, false = report-only
-  data: Record<string, unknown>;
-}
-
 // removed: 'create_phase_stub' from PendingFix.type in 2026-07-06 phase-removal
 export interface PendingFix {
   type: "assign_commit" | "add_decision_index_row" | "fix_decision_index_status" | "assign_adr_id" | "create_adr_file" | "add_discussion_index_row" | "fix_discussion_index_status";
@@ -157,7 +149,6 @@ export interface PendingFix {
 export interface AuditReport {
   auto_fixed: string[];
   pending_fixes: PendingFix[];
-  escalations: AuditFinding[];
 }
 
 export interface AppliedFix {

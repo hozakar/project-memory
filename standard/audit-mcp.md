@@ -12,15 +12,10 @@ description: MCP-driven drift audit fast path for the standard profile. Calls ru
 1. Read `.project-memory/config.yml` to confirm `profile: standard`.
 2. Call `run_audit(project_memory_dir, { profile: "standard" })` for both on-load and explicit `Skill project-memory audit` invocation. The MCP server will:
    - Internally skip phase-related and discussion-specific categories.
-3. Receive `{ auto_fixed, pending_fixes, escalations }`:
+3. Receive `{ auto_fixed, pending_fixes }`:
    - `auto_fixed`: file-move operations already executed by the MCP server (Cat 5 misplaced-issue moves). Log them in the auto-fix line.
    - `pending_fixes`: deterministic fixes detected but not yet applied. If `apply_audit_fixes` is in available tools, forward the **entire** array (no filtering) to `apply_audit_fixes(project_memory_dir, pending_fixes)`. **If `apply_audit_fixes` is NOT available** (older MCP server): fall back to applying each fix manually via `Edit`. The tool returns `{ applied, partial, failed, rerun_audit_recommended }`. Decision-related pending types (`add_decision_index_row`, etc.) still appear if decisions exist — handle them per the standard flow.
-   - `escalations`: remaining findings. Each carries `category`, `severity`, `description`, `interactive` (bool), and `data`.
-4. For each escalation where `interactive: true` → enter interactive triage using the question shapes in `audit.md` → Interactive Mode.
-5. For each escalation where `interactive: false` → these are pre-classified for auto-fix. Report them in the auto-fix log (not interactive triage).
-
-> **Note:** In the current implementation, no categories produce interactive escalations (Cat 14a is now fully auto-fix) and no categories produce non-interactive escalations (Cat 9 and 14c are now auto-fix). The interactive triage mechanism remains in place for future categories but currently receives no findings.
-6. Skip the file-based Detection Procedure in `standard/audit-fs.md` entirely — `run_audit` with `profile: "standard"` has already covered all active categories.
+4. Skip the file-based Detection Procedure in `standard/audit-fs.md` entirely — `run_audit` with `profile: "standard"` has already covered all active categories.
 
 **Backward compatibility with older MCP server versions:**
 
