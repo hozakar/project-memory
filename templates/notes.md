@@ -36,7 +36,7 @@ No structure enforced.
 | `id` | Yes | `NOTE-YYYY-MM-DD-short-slug`, kebab-case |
 | `title` | Yes | Human-readable, single line |
 | `tags` | No | List of strings, for filtering |
-| `created_by` | Yes | `{ name, email }` from git config (see attribution.md) |
+| `created_by` | Yes | `{ name, email }` from git config (see templates/attribution.md) |
 | `created_at` | Yes | Creation date |
 | `updated_at` | Yes | Last modification date |
 

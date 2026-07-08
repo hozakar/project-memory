@@ -256,6 +256,20 @@ export async function deleteRecord(id: string): Promise<{ success: boolean; erro
   }
 }
 
+/**
+ * Look up a single record by id and return its full row data.
+ * Returns null if the record does not exist or if a query error occurs.
+ */
+export async function getRecord(id: string): Promise<Record<string, unknown> | null> {
+  try {
+    const table = await getTable();
+    const rows = await table.query().where(`id = '${id}'`).limit(1).toArray();
+    return rows.length > 0 ? rows[0] : null;
+  } catch {
+    return null;
+  }
+}
+
 export async function listAllIds(): Promise<string[]> {
   try {
     const table = await getTable();

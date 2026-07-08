@@ -405,7 +405,7 @@ function cat14AssignmentIntegrity(
     }
 
     // 14c: Completed without evidence
-    if (status === "completed" && !completedNote && !completedPhaseId && !completedDecisionId && !completedDiscussionId) {
+    if (status === "completed" && !completedNote && !completedDecisionId && !completedDiscussionId) {
       if (!ignored.has(`assignment-no-evidence:${assignmentId}`)) {
         escalations.push({
           category: 14,
@@ -425,14 +425,17 @@ function cat14AssignmentIntegrity(
 // Main entry point
 // ---------------------------------------------------------------------------
 
-export type Profile = "standard" | "minimal";
+export type Profile = "standard" | "minimal" | "full" | "lite";
 
 export async function runAudit(
   projectMemoryDir: string,
   profile: Profile = "standard",
 ): Promise<AuditReport> {
+  // Normalize full/lite to standard (backward compatibility)
+  const effectiveProfile = (profile === "full" || profile === "lite") ? "standard" : profile;
+
   // Minimal profile has no audit by design — return empty report immediately.
-  if (profile === "minimal") {
+  if (effectiveProfile === "minimal") {
     return { auto_fixed: [], pending_fixes: [], escalations: [] };
   }
 

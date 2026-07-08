@@ -106,7 +106,7 @@ Project Memory answers: why it was changed, what alternatives were considered an
 
 Git is the source of truth for code changes. `.project-memory/` (or `MEMORY.md` under minimal) is the source of truth for engineering reasoning.
 
-Records carry author attribution via `created_by` and `contributors` frontmatter fields. Full rules: `conventions/maintainer.md` → Author Attribution. (Note: `contributors` is omitted in `lite`; both omitted in `minimal`.)
+Records carry author attribution via `created_by` and `contributors` frontmatter fields. Full rules: `conventions/maintainer.md` → Author Attribution. (Note: In legacy profile naming, `contributors` was omitted in `lite`; both were omitted in `minimal`.)
 
 ---
 
@@ -172,7 +172,7 @@ Records carry author attribution via `created_by` and `contributors` frontmatter
 
 # Records & Conventions
 
-For naming conventions, file templates, lifecycle rules, and the Decision Resolution Rules → read `conventions.md` (dispatcher — routes to shared topic-specific sub-files).
+For naming conventions, file templates, lifecycle rules, and the Decision Resolution Rules → read `conventions/index.md` (dispatcher — routes to shared topic-specific sub-files).
 
 For decision lifecycle, ADR steps, touches guidance → `conventions/decisions.md`.
 For discussion lifecycle, relevancy scoring, expiry → `conventions/discussions.md`.

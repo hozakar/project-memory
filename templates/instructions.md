@@ -7,7 +7,7 @@ description: Template for INSTRUCTION records. User workflow preferences re-inje
 
 ## INSTRUCTION-YYYY-MM-DD-slug.md
 
-Instruction records capture user workflow preferences as short prompts injected into LLM context at session start and re-injected at every gate checkpoint (Pre-Implementation Gate, Pre-Close Gate, Discussion trigger, Topic Shift). User-scoped via `created_by`, stored in `.project-memory/instructions/`.
+Instruction records capture user workflow preferences as short prompts injected into LLM context at session start and re-injected at every gate checkpoint (Pre-Implementation Gate, turn-boundary sweep, Discussion trigger). User-scoped via `created_by`, stored in `.project-memory/instructions/`.
 
 **Frontmatter (required):**
 ```yaml

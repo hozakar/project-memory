@@ -201,10 +201,11 @@ srv.tool(
   "Delete a note from the vector DB and filesystem. Accepts a note ID. Deletes the LanceDB record and the corresponding .project-memory/notes/NOTE-*.md file. Returns success/failure with per-store details. Notes are user-scoped (private) — deletion is owner-triggered only.",
   {
     id: z.string().regex(/^[a-zA-Z0-9-]+$/).describe("Note ID, e.g. NOTE-2026-06-21-some-slug"),
+    callerEmail: z.string().describe("Email of the caller requesting deletion. Must match the note's created_by_email. Notes are user-scoped (private) — only the owner may delete."),
   },
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async (args: any) => {
-    const result = await deleteNote(args.id);
+    const result = await deleteNote(args.id, args.callerEmail);
     return { content: [{ type: "text" as const, text: JSON.stringify(result) }] };
   }
 );
@@ -255,10 +256,10 @@ srv.tool(
 
 srv.tool(
   "run_audit",
-  "Run deterministic audit checks on a project-memory directory. Returns structured findings: auto_fixed (Cat 5/11 file moves executed), pending_fixes (Cat 7 YAML annotations for LLM to apply), escalations (all other findings with severity and interactive flag). Profile-aware: profile=minimal returns an empty report.",
+  "Run deterministic audit checks on a project-memory directory. Returns structured findings: auto_fixed (Cat 5/11 file moves executed), pending_fixes (Cat 6 decision index drift and Cat 8 ADR drift), escalations (all other findings with severity and interactive flag). Profile-aware: profile=minimal returns an empty report.",
   {
     project_memory_dir: z.string().describe("Absolute path to the .project-memory/ directory"),
-    profile: z.enum(["standard", "minimal"]).optional().default("standard").describe("Active project-memory profile. Default 'standard'. 'minimal' returns empty findings (no audit by design)."),
+    profile: z.enum(["standard", "minimal", "full", "lite"]).optional().default("standard").describe("Active project-memory profile. Default 'standard'. 'full' and 'lite' are normalized to 'standard'. 'minimal' returns empty findings (no audit by design)."),
   },
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async (args: any) => {

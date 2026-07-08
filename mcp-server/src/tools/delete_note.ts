@@ -1,7 +1,6 @@
 import * as fs from "fs";
 import * as path from "path";
-import { deleteRecord } from "../db";
-import { dbPath } from "../db";
+import { deleteRecord, getRecord, dbPath } from "../db";
 
 /**
  * Deletes a note from both the LanceDB vector index and the filesystem.
@@ -9,8 +8,24 @@ import { dbPath } from "../db";
  * Notes are user-scoped (private) — deletion is owner-triggered only.
  */
 export async function deleteNote(
-  id: string
+  id: string,
+  callerEmail?: string
 ): Promise<{ success: boolean; error?: string; details?: { dbDeleted: boolean; fsDeleted: boolean } }> {
+  // Ownership check: verify callerEmail matches the note's created_by_email
+  if (callerEmail) {
+    const record = await getRecord(id);
+    if (record) {
+      const noteOwnerEmail = record.createdByEmail as string | undefined;
+      if (noteOwnerEmail && noteOwnerEmail !== callerEmail) {
+        return {
+          success: false,
+          error: `Ownership mismatch: caller email "${callerEmail}" does not match note owner email "${noteOwnerEmail}". Notes are user-scoped (private) — only the owner may delete.`,
+          details: { dbDeleted: false, fsDeleted: false },
+        };
+      }
+    }
+  }
+
   const result = {
     success: false,
     dbDeleted: false,

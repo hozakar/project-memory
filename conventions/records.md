@@ -71,7 +71,7 @@ origin_updated: false     # true when origin modified since fork
 - At session start, current user's active instructions are loaded:
   - MCP available: `search_memory(query="<topic or relevant keywords>", type="instruction")` with `created_by_email` filter.
   - MCP unavailable: scan `.project-memory/instructions/` for INSTRUCTION-*.md files, filter by `created_by.email`.
-- At every gate checkpoint (Pre-Implementation Gate, Discussion trigger), active instructions are re-loaded and prepended to gate context. This ensures instructions survive compaction and long contexts. See `standard/gates.md` GATE 0 (Pre-Implementation Gate).
+- At every gate checkpoint (Pre-Implementation Gate, turn-boundary sweep, Discussion trigger), active instructions are re-loaded and prepended to gate context. This ensures instructions survive compaction and long contexts. See `standard/gates.md` GATE 0 (Pre-Implementation Gate).
 - ≥5 active instructions triggers a warning
 - Other users' instructions are never loaded without explicit request
 
@@ -102,7 +102,7 @@ Assignment records are independent records stored in `.project-memory/assignment
 - Example: `ASSIGNMENT-2026-06-14-mehmet-review-auth-bug.md`
 
 **Frontmatter (required):**
-See `templates.md` for the full schema. Key fields:
+See `templates/index.md` for the full schema. Key fields:
 - `id`: unique identifier
 - `status`: `pending` | `accepted` | `rejected` | `ongoing` | `completed`
 - `type`: `direct` (linked to existing record) or `freeform` (standalone task)
