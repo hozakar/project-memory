@@ -358,7 +358,6 @@ function cat14AssignmentIntegrity(
     const assignedAt = parsed["assigned_at"] || "";
     const remindCount = parseInt(parsed["remind_count"] || "0", 10);
     const completedNote = parsed["completion_note"] || "";
-    const completedPhaseId = parsed["completed_phase_id"] || "";
     const completedDecisionId = parsed["completed_decision_id"] || "";
     const completedDiscussionId = parsed["completed_discussion_id"] || "";
 

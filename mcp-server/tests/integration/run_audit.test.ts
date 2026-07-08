@@ -57,3 +57,19 @@ describe("runAudit — minimal profile", () => {
     });
   });
 });
+
+describe("runAudit — full/lite profile normalization", () => {
+  it("returns standard-profile report for 'full' profile", async () => {
+    const std = await runAudit(tmp.pmDir, "standard");
+    const full = await runAudit(tmp.pmDir, "full");
+    // Both should behave identically (normalize full→standard)
+    expect(full).toEqual(std);
+  });
+
+  it("returns standard-profile report for 'lite' profile", async () => {
+    const std = await runAudit(tmp.pmDir, "standard");
+    const lite = await runAudit(tmp.pmDir, "lite");
+    // Both should behave identically (normalize lite→standard)
+    expect(lite).toEqual(std);
+  });
+});
