@@ -57,7 +57,7 @@ describe("escapeLike", () => {
     expect(escapeLike("O'Brien")).toBe("O''Brien");
   });
 
-  it("returns unchanged string when no single quotes present", () => {
+  it("returns unchanged string when no special chars present", () => {
     expect(escapeLike("normal-value")).toBe("normal-value");
   });
 
@@ -67,5 +67,25 @@ describe("escapeLike", () => {
 
   it("handles empty string", () => {
     expect(escapeLike("")).toBe("");
+  });
+
+  it("escapes percent sign with backslash", () => {
+    expect(escapeLike("50%")).toBe("50\\%");
+  });
+
+  it("escapes underscore with backslash", () => {
+    expect(escapeLike("user_name")).toBe("user\\_name");
+  });
+
+  it("escapes backslash itself", () => {
+    expect(escapeLike("path\\to\\file")).toBe("path\\\\to\\\\file");
+  });
+
+  it("escapes all LIKE special characters together", () => {
+    expect(escapeLike("50%_test\\value")).toBe("50\\%\\_test\\\\value");
+  });
+
+  it("escapes percent after single quote", () => {
+    expect(escapeLike("it's 100% done")).toBe("it''s 100\\% done");
   });
 });

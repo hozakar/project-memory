@@ -48,13 +48,15 @@ The shared sections below (Severity, Permanent Skip, Era Auto-Clean, Output Form
 
 # Severity
 
-The model has 1 effective tier:
+The model has 3 effective behavioral tiers, derived from the `severity` and `interactive` fields assigned by `run_audit.ts`:
 
-| Severity | Categories | Behavior |
-|----------|-----------|----------|
-| **auto-fix** | 5,6,8,9,11,13,14 | Applied silently; logged in drift report. |
+| Behavioral Tier | Severity | Categories | Behavior |
+|-----------------|----------|-----------|----------|
+| **Interactive triage** | medium | 14a (orphaned assignment targets aged ≤3 days) | Raised to the LLM for human decision via question shapes in Interactive Mode below. |
+| **Low-severity non-interactive escalation** | low | 9 (discussion index drift), 14c (assignment completed without evidence) | Reported in the auto-fix log; no interactive prompt. |
+| **Auto-fix pending** | — | 5 (misplaced issues), 6 (decision index drift), 8 (ADR sync drift, conditional on `adr_enabled`), 11 (discussion expiry auto-archive), 13 (MCP consistency, conditional) | Applied silently by `apply_audit_fixes` or direct MCP operations; logged in drift report. |
 
-In standard, phase-related categories retired, Cat 7 and 12 dropped, Cat 9 is detected as low/non-interactive drift reports, and Cat 11 auto-archives expired discussions.
+In standard, phase-related categories retired, Cat 7 and 12 dropped. Cat 14b (stale pending >30d) auto-increments its remind_count. Cat 14a targets aged >3 days auto-fix via annotation (no interactive triage).
 
 ---
 
@@ -152,13 +154,23 @@ Replace `N` with the count of auto-fixed items. Omit any bullet that has no find
 
 When the skill is invoked as `Skill project-memory audit` (standard only):
 
-1. Run the full detection procedure for the active profile. Collect all findings. All findings in the active categories are auto-fixed silently — no interactive triage remains.
-2. Present the full drift report.
-3. After all fixes are applied, re-run the full detection. If new findings appear, repeat from step 1. Loop until clean.
+1. Run the full detection procedure for the active profile. Collect all findings. Auto-fix categories are applied silently; only interactive findings (where `interactive: true`) are presented for triage.
+2. For each interactive finding, enter interactive triage using the question shapes below. After the user responds, apply the resolution.
+3. After all interactive findings are resolved and non-interactive findings auto-fixed, re-run the full detection. If new findings appear, repeat from step 1. Loop until clean.
 4. Do NOT re-run the on-load summary loading sequence.
 
 **Question shapes per category:**
 
-No interactive categories remain. All active categories (5,6,8,9,11,13,14) are auto-fixed silently. Phase-related categories retired. Cat 7 and 12 dropped.
+**Cat 14a — Orphaned assignment target (≤3 days old, medium severity)**
 
-When the user chooses `"mark ignored (permanent)"` for any finding: write the corresponding `audit_ignore` entry to `.project-memory/config.yml` immediately, then move to the next finding.
+An assignment's `targetType`/`targetId` points to a file that does not exist. The assignment may have been superseded, completed offline, or the file may have been renamed or removed.
+
+For each such finding, raise one question:
+
+> Assignment `<id>` targets `<targetId>`, which was not found. Is this assignment still relevant?
+> * **Reassign** — update the target to an existing file.
+> * **Close** — mark as no longer needed (set `status: rejected` or `status: completed` with a note).
+> * **Convert to a note** — save the content as a NOTE record.
+> * **Mark ignored** — write to `audit_ignore` in `config.yml` and suppress future findings.
+
+When the user chooses "Mark ignored" or "mark ignored (permanent)" for any finding: write the corresponding `audit_ignore` entry to `.project-memory/config.yml` immediately, then move to the next finding.
