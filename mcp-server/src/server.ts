@@ -12,6 +12,7 @@ import { indexAssignment } from "./tools/index_assignment";
 import { indexNote } from "./tools/index_note";
 import { runAudit } from "./tools/run_audit";
 import { applyAuditFixes } from "./tools/apply_audit_fixes";
+import { startBackgroundAudit } from "./tools/background_audit";
 import { listContributors } from "./tools/list_contributors";
 import { deleteNote } from "./tools/delete_note";
 import type { IndexEntry, PendingFix } from "./types";
@@ -256,14 +257,19 @@ srv.tool(
 
 srv.tool(
   "run_audit",
-  "Run deterministic audit checks on a project-memory directory. Returns structured findings: auto_fixed (Cat 5/11 file moves executed), pending_fixes (Cat 6 decision index drift, Cat 8 ADR drift, Cat 9 discussion index drift). No escalations — all findings are auto-fixed directly or queued as deterministic pending_fixes. Profile-aware: profile=minimal returns an empty report.",
+  "Run deterministic audit checks on a project-memory directory. Returns structured findings: auto_fixed (Cat 5/11 file moves executed), pending_fixes (Cat 6 decision index drift, Cat 8 ADR drift, Cat 9 discussion index drift). No escalations — all findings are auto-fixed directly or queued as deterministic pending_fixes. Profile-aware: profile=minimal returns an empty report. When background=true, runs silently in the background (returns {status:'running'} immediately) and applies all fixes including pending_fixes server-side via the chained audit pipeline.",
   {
     project_memory_dir: z.string().describe("Absolute path to the .project-memory/ directory"),
     profile: z.enum(["standard", "minimal", "full", "lite"]).optional().default("standard").describe("Active project-memory profile. Default 'standard'. 'full' and 'lite' are normalized to 'standard'. 'minimal' returns empty findings (no audit by design)."),
+    background: z.boolean().optional().default(false).describe("If true, run the audit silently in the background and return {status:'running'} immediately (auto-run mode — all fixes applied server-side via the chained run_audit → apply_audit_fixes pipeline, no report, no retrieval). If false (default, manual audit), run synchronously and return the full {auto_fixed, pending_fixes} result."),
   },
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async (args: any) => {
-    const result = await runAudit(args.project_memory_dir, args.profile ?? "standard");
+    if (args.background) {
+      const r = await startBackgroundAudit(args.project_memory_dir, args.profile);
+      return { content: [{ type: "text" as const, text: JSON.stringify(r) }] };
+    }
+    const result = await runAudit(args.project_memory_dir, args.profile);
     return { content: [{ type: "text" as const, text: JSON.stringify(result) }] };
   }
 );

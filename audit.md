@@ -9,7 +9,9 @@ description: Drift audit dispatcher for project-memory. Routes by active profile
 Emit `🧠 PROJECT MEMORY LOADED` as a synchronous indicator at session open. This is the memory-loaded header only — no audit results at this point.
 
 **Context A2 — Post-first-response drift audit (async):**
-After the LLM answers the user's first message, run the drift audit automatically (standard only — minimal skips audit entirely). Apply auto-fixes silently. Emit a single drift report block for all findings, headed by `[🧠] POST-RESPONSE DRIFT AUDIT — N auto-fixed`. If nothing found and nothing auto-fixed, emit the clean line. All findings auto-fix silently — no interactive mode needed.
+After the LLM answers the user's first message, run the drift audit automatically (standard only — minimal skips audit entirely).
+- **MCP present:** The LLM calls `run_audit(project_memory_dir, { profile: 'standard', background: true })` at session open (SKILL.md On-Load step 5). The server runs the full audit pipeline (`run_audit → apply_audit_fixes → re-run until clean`) silently in the background and returns `{ status: 'running' }` immediately. The LLM emits a single instant-ack line (e.g. `🧠 PROJECT MEMORY AUDIT — running in background`) and moves on. **NO drift report block is emitted**; all fixes apply silently to disk. No retrieval.
+- **No MCP:** Fall back to the deferred file-based audit per On-Load step 5 (requires the LLM to emit the drift report as a follow-up block after the first user response).
 
 **Context B — On-demand (standard profile), via `Skill project-memory audit` or natural-language triggers:**
 Run when the skill is invoked with the `audit` argument OR when the user phrases a request that clearly asks for an audit / drift review of project memory (e.g. "let's audit", "review project memory", "run a drift check" — lenient detection in any language, standard only). Run detection silently, apply auto-fixes, emit the consolidated drift report. All active categories auto-fix silently — no interactive triage. Re-run detection after fixes; loop until clean. When the trigger phrase is ambiguous, ask a one-line clarification before entering audit mode. Governing rule: `DECISION-2026-06-17-audit-implicit-triggers`.
@@ -20,10 +22,18 @@ Run when the skill is invoked with the `audit` argument OR when the user phrases
 
 # Post-Response Drift Audit
 
-On-load drift audit is deferred to post-first-response. The LLM answers the user's first message first; the drift audit (active categories) runs AFTER the first user-facing response is delivered. The drift report is emitted as a follow-up block with header `[🧠] POST-RESPONSE DRIFT AUDIT — N auto-fixed`.
+On-load drift audit is deferred to post-first-response.
 
-Exceptions (audit runs synchronously):
-1. Explicit invocation: `Skill project-memory audit` (or any natural-language audit trigger per `DECISION-2026-06-17-audit-implicit-triggers`).
+## MCP present — silent background auto-run
+
+At session open, the LLM calls `run_audit(project_memory_dir, { profile: 'standard', background: true })`. The MCP server starts the chained pipeline (`run_audit → apply_audit_fixes → re-run until clean`) silently in the background and returns `{ status: 'running' }` immediately. The LLM emits a single instant-ack line — e.g. `🧠 PROJECT MEMORY AUDIT — running in background` — and moves on to answer the user. NO drift report block is emitted; all fixes apply silently to disk. No retrieval.
+
+## No MCP — deferred file-based audit
+
+The LLM answers the user's first message first; the drift audit (active categories) runs AFTER the first user-facing response is delivered. The drift report is emitted as a follow-up block with header `[🧠] POST-RESPONSE DRIFT AUDIT — N auto-fixed`.
+
+## Exceptions (audit runs synchronously):
+1. Explicit invocation: `Skill project-memory audit` (or any natural-language audit trigger per `DECISION-2026-06-17-audit-implicit-triggers`). Uses the synchronous `run_audit` form (background omitted/false) — returns the full `{auto_fixed, pending_fixes}` result.
 2. First user message is itself an audit-implicit/explicit trigger — the LLM must run the audit synchronously to answer correctly. Threshold unchanged from current spec; false positives (user accidentally triggers an audit-tarzı message) are tolerable.
 3. `minimal` profile — no audit at all; no deferral applies.
 

@@ -7,10 +7,15 @@ description: MCP-driven drift audit fast path for the standard profile. Calls ru
 
 **Invocation:** at post-first-response hook (default), or on explicit `Skill project-memory audit` (sync), or when first user message is an audit-implicit-trigger (sync).
 
+**Auto-run (On-Load) uses background mode:**
+At session open (SKILL.md On-Load step 5), the LLM calls `run_audit(project_memory_dir, { profile: 'standard', background: true })`. The server runs the full pipeline silently in the background: `run_audit → apply_audit_fixes → re-run until clean` (max 5 iterations). Returns `{ status: 'running' }` immediately. No retrieval, no report. The LLM emits a single instant-ack line.
+
+**Manual invocation (explicit `Skill project-memory audit`) uses synchronous form:**
+
 **When `run_audit` is in available MCP tools:**
 
 1. Read `.project-memory/config.yml` to confirm `profile: standard`.
-2. Call `run_audit(project_memory_dir, { profile: "standard" })` for both on-load and explicit `Skill project-memory audit` invocation. The MCP server will:
+2. Call `run_audit(project_memory_dir, { profile: "standard" })` (background omitted/false) for explicit `Skill project-memory audit` invocation. The MCP server will:
    - Internally skip phase-related and discussion-specific categories.
 3. Receive `{ auto_fixed, pending_fixes }`:
    - `auto_fixed`: file-move operations already executed by the MCP server (Cat 5 misplaced-issue moves). Log them in the auto-fix line.

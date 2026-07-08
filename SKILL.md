@@ -22,7 +22,10 @@ When this skill activates:
    - `profile=standard` → read `standard/protocol.md` for the Memory Loading Strategy and follow it. Then proceed to step 5.
    - `profile=minimal` → follow `minimal/minimal.md` instead — it covers loading, the single gate, and record-append behavior.
 
-5. **Post-first-response drift audit** (standard only) — the drift audit is deferred to after the LLM answers the user's first message. After the first user-facing response is delivered, run the drift audit (7 categories) via `audit.md` and emit the drift report as a follow-up block. Exceptions (audit runs synchronously): (a) explicit invocation via `Skill project-memory audit` or natural-language audit trigger per `DECISION-2026-06-17-audit-implicit-triggers`; (b) the first user message is itself an audit-implicit/explicit trigger — run audit synchronously to answer correctly; (c) `minimal` profile — no audit at all, no deferral applies.
+5. **Post-first-response drift audit** (standard only):
+   - **If MCP `run_audit` is available:** call `run_audit(project_memory_dir, { profile: 'standard', background: true })` at session open. The server returns `{ status: 'running' }` immediately and fixes everything silently in the background via the chained pipeline (`run_audit → apply_audit_fixes → re-run until clean`). Emit the instant-ack line `🧠 PROJECT MEMORY AUDIT — running in background` and move on. **No report block is emitted.**
+   - **If MCP is NOT available:** defer the drift audit to after the LLM answers the user's first message. After the first user-facing response is delivered, run the drift audit (7 categories) via the file-based `audit.md` path and emit the drift report as a follow-up block.
+   - **Exceptions (audit runs synchronously):** (a) explicit invocation via `Skill project-memory audit` or natural-language audit trigger per `DECISION-2026-06-17-audit-implicit-triggers` — uses synchronous `run_audit` (background omitted/false); (b) the first user message is itself an audit-implicit/explicit trigger — run audit synchronously to answer correctly; (c) `minimal` profile — no audit at all, no deferral applies.
 
 6. Continue with the session. Do not ask the user for anything beyond the init UX (step 3) at this stage.
 
