@@ -112,6 +112,7 @@ export function deriveOutcomeType(outcome: string): string {
   if (outcome.startsWith("phase-")) return "phase";
   if (outcome.startsWith("DECISION-")) return "decision";
   if (outcome === "roadmap") return "roadmap";
+  if (outcome === "issue") return "issue";
   return "none";
 }
 

@@ -165,6 +165,10 @@ describe("deriveOutcomeType", () => {
     expect(deriveOutcomeType("")).toBe("none");
   });
 
+  it('returns "issue" for issue outcome', () => {
+    expect(deriveOutcomeType("issue")).toBe("issue");
+  });
+
   it('returns "none" for unknown format (default fallback)', () => {
     expect(deriveOutcomeType("unknown-format")).toBe("none");
   });
