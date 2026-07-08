@@ -1,8 +1,9 @@
-import { describe, it, expect, beforeAll, afterAll } from "vitest";
+import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach } from "vitest";
 import * as fs from "fs";
 import { join } from "path";
 import { createTmpDir, type TmpDir } from "./helpers/tmp-db";
 import { runAudit } from "../../src/tools/run_audit";
+import { applyAuditFixes } from "../../src/tools/apply_audit_fixes";
 
 let tmp: TmpDir;
 
@@ -379,5 +380,324 @@ describe("runAudit — Cat 14: assignment integrity auto-fix", () => {
     expect(content2).toContain("# Task Description");
 
     try { fs.rmSync(filePath); } catch {}
+  });
+});
+
+describe("Cat 15: decision supersession integrity", () => {
+  let cat15tmp: TmpDir;
+  let cat15DecisionsDir: string;
+
+  beforeEach(() => {
+    cat15tmp = createTmpDir();
+    // Create minimal structure
+    fs.writeFileSync(join(cat15tmp.pmDir, "config.yml"), "adr_enabled: false\naudit_ignore: []\n");
+    const phasesDir = join(cat15tmp.pmDir, "phases");
+    fs.mkdirSync(phasesDir, { recursive: true });
+    fs.writeFileSync(join(phasesDir, "index.yml"), "phases: []\n");
+    cat15DecisionsDir = join(cat15tmp.pmDir, "decisions");
+    fs.mkdirSync(cat15DecisionsDir, { recursive: true });
+  });
+
+  afterEach(() => {
+    try { cat15tmp.cleanup(); } catch { /* Windows cleanup */ }
+  });
+
+  // Helper to write a decision file
+  function writeDecision(id: string, overrides: Record<string, string> = {}, body = "# Test\n"): void {
+    const frontmatter: Record<string, string> = {
+      id,
+      title: `Test ${id}`,
+      status: "active",
+      primary_scope: "test",
+      ...overrides,
+    };
+    const lines = ["---"];
+    for (const [k, v] of Object.entries(frontmatter)) {
+      lines.push(`${k}: ${v}`);
+    }
+    lines.push("---");
+    lines.push("");
+    lines.push(body);
+    fs.writeFileSync(join(cat15DecisionsDir, `${id}.md`), lines.join("\n"), "utf-8");
+  }
+
+  // Helper: write decisions/index.md with Active and (optionally) Superseded tables
+  function writeIndex(activeRows: string[], supersededRows: string[] = []): void {
+    const lines: string[] = [
+      "# Decisions Index",
+      "",
+      "| Date | ID | Scope | Status | Global | Touches | Claim |",
+      "|---|---|---|---|---|---|---|",
+    ];
+    for (const row of activeRows) lines.push(row);
+
+    if (supersededRows.length > 0) {
+      lines.push("");
+      lines.push("## Superseded");
+      lines.push("");
+      lines.push("| Date | ID | Scope | Status | Global | Touches | Claim | Superseded By |");
+      lines.push("|---|---|---|---|---|---|---|---|");
+      for (const row of supersededRows) lines.push(row);
+    }
+
+    fs.writeFileSync(join(cat15DecisionsDir, "index.md"), lines.join("\n"), "utf-8");
+  }
+
+  // -------------------------------------------------------------------------
+  // Test 1: Dangling superseded_by auto-fix
+  // -------------------------------------------------------------------------
+  it("1: clears dangling superseded_by when target file does not exist", async () => {
+    const id = "DECISION-2026-07-08-dangling-superseded-by";
+    const target = "DECISION-9999-99-99-nonexistent";
+    writeDecision(id, { status: "superseded", superseded_by: target });
+    // Place A in Superseded index table with the dangling Superseded By cell
+    writeIndex([], [
+      `| 2026-07-08 | ${id} | test | superseded | - | test | Claim text | ${target} |`,
+    ]);
+
+    const report = await runAudit(cat15tmp.pmDir);
+
+    const cleared = report.auto_fixed.find(f => f.includes("cleared dangling superseded_by") && f.includes(id));
+    expect(cleared).toBeDefined();
+
+    // File's superseded_by should now be null
+    const content = fs.readFileSync(join(cat15DecisionsDir, `${id}.md`), "utf-8");
+    expect(content).toContain("superseded_by: null");
+
+    // Index Superseded By cell should be cleared to `-`
+    const indexContent = fs.readFileSync(join(cat15DecisionsDir, "index.md"), "utf-8");
+    // The row should now have `-` in the last cell
+    const supersededSection = indexContent.split("## Superseded")[1];
+    expect(supersededSection).toContain(`| ${id} |`);
+    // Last cell should be ` - ` or `-` not the dangling target
+    const rowMatch = supersededSection.match(new RegExp(`\\|\\s*${id}\\s*\\|.*\\|\\s*([^|]+)\\s*\\|\\s*$`, "m"));
+    if (rowMatch) {
+      expect(rowMatch[1].trim()).not.toBe(target);
+    }
+  });
+
+  // -------------------------------------------------------------------------
+  // Test 2: Dangling supersedes auto-fix
+  // -------------------------------------------------------------------------
+  it("2: clears dangling supersedes when target file does not exist", async () => {
+    const id = "DECISION-2026-07-08-dangling-supersedes";
+    const target = "DECISION-9999-99-99-nonexistent";
+    writeDecision(id, { status: "active", supersedes: target });
+    writeIndex([
+      `| 2026-07-08 | ${id} | test | active | - | test | Claim`,
+    ]);
+
+    const report = await runAudit(cat15tmp.pmDir);
+
+    const cleared = report.auto_fixed.find(f => f.includes("cleared dangling supersedes") && f.includes(id));
+    expect(cleared).toBeDefined();
+
+    const content = fs.readFileSync(join(cat15DecisionsDir, `${id}.md`), "utf-8");
+    expect(content).toContain("supersedes: null");
+  });
+
+  // -------------------------------------------------------------------------
+  // Test 3: Zombie-active → pending_fix
+  // -------------------------------------------------------------------------
+  it("3: produces pending_fix for zombie-active (superseded_by set but status not superseded)", async () => {
+    const idA = "DECISION-2026-07-08-zombie-a";
+    const idB = "DECISION-2026-07-08-zombie-b";
+    // A has superseded_by: B, but status: active (zombie)
+    writeDecision(idA, { superseded_by: idB, status: "active" });
+    // B exists
+    writeDecision(idB, { status: "active" });
+    writeIndex([
+      `| 2026-07-08 | ${idA} | test | active | - | test | Claim`,
+      `| 2026-07-08 | ${idB} | test | active | - | test | Claim`,
+    ]);
+
+    const report = await runAudit(cat15tmp.pmDir);
+
+    const zombieFix = report.pending_fixes.find(f => f.type === "fix_decision_supersession_status" && f.decisionId === idA);
+    expect(zombieFix).toBeDefined();
+    expect(zombieFix!.supersededBy).toBe(idB);
+
+    // A's status should still be 'active' (run_audit only detects, doesn't apply)
+    const content = fs.readFileSync(join(cat15DecisionsDir, `${idA}.md`), "utf-8");
+    expect(content).toContain("status: active");
+  });
+
+  // -------------------------------------------------------------------------
+  // Test 4: apply_audit_fixes applies zombie fix end-to-end
+  // -------------------------------------------------------------------------
+  it("4: apply_audit_fixes applies the zombie fix: flips status, adds superseded_by, moves row", async () => {
+    const idA = "DECISION-2026-07-08-e2e-a";
+    const idB = "DECISION-2026-07-08-e2e-b";
+    writeDecision(idA, { superseded_by: idB, status: "active" });
+    writeDecision(idB, { status: "active" });
+    writeIndex([
+      `| 2026-07-08 | ${idA} | test | active | - | test | Claim E2E`,
+      `| 2026-07-08 | ${idB} | test | active | - | test | Claim E2E`,
+    ]);
+
+    // Run audit to detect
+    const report = await runAudit(cat15tmp.pmDir);
+    const zombieFix = report.pending_fixes.find(f => f.type === "fix_decision_supersession_status" && f.decisionId === idA);
+    expect(zombieFix).toBeDefined();
+
+    // Apply the pending fix
+    const applyResult = await applyAuditFixes(cat15tmp.pmDir, [zombieFix!]);
+    const applied = applyResult.applied.find(a => a.fix_type === "fix_decision_supersession_status");
+    expect(applied).toBeDefined();
+
+    // A.md status is now superseded
+    const contentA = fs.readFileSync(join(cat15DecisionsDir, `${idA}.md`), "utf-8");
+    expect(contentA).toContain("status: superseded");
+    expect(contentA).toContain(`superseded_by: ${idB}`);
+
+    // Index: A's row should be in Superseded table with Superseded By = idB
+    const indexContent = fs.readFileSync(join(cat15DecisionsDir, "index.md"), "utf-8");
+    expect(indexContent).toContain("## Superseded");
+    const supersededSection = indexContent.split("## Superseded")[1];
+    expect(supersededSection).toContain(`| ${idA} |`);
+    expect(supersededSection).toContain(`| ${idB} |`); // Superseded By cell
+
+    // Active section must NOT contain A's row
+    const activeSection = indexContent.split("## Superseded")[0];
+    // Active section can have the header and separator — check that A's row ID is not in active rows
+    const activeLines = activeSection.split("\n").filter(l => l.includes("DECISION-"));
+    const activeIds = activeLines.map(l => l.match(/DECISION-[\w-]+/)?.[0]).filter(Boolean);
+    expect(activeIds).not.toContain(idA);
+    expect(activeIds).toContain(idB);
+  });
+
+  // -------------------------------------------------------------------------
+  // Test 5: audit_ignore suppression
+  // -------------------------------------------------------------------------
+  it("5: audit_ignore suppresses zombie detection", async () => {
+    const idA = "DECISION-2026-07-08-ignore-a";
+    const idB = "DECISION-2026-07-08-ignore-b";
+    writeDecision(idA, { superseded_by: idB, status: "active" });
+    writeDecision(idB, { status: "active" });
+    writeIndex([
+      `| 2026-07-08 | ${idA} | test | active | - | test | Claim`,
+      `| 2026-07-08 | ${idB} | test | active | - | test | Claim`,
+    ]);
+
+    // Add audit_ignore entry using readAuditIgnore-compatible format (flat YAML key: value, no `-` list marker)
+    fs.writeFileSync(join(cat15tmp.pmDir, "config.yml"),
+      "adr_enabled: false\naudit_ignore:\n  key: decision-supersession:DECISION-2026-07-08-ignore-a:zombie\n");
+
+    const report = await runAudit(cat15tmp.pmDir);
+    const zombieFix = report.pending_fixes.find(f => f.type === "fix_decision_supersession_status" && f.decisionId === idA);
+    expect(zombieFix).toBeUndefined();
+
+    // Also check dangling suppression with the same config
+    const danglingFix = report.auto_fixed.find(f => f.includes(idA) && f.includes("dangling"));
+    expect(danglingFix).toBeUndefined();
+  });
+
+  // -------------------------------------------------------------------------
+  // Test 6: Idempotency — applying the same fix twice is a no-op
+  // -------------------------------------------------------------------------
+  it("6: applying the same zombie fix twice is idempotent", async () => {
+    const idA = "DECISION-2026-07-08-idempotent-a";
+    const idB = "DECISION-2026-07-08-idempotent-b";
+    writeDecision(idA, { superseded_by: idB, status: "active" });
+    writeDecision(idB, { status: "active" });
+    writeIndex([
+      `| 2026-07-08 | ${idA} | test | active | - | test | Claim Idempotent`,
+      `| 2026-07-08 | ${idB} | test | active | - | test | Claim Idempotent`,
+    ]);
+
+    const report = await runAudit(cat15tmp.pmDir);
+    const zombieFix = report.pending_fixes.find(f => f.type === "fix_decision_supersession_status" && f.decisionId === idA);
+    expect(zombieFix).toBeDefined();
+
+    // First apply
+    const result1 = await applyAuditFixes(cat15tmp.pmDir, [zombieFix!]);
+    expect(result1.applied.some(a => a.fix_type === "fix_decision_supersession_status")).toBe(true);
+
+    // Second apply — should be no-op (row already moved to Superseded table)
+    const result2 = await applyAuditFixes(cat15tmp.pmDir, [zombieFix!]);
+    // Row not in Active table → returns PartialFix with row_not_in_active_table
+    expect(result2.partial.some(p => p.fix_type === "fix_decision_supersession_status" && p.context?.reason === "row_not_in_active_table")).toBe(true);
+
+    // A.md status still superseded
+    const contentA = fs.readFileSync(join(cat15DecisionsDir, `${idA}.md`), "utf-8");
+    expect(contentA).toContain("status: superseded");
+  });
+
+  // -------------------------------------------------------------------------
+  // Test 7: Healthy superseded decision produces no finding
+  // -------------------------------------------------------------------------
+  it("7: correctly superseded decision (status=superseded + superseded_by exists) produces no finding", async () => {
+    const idA = "DECISION-2026-07-08-healthy-a";
+    const idB = "DECISION-2026-07-08-healthy-b";
+    // A is correctly superseded: status=superseded, superseded_by=B, B exists
+    writeDecision(idA, { superseded_by: idB, status: "superseded" });
+    writeDecision(idB, { status: "active" });
+    writeIndex([
+      `| 2026-07-08 | ${idB} | test | active | - | test | Claim`,
+    ], [
+      `| 2026-07-08 | ${idA} | test | superseded | - | test | Claim | ${idB} |`,
+    ]);
+
+    const report = await runAudit(cat15tmp.pmDir);
+
+    const cat15Auto = report.auto_fixed.filter(f => f.startsWith("Cat 15:"));
+    const cat15Pending = report.pending_fixes.filter(f => f.type === "fix_decision_supersession_status");
+
+    expect(cat15Auto).toHaveLength(0);
+    expect(cat15Pending).toHaveLength(0);
+  });
+
+  // -------------------------------------------------------------------------
+  // Test 8: audit_ignore suppresses dangling detection (FN4 regression)
+  // -------------------------------------------------------------------------
+  it("8: audit_ignore suppresses dangling superseded_by detection", async () => {
+    const id = "DECISION-2026-07-08-ignore-dangling";
+    const target = "DECISION-9999-99-99-nonexistent";
+    // Create a decision with dangling superseded_by
+    writeDecision(id, { superseded_by: target });
+    writeIndex([], [
+      `| 2026-07-08 | ${id} | test | superseded | - | test | Claim | ${target} |`,
+    ]);
+
+    // Add audit_ignore for dangling
+    fs.writeFileSync(join(cat15tmp.pmDir, "config.yml"),
+      "adr_enabled: false\naudit_ignore:\n  key: decision-supersession:DECISION-2026-07-08-ignore-dangling:dangling\n");
+
+    const report = await runAudit(cat15tmp.pmDir);
+
+    // No Cat 15 dangling message for this id
+    const danglingFix = report.auto_fixed.find(f => f.includes(id) && f.includes("dangling"));
+    expect(danglingFix).toBeUndefined();
+
+    // The file's superseded_by should still point to the (non-existent) target (not cleared)
+    const content = fs.readFileSync(join(cat15DecisionsDir, `${id}.md`), "utf-8");
+    const fm = content.split("---")[1];
+    expect(fm).toContain(`superseded_by: ${target}`);
+  });
+
+  // -------------------------------------------------------------------------
+  // Test 9: Both-dangling clears both fields (B1 + FN5 regression)
+  // -------------------------------------------------------------------------
+  it("9: clears both dangling superseded_by and supersedes when both targets are missing", async () => {
+    const id = "DECISION-2026-07-08-both-dangling";
+    const target1 = "DECISION-9999-99-99-nonexistent-a";
+    const target2 = "DECISION-9999-99-99-nonexistent-b";
+    writeDecision(id, { status: "active", superseded_by: target1, supersedes: target2 });
+    writeIndex([
+      `| 2026-07-08 | ${id} | test | active | - | test | Claim`,
+    ]);
+
+    const report = await runAudit(cat15tmp.pmDir);
+
+    // Both messages should appear
+    const clearedSupersededBy = report.auto_fixed.find(f => f.includes("cleared dangling superseded_by") && f.includes(id));
+    expect(clearedSupersededBy).toBeDefined();
+    const clearedSupersedes = report.auto_fixed.find(f => f.includes("cleared dangling supersedes") && f.includes(id));
+    expect(clearedSupersedes).toBeDefined();
+
+    // The file's frontmatter should have both fields set to null
+    const content = fs.readFileSync(join(cat15DecisionsDir, `${id}.md`), "utf-8");
+    expect(content).toContain("superseded_by: null");
+    expect(content).toContain("supersedes: null");
   });
 });

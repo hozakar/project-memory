@@ -126,7 +126,7 @@ export interface IndexEntry {
 
 // removed: 'create_phase_stub' from PendingFix.type in 2026-07-06 phase-removal
 export interface PendingFix {
-  type: "assign_commit" | "add_decision_index_row" | "fix_decision_index_status" | "assign_adr_id" | "create_adr_file" | "add_discussion_index_row" | "fix_discussion_index_status";
+  type: "assign_commit" | "add_decision_index_row" | "fix_decision_index_status" | "assign_adr_id" | "create_adr_file" | "add_discussion_index_row" | "fix_discussion_index_status" | "fix_decision_supersession_status";
   // assign_commit fields
   phaseId?: string;
   commitHash?: string;
@@ -144,6 +144,8 @@ export interface PendingFix {
   adrStatus?: string;
   // add_discussion_index_row / fix_discussion_index_status fields
   discussionId?: string;
+  // fix_decision_supersession_status fields
+  supersededBy?: string;
 }
 
 export interface AuditReport {

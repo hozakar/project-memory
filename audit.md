@@ -50,7 +50,7 @@ The LLM answers the user's first message first; the drift audit (active categori
 3. **If yes:** read `<profile>/audit-mcp.md` and follow its MCP Fast Path (the same `run_audit(project_memory_dir, { profile: "standard" })` call shape applies to both on-load and explicit invocation). Skip `<profile>/audit-fs.md`.
 4. **If no:** read `<profile>/audit-fs.md` and follow its file-based Detection Procedure.
 
-`<profile>` is `standard`. The standard profile uses a reduced category set (5, 6, 8 (conditional), 9, 11, 13 (conditional), 14 — phase-related categories retired, Cat 7 and 12 dropped).
+`<profile>` is `standard`. The standard profile uses a reduced category set (5, 6, 8 (conditional), 9, 11, 13 (conditional), 14, 15 — phase-related categories retired, Cat 7 and 12 dropped).
 
 **Semantic Conflict Scan (`semantic-conflict-scan`)** was a legacy full-only optional stage. It is no longer available in the standard profile.
 
@@ -71,6 +71,7 @@ All findings use a single Auto-fix tier — they are either auto-fixed directly 
 | 11 (discussion expiry auto-archive) | Auto-fixed: archived to `discussions/archive/` |
 | 13 (MCP consistency, conditional) | Auto-fixed: missing notes re-indexed, orphaned records deleted from DB |
 | 14 (assignment integrity: 14a target orphan, 14b stale pending, 14c completed without evidence) | Auto-fixed: frontmatter annotated with `target_orphaned_at`, `reminded: true`, or `completed_without_evidence_at` |
+| 15 (decision supersession integrity) | Auto-fixed (dangling supersedes/superseded_by pointers cleared in frontmatter and Superseded index table) + pending_fix (zombie-active: status flipped to superseded, index row moved to Superseded table) |
 
 ---
 
@@ -96,6 +97,7 @@ Before suppressing any finding (auto-fix or pending fix), check the `audit_ignor
 | 8 | `adr-drift:<DECISION-ID>:<missing-adr_id|missing-file|status-mismatch>` |
 | 9 | `discussion-drift:<DISCUSSION-ID>:<missing-row|orphan-row|status-mismatch>` |
 | 14 | `assignment-orphan:<ASSIGNMENT-ID>` / `assignment-stale:<ASSIGNMENT-ID>` / `assignment-no-evidence:<ASSIGNMENT-ID>` |
+| 15 | `decision-supersession:<DECISION-ID>:<dangling|zombie>` |
 
 **`config.yml` format:**
 

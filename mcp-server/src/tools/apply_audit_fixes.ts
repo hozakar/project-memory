@@ -7,7 +7,7 @@ import type {
   PartialFix,
   FailedFix,
 } from "../types";
-import { parseFrontmatter } from "./run_audit";
+import { parseFrontmatter, setFrontmatterField } from "./run_audit";
 import { validateMemoryId } from "../validation.js";
 
 // ---------------------------------------------------------------------------
@@ -541,6 +541,161 @@ Status: ${status}
 // removed: create_phase_stub in 2026-07-06 phase-removal — the entire applyCreatePhaseStub function and PHASE_STUBS constant are deleted
 
 // ---------------------------------------------------------------------------
+// fix_decision_supersession_status — flip status to superseded, set superseded_by,
+// move row from Active table to Superseded table in decisions/index.md.
+// idempotent.
+// ---------------------------------------------------------------------------
+
+function applyFixDecisionSupersessionStatus(
+  fix: PendingFix,
+  projectMemoryDir: string,
+): AppliedFix | PartialFix | FailedFix {
+  const decisionId = fix.decisionId;
+  const supersededBy = fix.supersededBy;
+  if (!decisionId || !supersededBy) {
+    return { fix_type: "fix_decision_supersession_status", reason: "schema_mismatch", details: "missing decisionId/supersededBy" };
+  }
+  validateMemoryId(decisionId, "decisionId");
+
+  // 1. Read the decision file and set status + superseded_by
+  const decisionsDir = path.join(projectMemoryDir, "decisions");
+  const decisionPath = path.join(decisionsDir, `${decisionId}.md`);
+  if (!fileExists(decisionPath)) {
+    return { fix_type: "fix_decision_supersession_status", reason: "file_not_found", details: decisionPath };
+  }
+
+  let content = readFile(decisionPath);
+  content = setFrontmatterField(content, "status", "superseded");
+  content = setFrontmatterField(content, "superseded_by", supersededBy);
+  fs.writeFileSync(decisionPath, content, "utf-8");
+
+  // 2. Move the row in decisions/index.md from Active table to Superseded table
+  const indexPath = path.join(decisionsDir, "index.md");
+  if (!fileExists(indexPath)) {
+    return { fix_type: "fix_decision_supersession_status", target_file: path.relative(path.dirname(projectMemoryDir), decisionPath), summary: `Set ${decisionId} status=superseded; index.md not found, skipped index move` };
+  }
+
+  const indexContent = readFile(indexPath);
+  const lines = indexContent.split("\n");
+
+  // Find the ## Superseded section boundary
+  let supersededSectionIdx = -1;
+  for (let i = 0; i < lines.length; i++) {
+    if (lines[i].trim().startsWith("## Superseded")) {
+      supersededSectionIdx = i;
+      break;
+    }
+  }
+
+  // Split into Active section (before ## Superseded) and Superseded section (from ## Superseded onward)
+  // Also capture any sections after ## Superseded (e.g. ## Rejected) as tailLines
+  let activeLines: string[];
+  let supersededLines: string[];
+  let tailLines: string[];
+  if (supersededSectionIdx >= 0) {
+    activeLines = lines.slice(0, supersededSectionIdx);
+    // Find the next ## header after ## Superseded to bound the section
+    let nextHeaderIdx = -1;
+    for (let i = supersededSectionIdx + 1; i < lines.length; i++) {
+      if (lines[i].trim().startsWith("## ")) {
+        nextHeaderIdx = i;
+        break;
+      }
+    }
+    if (nextHeaderIdx >= 0) {
+      supersededLines = lines.slice(supersededSectionIdx, nextHeaderIdx);
+      tailLines = lines.slice(nextHeaderIdx);
+    } else {
+      supersededLines = lines.slice(supersededSectionIdx);
+      tailLines = [];
+    }
+  } else {
+    // No ## Superseded section — all lines are Active
+    activeLines = lines;
+    supersededLines = [];
+    tailLines = [];
+  }
+
+  // Find the row in Active table
+  let rowContent = "";
+  let rowIdx = -1;
+  for (let i = 0; i < activeLines.length; i++) {
+    const cells = activeLines[i].split("|").map(c => c.trim());
+    if (cells[2] === decisionId) {
+      rowIdx = i;
+      rowContent = activeLines[i];
+      break;
+    }
+  }
+
+  if (rowIdx < 0) {
+    // Row not found in Active table — frontmatter fix already applied; return partial so loop doesn't spin
+    return {
+      fix_type: "fix_decision_supersession_status",
+      target_file: path.relative(path.dirname(projectMemoryDir), decisionPath),
+      llm_must_do: `Set ${decisionId} status=superseded; row not found in Active table (may already be in Superseded table); index will be reconciled by Cat 6 next run.`,
+      context: { decisionId, reason: "row_not_in_active_table" },
+    };
+  }
+
+  // Parse the row to construct a Superseded-table row
+  // Active table: | Date | ID | Scope | Status | Global | Touches | Claim |
+  // Superseded table: | Date | ID | Scope | Status | Global | Touches | Claim | Superseded By |
+  const cells = rowContent.split("|").map(c => c.trim());
+  // cells[0] is empty (before first |), cells[1]=Date, cells[2]=ID, cells[3]=Scope, cells[4]=Status, cells[5]=Global, cells[6]=Touches, cells[7]=Claim
+  const date = cells[1] || "";
+  const scope = cells[3] || "unknown";
+  const global = cells[5] || "-";
+  const touches = cells[6] || "";
+  const claim = cells[7] || "";
+
+  const newRow = `| ${date} | ${decisionId} | ${scope} | superseded | ${global} | ${touches} | ${claim} | ${supersededBy} |`;
+
+  // Remove the row from Active table
+  activeLines.splice(rowIdx, 1);
+
+  // Append to Superseded table (after header + separator rows, before trailing blank lines)
+  if (supersededLines.length === 0) {
+    // Create the Superseded section
+    supersededLines = [
+      "## Superseded",
+      "",
+      "| Date | ID | Scope | Status | Global | Touches | Claim | Superseded By |",
+      "|---|---|---|---|---|---|---|---|",
+      newRow,
+    ];
+  } else {
+    // Find insertion point: after the last row that starts with | (past header + separator + existing rows)
+    let insertIdx = supersededLines.length;
+    // Walk backwards to find last data row (line starting with |)
+    for (let i = supersededLines.length - 1; i >= 0; i--) {
+      if (supersededLines[i].trim().startsWith("|")) {
+        insertIdx = i + 1;
+        break;
+      }
+    }
+    // Also skip past any empty lines after the last data row
+    for (let i = insertIdx; i < supersededLines.length; i++) {
+      if (supersededLines[i].trim() === "") {
+        insertIdx = i + 1;
+      } else {
+        break;
+      }
+    }
+    supersededLines.splice(insertIdx, 0, newRow);
+  }
+
+  const newIndexContent = [...activeLines, ...supersededLines, ...tailLines].join("\n");
+  fs.writeFileSync(indexPath, newIndexContent, "utf-8");
+
+  return {
+    fix_type: "fix_decision_supersession_status",
+    target_file: path.relative(path.dirname(projectMemoryDir), indexPath),
+    summary: `Fixed ${decisionId}: status→superseded, moved to Superseded table (superseded_by: ${supersededBy})`,
+  };
+}
+
+// ---------------------------------------------------------------------------
 // Dispatcher
 // ---------------------------------------------------------------------------
 
@@ -576,6 +731,9 @@ export async function applyAuditFixes(
       case "create_adr_file":
         result = applyCreateAdrFile(fix, projectMemoryDir);
         break;
+      case "fix_decision_supersession_status":
+        result = applyFixDecisionSupersessionStatus(fix, projectMemoryDir);
+        break;
       default: {
         const exhaust: never = fix.type;
         result = { fix_type: exhaust as PendingFix["type"], reason: "unknown_type", details: `no handler for ${String(exhaust)}` };
@@ -588,7 +746,7 @@ export async function applyAuditFixes(
   }
 
   // Recommend re-audit if any write happened that changes cross-file state.
-  const rerunTypes: PendingFix["type"][] = ["assign_commit", "add_decision_index_row", "fix_decision_index_status", "assign_adr_id", "add_discussion_index_row"];
+  const rerunTypes: PendingFix["type"][] = ["assign_commit", "add_decision_index_row", "fix_decision_index_status", "assign_adr_id", "add_discussion_index_row", "fix_decision_supersession_status"];
   const rerun_audit_recommended = applied.some(a => rerunTypes.includes(a.fix_type))
     || partial.some(p => rerunTypes.includes(p.fix_type));
 

@@ -255,7 +255,7 @@ srv.tool(
 
 srv.tool(
   "run_audit",
-  "Run deterministic audit checks on a project-memory directory. Returns structured findings: auto_fixed (Cat 5/11 file moves executed), pending_fixes (Cat 6 decision index drift, Cat 8 ADR drift, Cat 9 discussion index drift). No escalations — all findings are auto-fixed directly or queued as deterministic pending_fixes. Profile-aware: profile=minimal returns an empty report. When background=true, runs silently in the background (returns {status:'running'} immediately) and applies all fixes including pending_fixes server-side via the chained audit pipeline.",
+  "Run deterministic audit checks on a project-memory directory. Returns structured findings: auto_fixed (Cat 5/11 file moves executed, Cat 14/15 auto-fixes), pending_fixes (Cat 6 decision index drift, Cat 8 ADR drift, Cat 9 discussion index drift, Cat 15 decision supersession). No escalations — all findings are auto-fixed directly or queued as deterministic pending_fixes. Profile-aware: profile=minimal returns an empty report. When background=true, runs silently in the background (returns {status:'running'} immediately) and applies all fixes including pending_fixes server-side via the chained audit pipeline.",
   {
     project_memory_dir: z.string().describe("Absolute path to the .project-memory/ directory"),
     profile: z.enum(["standard", "minimal", "full", "lite"]).optional().default("standard").describe("Active project-memory profile. Default 'standard'. 'full' and 'lite' are normalized to 'standard'. 'minimal' returns empty findings (no audit by design)."),
@@ -274,11 +274,11 @@ srv.tool(
 
 srv.tool(
   "apply_audit_fixes",
-  "Deterministically execute the pending_fixes payload returned by run_audit. Handles assign_commit, add_decision_index_row, fix_decision_index_status, assign_adr_id, create_adr_file. Idempotent: re-running with the same payload is a no-op. Source-of-truth safe: never reads the vector index, never synthesizes prose (template cells with prose content are returned as `partial` for LLM completion).",
+  "Deterministically execute the pending_fixes payload returned by run_audit. Handles assign_commit, add_decision_index_row, fix_decision_index_status, assign_adr_id, create_adr_file, fix_decision_supersession_status. Idempotent: re-running with the same payload is a no-op. Source-of-truth safe: never reads the vector index, never synthesizes prose (template cells with prose content are returned as `partial` for LLM completion).",
   {
     project_memory_dir: z.string().describe("Absolute path to the .project-memory/ directory"),
     pending_fixes: z.array(z.object({
-      type: z.enum(["assign_commit", "add_decision_index_row", "fix_decision_index_status", "assign_adr_id", "create_adr_file"]),
+      type: z.enum(["assign_commit", "add_decision_index_row", "fix_decision_index_status", "assign_adr_id", "create_adr_file", "fix_decision_supersession_status"]),
     }).passthrough()).describe("The pending_fixes array from run_audit, passed through verbatim."),
   },
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

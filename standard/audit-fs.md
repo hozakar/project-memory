@@ -1,15 +1,15 @@
 ---
 name: project-memory-audit-fs
-description: File-system drift audit detection procedure for the standard profile. 7 active categories (phase-related categories retired, Cat 7, 12 dropped).
+description: File-system drift audit detection procedure for the standard profile. 8 active categories (phase-related categories retired, Cat 7, 12 dropped).
 ---
 
 # Detection Procedure (standard)
 
 **Invocation:** at post-first-response hook (default), or on explicit `Skill project-memory audit` (sync), or when first user message is an audit-implicit-trigger (sync).
 
-Run all 7 active categories on every audit pass. Collect findings before acting. Check `audit_ignore` (see `audit.md` → Permanent Skip) before escalating any finding — suppressed findings are omitted entirely.
+Run all 8 active categories on every audit pass. Collect findings before acting. Check `audit_ignore` (see `audit.md` → Permanent Skip) before escalating any finding — suppressed findings are omitted entirely.
 
-**Active categories in standard:** 5, 6, 8 (conditional on `adr_enabled`), 9, 11, 13 (conditional on MCP), 14.
+**Active categories in standard:** 5, 6, 8 (conditional on `adr_enabled`), 9, 11, 13 (conditional on MCP), 14, 15.
 
 **Retired in standard:** Phase-related categories (open-phase gaps, phase file completeness) — retired when the phase concept was dropped. Cat 9 and Cat 11 (discussion hygiene) ARE active: Cat 9 reports discussion index drift (low severity, non-interactive); Cat 11 auto-archives discussions with outcome: none older than 30 days.
 
@@ -26,6 +26,7 @@ Run all 7 active categories on every audit pass. Collect findings before acting.
 | 11 | **Discussion expiry** | DISCUSSION with outcome: none and age > 30 days → archive. | Glob: discussions/DISCUSSION-*.md; Read frontmatter | **Auto-fix** | — |
 | 13 | **MCP consistency (conditional)** | Runs only if MCP `check_consistency` tool is available. Indexes any IDs found on disk but not in DB. | MCP: `check_consistency`; `Read` files for missing IDs; MCP: `index_*` tools | **Auto-fix** | — |
 || 14 | **Assignment integrity** | 14a (target_id orphan: auto-fix writes `target_orphaned_at` to frontmatter, any age), 14b (stale pending >30d: one-shot `reminded: true` flag), 14c (completed without evidence: auto-fix writes `completed_without_evidence_at` to frontmatter). **No-op when assignments feature unused.** | `Glob: assignments/*.md`; `Read` frontmatter | **Auto-fix** | — |
+|| 15 | **Decision supersession integrity** | Dangling supersedes/superseded_by pointers (target missing) + zombie-active (superseded_by set & target exists but status not superseded) | `Glob: decisions/DECISION-*.md`; `Read: decisions/index.md` | **Auto-fix** (dangling: direct clear; zombie: pending_fix flips status + moves index row) | — |
 
 ---
 
