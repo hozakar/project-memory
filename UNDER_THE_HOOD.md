@@ -5,11 +5,11 @@ assistants loading this skill.
 
 ---
 
-## What git tracks vs. what I track
+## What git tracks vs. what the skill tracks
 
 - **Git** answers: what changed, where, when, what is the diff.
-- **I** answer: why it was changed, what alternatives were rejected, what
-  constraints existed, what tensions are unresolved, what approaches have
+- **The skill** answers: why it was changed, what alternatives were rejected,
+  what constraints existed, what tensions are unresolved, what approaches have
   proven harmful, what should happen next.
 
 ---
@@ -17,7 +17,7 @@ assistants loading this skill.
 ## Profiles
 
 Project-memory supports two profiles. The profile controls ceremony — how much
-overhead I introduce automatically. Choose at first run; switch at any time.
+overhead the skill introduces automatically. Choose at first run; switch at any time.
 
 | | `standard` | `minimal` |
 |---|---|---|
@@ -34,9 +34,9 @@ ADR, MCP — are available in all profiles regardless of which you choose.
 
 ## Directory structure
 
-> **These files are mine.** I create them, I maintain them, I read them. If you
-> edit them manually, I may get confused — I trust what's in there. If something
-> looks wrong, just tell me; I can fix it.
+> **These files are managed by the skill.** The skill creates, maintains, and
+> reads them. Manual edits can desync the index — the skill trusts what's in
+> there. If something looks wrong, just say so; it can be fixed.
 
 **Standard profile** uses a `.project-memory/` directory (scaffolds a
 leaner tree at init — no `discussions/`, `issues/`, `assignments/`, or
@@ -121,13 +121,14 @@ entries are added incrementally during work.
 
 ## Decisions
 
-When the team makes an architectural or design choice, I record it as a
+When the team makes an architectural or design choice, the skill records it as a
 `DECISION-YYYY-MM-DD-slug.md` file. Rejected alternatives are logged alongside
 the chosen path so future sessions don't re-litigate settled choices.
 
-Before any significant implementation, I automatically cross-reference what
-you're about to touch against active decisions. If a conflict is detected, I
-surface a single batched question. If there's no conflict, I proceed silently.
+Before any significant implementation, the skill automatically cross-references
+what you're about to touch against active decisions. If a conflict is detected,
+it surfaces a single batched question. If there's no conflict, it proceeds
+silently.
 
 ---
 
@@ -137,9 +138,9 @@ Exploratory conversations are captured as `DISCUSSION-YYYY-MM-DD-slug.md` files.
 At close, a discussion links to its downstream artifact — a decision,
 an issue, or a roadmap entry. Discussions can be resumed across sessions.
 
-I score each discussion for relevancy before saving. Low-signal conversations
-are dropped silently; high-signal ones are saved automatically; borderline cases
-are escalated with a yes/no question.
+The skill scores each discussion for relevancy before saving. Low-signal
+conversations are dropped silently; high-signal ones are saved automatically;
+borderline cases are escalated with a yes/no question.
 
 ---
 
@@ -174,8 +175,9 @@ Attribution depth depends on the active profile:
 - **Standard:** all record types carry `created_by` — `contributors` is omitted.
 - **Minimal:** no attribution — git already records authorship per commit.
 
-In all cases I capture git identity at write time and soft-fail to an `unknown`
-sentinel if identity cannot be determined — no escalation, no blocked workflow.
+In all cases git identity is captured at write time, soft-failing to an
+`unknown` sentinel if identity cannot be determined — no escalation, no blocked
+workflow.
 
 ---
 
@@ -192,7 +194,32 @@ at any time via `.project-memory/config.yml`.
 
 ## Drift audit
 
-I run an 8-category drift audit each session, deferred to after the first user response so it doesn't add latency to session start. One exception runs synchronously: explicit `Skill project-memory audit` invocation. With the MCP companion server, all 8 categories are fully deterministic — no LLM judgment involved. Without MCP, the same categories run via file-system detection with the same deterministic logic.
+The skill runs an 8-category drift audit each session, deferred to after the
+first user response so it doesn't add latency to session start. One exception
+runs synchronously: explicit `Skill project-memory audit` invocation.
+
+**How the two paths differ materially — not just in speed:**
+
+- **With the MCP companion server (standard profile only used nontrivially):**
+  the audit is *deterministic, instant, and costs zero tokens / zero LLM
+  judgment.* At session open the skill calls
+  `run_audit(…, background: true)`, gets back `{ status: 'running' }` (or
+  `'done'`) immediately, and emits a single ack line. The server runs the full
+  pipeline silently in a background worker — `run_audit → apply_audit_fixes →
+  re-run until clean` (max 5 iterations) — applying all fixes with no further
+  involvement from the LLM. No Glob/Read churn, no per-finding reasoning, no
+  report block. The skill just moves on.
+- **Without MCP (standard profile):** the same 8 categories fire, but every one
+  of them is driven by the LLM issuing `Glob` / `Read` calls, interpreting
+  frontmatter and index rows, and writing fixes token-by-token. The *detection
+  rules* are deterministic, but the *operation* is not free: each pass costs
+  tokens, wall-clock time, and LLM judgment. On a project with many decisions
+  and discussions, the per-session audit becomes a noticeable overhead item —
+  the most concrete reason to install MCP in standard.
+- **Minimal profile:** no audit at all, with or without MCP.
+
+In short: MCP isn't "faster audits" — it's *audits that don't draw on the LLM
+at all*. The LLM-facing path exists as a fallback, but it is the expensive one.
 
 | Category | Description | Resolution |
 |---|---|---|
@@ -213,9 +240,10 @@ An optional MCP server (`mcp-server/`) that dramatically improves memory quality
 and session performance. Strongly suggested for any project beyond the first few
 sessions.
 
-Without MCP I read files sequentially. With MCP I run semantic vector search over
-all record types in a single call — finding relevant prior decisions, discussions,
-and past work with high accuracy, even when keyword overlap is low.
+Without MCP the skill reads files sequentially. With MCP it runs semantic
+vector search over all record types in a single call — finding relevant prior
+decisions, discussions, and past work with high accuracy, even when keyword
+overlap is low.
 
 **Tools provided:**
 - `search_memory` — semantic search across all record types with filters

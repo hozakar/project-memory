@@ -77,6 +77,16 @@ If you want it, just say so:
 
 The skill will take care of it. If you would rather do it yourself: → [mcp-server/INSTALL.md](mcp-server/INSTALL.md)
 
+One concrete thing the MCP Server changes: **drift audits stop costing you tokens
+and time.** Without it (in the `standard` profile), each session's audit runs by
+having the agent issue Glob/Read calls, reason over each finding, and write fixes
+token-by-token — the rules are deterministic, but every pass draws on the LLM.
+With the MCP Server installed, the audit is *deterministic, instant, and runs in a
+background worker* — the skill calls `run_audit`, gets an immediate ack, and moves
+on. The server runs the entire pipeline (`run_audit → apply_audit_fixes → re-run
+until clean`) silently, applying all fixes with zero further involvement from the
+agent. No tokens spent on audit, no LLM judgment, no latency added to your session.
+
 ---
 
 ## Usage
@@ -115,8 +125,12 @@ it varies quite a bit:
 - **minimal** — MCP gives you some uplift, but honestly you will be fine without it.
   A single markdown file does not need a vector index.
 
-- **standard** — strongly recommended. Without MCP, you will feel the difference —
-  semantic search and single-call audits are where it earns its keep.
+- **standard** — strongly recommended. Without MCP, the per-session drift audit
+  runs LLM-side — Glob/Read, reasoning, and fixes token-by-token. With MCP
+  installed, audits become deterministic and instant: a background worker runs the
+  full pipeline and applies all fixes with zero tokens and zero LLM judgment.
+  Semantic search is also server-side. This is where the MCP Server earns its keep
+  in `standard`.
 
 ---
 
