@@ -18,7 +18,7 @@ At session open (SKILL.md On-Load step 5), the LLM calls `run_audit(project_memo
 
 1. Read `.project-memory/config.yml` to confirm `profile: standard`.
 2. Call `run_audit(project_memory_dir, { profile: "standard" })` (background omitted/false) for explicit `Skill project-memory audit` invocation. The MCP server will:
-   - Internally skip phase-related categories (Cat 4, Cat 10, retired). Cat 9 and Cat 11 (discussion hygiene) remain active for standard/full/lite profiles.
+   - Internally skip phase-related categories (Cat 4, Cat 10, retired). Cat 9 and Cat 11 (discussion hygiene) remain active for all profiles (legacy full/lite normalize to standard at read time).
 3. Receive `{ auto_fixed, pending_fixes }`:
    - `auto_fixed`: file-move operations already executed by the MCP server (Cat 5 misplaced-issue moves, Cat 14/15 auto-fixes). Log them in the auto-fix line.
    - `pending_fixes`: deterministic fixes detected but not yet applied. If `apply_audit_fixes` is in available tools, forward the **entire** array (no filtering) to `apply_audit_fixes(project_memory_dir, pending_fixes)`. **If `apply_audit_fixes` is NOT available** (older MCP server): fall back to applying each fix manually via `Edit`. The tool returns `{ applied, partial, failed, rerun_audit_recommended }`. Decision-related pending types (`add_decision_index_row`, `fix_decision_supersession_status`, etc.) still appear if decisions exist — handle them per the standard flow.

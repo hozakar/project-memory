@@ -36,11 +36,11 @@ This keeps a fresh project visually clean — empty dirs aren't created speculat
 
 ## Active
 | Date | ID | Status | Scope | Touches | Claim |
-|---|---|---|---|---|---|--|
+|---|---|---|---|---|---|
 
 ## Superseded
 | Date | ID | Status | Scope | Touches | Claim | Superseded By |
-|---|---|---|---|---|---|---|---|
+|---|---|---|---|---|---|---|
 ```
 
 ---

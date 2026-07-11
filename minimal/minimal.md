@@ -36,7 +36,7 @@ Detection: `.project-memory/config.yml` exists → installed; absent → first-r
 - YYYY-MM-DD: topic-name — what happened (1 line)
 ```
 
-Profile metadata (`profile`, `profile_history`) lives in `config.yml` — same as full and lite.
+Profile metadata (`profile`, `profile_history`) lives in `config.yml` — same as in all profiles.
 
 ## On Load
 
