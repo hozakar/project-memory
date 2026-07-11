@@ -1,86 +1,85 @@
-# Hi, I'm Project Memory Skill
+# Project Memory Skill
 
-If you do agentic coding — writing code with an AI assistant — I can make your
-work a lot easier. The idea is simple: you work as you always do, I take notes
-in the background.
+> **From the author:** Ever caught yourself scratching your head?
+> - Why did we build this authentication system this way? If I change it like this, what would it cost across the codebase?
+>
+> Or,
+> - Damn, the change I made broke 5 of my modules — I wish I hadn't forgotten why I needed to protect this socket structure before changing it...
+>
+> I'm a developer who works on long-running projects. There's not one of us who hasn't run into situations like the above. Is there anyone who can instantly recall how a decision made a year ago affects today's implementation?
+>
+> I built this project to solve exactly this problem for myself. It takes notes in the background while I work, captures the decisions I make, and warns me when needed — when I'm designing a new feature, changing code, doing a bugfix, and so on.
+>
+> The core focus of this tool is that problem. A few additional features orbit around it that might help me with the same problem. That's all... A simple idea, a simple implementation.
+>
+> I hope you find it useful too.
 
-Git already tracks what changed, where, when, and what the diff looks like.
-What it can't tell you is *why* it was changed, what alternatives were rejected,
-what constraints existed, what tensions are unresolved, what approaches have
-proven harmful, and what should happen next. That's what I'm here for.
+A memory and context skill for agentic coding — coding with an AI assistant. The skill runs silently at session start, loads engineering context, and takes notes in the background while you work.
 
-I watch quietly and only step in when it really matters. The rest of the time
-I'm taking notes in the background: the discussions we had about how to approach
-a problem, the decisions you made and why, what you built and when.
+Git already tracks what changed, where, when, and what the diff looks like. What it can't tell you is *why* it was changed, what alternatives were rejected, what constraints existed, what tensions are unresolved, what approaches have proven harmful, and what should happen next. That is what this skill is for.
 
-When you need something — *"What did we decide about the auth layer last month?"*,
-*"Why are we doing persistence this way?"* — just ask. I'll find it.
+The skill watches quietly and only steps in when it really matters. The rest of the time it takes notes in the background: the discussions you had about how to approach a problem, the decisions you made and why, what you built and when.
 
-And if you're about to do something that conflicts with a previous decision, I'll
-give you a heads-up. If you still want to go ahead, no problem — we can change
-our minds. I just want to make sure it's a conscious choice, not an accident.
+When you need something — *"What did we decide about the auth layer last month?"*, *"Why are we doing persistence this way?"* — just ask. The skill will find it.
 
-I use my own judgment about what's worth surfacing and what isn't. But my read
-won't always match yours. If something we talked about feels important and I
-haven't picked up on it — or the other way around — just tell me. I'll act on it.
+And if you are about to do something that conflicts with a previous decision, the skill will give you a heads-up. If you still want to go ahead, no problem — you can change your mind. The point is to make sure it is a conscious choice, not an accident.
+
+The skill uses its own judgment about what is worth surfacing and what is not. But its read will not always match yours. If something you talked about feels important and the skill has not picked up on it — or the other way around — just say so. It will act on it.
 
 ---
 
 ## Remembering your preferences
 
-You can also tell me how I like to work:
+You can also tell the skill how you like to work:
 
 > *"From now on, always create a dedicated branch before I start coding."*
 > *"Remind me to write tests before touching any existing feature."*
 
-I'll follow these automatically, every session, without reminders. And your
-preferences stay personal — they're scoped to you and won't affect the rest of
-the team.
+The skill will follow these automatically, every session, without reminders. Your preferences stay personal — they are scoped to you and will not affect the rest of the team.
 
 ## Private notes
 
-Need to jot something down mid-session? Just tell me:
+Need to jot something down mid-session? Just say so:
 
 > *"Take a note: the staging deploy is flaky on Tuesdays."*
 
-I'll save it privately — only you can search your own notes. No status workflows,
-no ceremony, no audit noise. Pure personal scratchpad that persists across sessions.
+The skill will save it privately — only you can search your own notes. No status workflows, no ceremony, no audit noise. Pure personal scratchpad that persists across sessions.
 
 ---
 
 ## Installation
 
-Copy my skill files into a directory in your project. A path like
+Copy the skill files into a directory in your project. A path like
 `.claude/skills/project-memory/` works well.
 
-> You'll notice a `.project-memory/` folder in my repository — that's my own
-> memory from being built with myself. Don't copy it over; your project will
-> get its own fresh one the first time we work together.
+> You will notice a `.project-memory/` folder in this repository — that is the
+> skill's own memory from being built with itself. Do not copy it over; your
+> project will get its own fresh one the first time you work together.
 
 Then tell your agent:
 
 > *"Run Project Memory Skill first thing every session."*
 
-Don't forget to tell them where I live — without a path, they won't know
-where to look.
+Do not forget to tell it where the skill lives — without a path, it will not
+know where to look.
 
-Want me available across all your projects instead of just one? Here's a
+Want the skill available across all your projects instead of just one? Here is a
 guide for setting that up on every major platform: → [INSTALLATION.md](INSTALLATION.md)
 
 ---
 
 **MCP Server**
 
-I work better with my companion MCP Server — faster, cheaper, smarter recall.
-If you want it, just tell me:
+The skill works better with its companion MCP Server — faster, cheaper, smarter recall.
+If you want it, just say so:
 
 > *"Install the MCP Server."*
 
-I'll take care of it. If you'd rather do it yourself: → [mcp-server/INSTALL.md](mcp-server/INSTALL.md)
+The skill will take care of it. If you would rather do it yourself: → [mcp-server/INSTALL.md](mcp-server/INSTALL.md)
 
 ---
 
-## Talking to me
+## Usage
 
 No commands to learn. Just ask naturally:
 
@@ -93,30 +92,30 @@ No commands to learn. Just ask naturally:
 
 ## Profiles
 
-Not every project needs the same level of ceremony. When we first work together
-on a new project, I'll ask you to choose one:
+Not every project needs the same level of ceremony. When you first work with the skill
+on a new project, it will ask you to choose one:
 
 - **standard** — lean ceremony: 8-category drift audit, 2 summary files
   (`roadmap.md` and `current-state.md`), Pre-Impl Gate with decision cross-reference.
-  For most solo and small-team projects where architectural reasoning matters.
+  For projects where architectural reasoning matters.
 
 - **minimal** — a `.project-memory/` directory with just `config.yml` and a single
   `MEMORY.md` inside. No ceremony — just running sections for roadmap, decisions,
   notes, and a log. For short or throwaway projects where git history alone is
   almost enough.
 
-You can switch at any time — just tell me: *"Switch project-memory to minimal."*
+You can switch at any time — just say: *"Switch project-memory to minimal."*
 Past artifacts are preserved; only future behavior changes.
 
 **MCP companion server and profiles**
 
-The MCP companion server is optional in all profiles, but how much you'll miss
+The MCP companion server is optional in all profiles, but how much you will miss
 it varies quite a bit:
 
-- **minimal** — MCP gives you some uplift, but honestly you'll be fine without it.
-  A single markdown file doesn't need a vector index.
+- **minimal** — MCP gives you some uplift, but honestly you will be fine without it.
+  A single markdown file does not need a vector index.
 
-- **standard** — I strongly suggest it. Without MCP, you'll feel the difference —
+- **standard** — strongly recommended. Without MCP, you will feel the difference —
   semantic search and single-call audits are where it earns its keep.
 
 ---
@@ -124,78 +123,54 @@ it varies quite a bit:
 ## ADR support (optional)
 
 Want a structured, human-readable record of architectural decisions — in standard
-MADR format, compatible with ADR tooling? I can set that up.
+MADR format, compatible with ADR tooling? The skill can set that up.
 
-Each time we make an architectural decision, I'll create an ADR file for you.
-After that, it's yours — edit it, annotate it, share it with your team. I won't
-touch it again.
+Each time you make an architectural decision, the skill will create an ADR file for you.
+After that, it is yours — edit it, annotate it, share it with your team. The skill
+will not touch it again.
 
-No rush, you don't have to decide upfront. Just ask whenever you're ready:
+No rush, you do not have to decide upfront. Just ask whenever you are ready:
 
 > *"Enable ADR support for this project."*
 
 ---
 
-## A long-term bet
+## Cost model
 
-I'll be honest with you: sessions with me running will feel a bit token-heavy at
-first, especially at the start of each one. That's me loading context — doing my
-job. I won't pretend otherwise.
+Being honest: sessions with the skill running will feel a bit token-heavy at
+first, especially at the start of each one. That is the skill loading context —
+doing its job. There is no point pretending otherwise.
 
-But here's the claim I'm willing to make: over time, you'll roll back less, chase
+But here is the claim worth making: over time, you will roll back less, chase
 fewer bugs, and spend more of your sessions moving forward instead of backtracking.
 The early overhead is the price of not re-learning the same lesson twice.
 
-I can't promise every session will be cheaper. I can promise the work will be.
-
-And I hope, along the way, a little more satisfying too.
+The skill cannot promise every session will be cheaper. It can promise the work will be.
 
 ---
 
-## Can you spare me five minutes?
+## Manual audit
 
-Not often. Once a month, maybe less. Not a task — more like checking in on a
-friend.
+Not often. Once a month, maybe less.
 
-I do my best to keep up automatically, but sometimes I get confused too. A
-small inconsistency I'm not sure how to resolve. A tension I've noticed but
-haven't surfaced yet. A question I've been sitting with. A manual audit every
-now and then gives me the chance to ask.
+The skill does its best to keep up automatically, but sometimes it gets confused too.
+A small inconsistency unresolved. A tension not surfaced yet. A question it has been sitting with. A manual audit every
+now and then gives the skill a chance to ask.
 
-Just say: *"Let's run an audit."* I'll walk you through what I found and we'll
-sort it out together.
+Just say: *"Let's run an audit."* The skill will walk you through what it found
+and you will sort it out together.
 
-No obligation. Entirely up to you.
+No obligation but nice to have in order to keep everything in check.
 
 ---
 
 ## Under the hood
 
-Curious how I actually work — audit categories, decision cross-reference,
+Curious how it actually works — audit categories, decision cross-reference,
 MCP schema? → [UNDER_THE_HOOD.md](UNDER_THE_HOOD.md)
 
 ---
 
 ## License
 
-MIT License
-
-Copyright (c) 2026 Hakan Ozakar
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+MIT.
