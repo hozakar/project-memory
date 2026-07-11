@@ -18,10 +18,10 @@ The right axis for choosing a profile is **longevity × revisit frequency × rea
 | # | Feature | `standard` | `minimal` |
 |---|---|---|---|---|
 | 1 | Pre-Implementation Gate | Step 0 + 1 + 2 + 3 (Step 4 skipped) | Step 0 only (instruction inject, then continue) |
-| 2 | Turn-boundary sweep | Turn-end check: "did this turn commit?" → update current-state.md (always) + roadmap.md (on scope change). One judgment per turn. | n/a |
+| 2 | Turn-boundary sweep | GATE 0 re-inject instructions + turn-end check: "did this turn commit?" → update current-state.md (always) + roadmap.md (on scope change). One judgment per turn. | n/a |
 | 3 | Drift Audit | 8 categories (5,6,8,9,11,13,14,15). Phase-related categories retired. Cat 7, 12 dropped. | none |
 | 4 | Summaries | 2 files (`roadmap.md` + `current-state.md`) | inline sections of `MEMORY.md` |
-| 5 | Gate instruction re-injection | Pre-Impl Gate Step 0 only | Pre-Impl Gate Step 0 only (the only gate that exists) |
+| 5 | Gate instruction re-injection | Pre-Impl Gate GATE 0 + Turn-Boundary Sweep GATE 0 | Pre-Impl Gate Step 0 only (the only gate that exists) |
 | 6 | Author attribution | `created_by` only | none |
 | 7 | Decisions | DECISION files + `index.md` | append rows in `MEMORY.md` |
 

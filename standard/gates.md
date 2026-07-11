@@ -1,16 +1,18 @@
 ---
 name: project-memory-gates
-description: Pre-Implementation Gate and turn-boundary sweep for the standard profile. No phase ceremony. Summary writes are turn-boundary-driven.
+description: Pre-Implementation Gate and turn-boundary sweep for the standard profile. No phase ceremony. Summary writes are turn-boundary-driven. Instruction re-injection at both gates (Pre-Impl GATE 0 + Turn-Boundary GATE 0).
 ---
 
 # CRITICAL GATES (standard profile)
 
 ```
 BEFORE IMPLEMENTATION → Pre-Implementation Gate (GATE 0 + Steps 1–3)
-TURN END             → turn-boundary sweep (did this turn include a commit? yes → update current-state + roadmap)
+TURN END             → turn-boundary sweep (GATE 0 re-injection + did this turn include a commit? yes → update current-state + roadmap)
 ```
 
 > **Turn-boundary-driven writes (T6 contract):** The turn-boundary sweep below is the sole trigger for summary file updates. At turn end, the sweep asks "did this turn include a commit?" — if yes, it updates `current-state.md` (always) and `roadmap.md` (on scope change). One judgment per turn, not N per commit. No per-commit gate fires. Decision-moment awareness (DECISION-2026-06-25-decision-moment-awareness) is independent — decisions are captured when made, mid-turn. T6 (audit re-anchor) may quote this paragraph as the authoritative trigger definition.
+
+> **Instruction re-injection (DECISION-2026-06-14-instruction-gate-injection):** Active instructions are re-injected at two gate checkpoints: Pre-Implementation Gate GATE 0 (before any significant implementation) and Turn-Boundary Sweep GATE 0 (at turn end). This ensures instructions survive context compaction and long contexts. See each gate's GATE 0 section below.
 
 ---
 
@@ -96,6 +98,28 @@ If the user says "skip decision questions for now" (or similar phrasing), suspen
 
 One judgment per turn — not N per commit.
 
+## ⚠️ GATE 0 — INSTRUCTION RE-INJECTION
+
+**THIS GATE EXECUTES BEFORE STEP 1. IT IS NOT OPTIONAL.**
+
+Re-load active instructions to ensure they survive context compaction and long contexts. This is the same procedure as Pre-Implementation Gate GATE 0.
+
+**If MCP available:**
+```
+search_memory(
+  query: "active instructions for this session",
+  type_filter: "instruction",
+  created_by_email: "<run: git config user.email>"
+)
+```
+
+**If MCP unavailable (fallback):**
+Scan `.project-memory/instructions/` for `INSTRUCTION-*.md` files with `state: active`. Filter by `created_by.email` matching current git identity.
+
+Re-inject each instruction's `body` (MCP) or `# Prompt` section (FS) into context. If no active instructions exist, this is a no-op — proceed to Step 1.
+
+---
+
 ## Step 1 — Did this turn include a commit?
 
 Check mechanically via `git log --since=<turn-start>` or equivalent. A commit existing during this turn is the only significance signal — no per-commit significant/trivial classification is needed.
@@ -127,7 +151,7 @@ If unsure whether a scope change occurred, err on the side of updating roadmap.m
 
 ## Decision capture is NOT part of this sweep
 
-Decision-moment awareness (DECISION-2026-06-25-decision-moment-awareness) is independent of the turn boundary. Decisions are captured **when made** (mid-turn), not batched at the sweep. The sweep only carries rolling summaries (current-state + roadmap).
+Decision-moment awareness (DECISION-2026-06-25-decision-moment-awareness) is independent of the turn boundary. Decisions are captured **when made** (mid-turn), not batched at the sweep. The sweep carries instruction re-injection (GATE 0) and rolling summaries (current-state + roadmap) — not decision capture.
 
 ---
 
@@ -137,3 +161,11 @@ Decision-moment awareness (DECISION-2026-06-25-decision-moment-awareness) is ind
 - **Pre-Close Gate** — removed. Phase lifecycle and phase-close ceremony no longer exist as gate concepts. Summary writes are turn-boundary-driven (see Turn-Boundary Sweep).
 - **Topic-shift-to-new-phase logic** — removed. Topic tracking no longer gates on phase creation. The turn-boundary sweep's scope-change detection handles roadmap updates when work shifts areas.
 - **Phase-close write triggers** — removed. All automated summary updates are now turn-boundary-driven via the sweep above.
+
+---
+
+# Discussion trigger (orthogonal gate)
+
+When Discussion Mode engages (explicit `Skill project-memory discuss` or implicit trigger per `conventions/discussions.md`), active instructions are re-injected before the discussion proceeds. This is the same procedure as Pre-Implementation Gate GATE 0 — load active instructions filtered by current git user, prepend their body to discussion context.
+
+See `conventions/discussions.md` → Lifecycle for the full discussion flow.

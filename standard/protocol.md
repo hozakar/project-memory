@@ -1,6 +1,6 @@
 ---
 name: project-memory-protocol
-description: Standard-profile agent thinking protocol, simplified memory loading strategy (2 summaries), instruction re-injection scope limited to Pre-Impl Gate.
+description: Standard-profile agent thinking protocol, simplified memory loading strategy (2 summaries), instruction re-injection at Pre-Impl Gate GATE 0 and Turn-Boundary Sweep GATE 0.
 ---
 
 # Agent Thinking Protocol (standard)
@@ -85,7 +85,7 @@ The session-start work happens in this order. Each step may be a no-op depending
 8. Recent git commits (as needed)
 ```
 
-**On context compaction:** Memory Loading Strategy is NOT re-run on compaction. Active instructions survive via Pre-Impl Gate Step 0 re-injection. The rest is best-effort.
+**On context compaction:** Memory Loading Strategy is NOT re-run on compaction. Active instructions survive via Pre-Impl Gate GATE 0 and Turn-Boundary Sweep GATE 0 re-injection. The rest is best-effort.
 
 **Standard reductions vs legacy full:**
 - Reads 2 summaries (`current-state.md`, `roadmap.md`) instead of 5 — `project-memory.md`, `active-issues.md`, `architecture.md` are not present in standard scaffolding.

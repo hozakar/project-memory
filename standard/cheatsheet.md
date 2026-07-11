@@ -20,7 +20,7 @@ Did this turn include a commit? (check via git log --since=<turn-start>)
 One judgment per turn, not N per commit. Decision-moment awareness (DECISION-2026-06-25) handles decisions independently, captured when made, mid-turn.
 
 **About to implement something non-trivial?**
-→ GATE 0: load active instructions (EXECUTE search_memory — standard re-injects here only, not at every gate).
+→ GATE 0: load active instructions (EXECUTE search_memory — re-injected at Pre-Impl Gate and Turn-Boundary Sweep).
 → Step 1: review `summaries/current-state.md` for context.
 → Step 2: scan `decisions/index.md` (and `discussions/index.md` if discussions feature is used) for `touches` overlap or `scope` match; batch directional conflicts into one `AskUserQuestion`.
 → Step 3: if architectural move with no candidate, offer to record a DECISION.
@@ -57,7 +57,7 @@ One judgment per turn, not N per commit. Decision-moment awareness (DECISION-202
 | Status-changing write on decision / discussion / issue | Standard does NOT track `contributors`. Skip this step. |
 | Discussion concluded | Write `DISCUSSION-*.md` to `discussions/` (create dir on first use); add row to `discussions/index.md`. If MCP: call `index_discussion`. |
 | Discussion resumed | Load existing file, update at close. |
-| Turn with a commit | Turn-boundary sweep: update `summaries/current-state.md` (once, covering the turn's commits); also update `summaries/roadmap.md` on scope change. |
+| Turn with a commit | Turn-boundary sweep: GATE 0 re-inject active instructions; update `summaries/current-state.md` (once, covering the turn's commits); also update `summaries/roadmap.md` on scope change. |
 | User asks about past decisions/discussions (MCP available) | `search_memory` per `mcp-integration.md`. Pass `include_superseded: true` only when explicitly researching past/superseded decisions. |
 | Drift audit (post-first-response) — `run_audit` available | Default: deferred. Call `run_audit(project_memory_dir, { profile: "standard" })`. Apply pending_fixes via apply_audit_fixes. |
 | Drift audit (post-first-response) — `run_audit` NOT available | Default: deferred. Run file-based detection (8 active categories). |
