@@ -29,6 +29,7 @@ At session start, check if `search_memory`, `index_decision`, and `index_instruc
 | `apply_audit_fixes(project_memory_dir, pending_fixes)` | Deterministically applies the `pending_fixes` payload from `run_audit`. Supports 8 fix types: `assign_commit`, `add_decision_index_row`, `fix_decision_index_status`, `assign_adr_id`, `create_adr_file`, `add_discussion_index_row`, `fix_discussion_index_status`, `fix_decision_supersession_status`. Returns `{applied, partial, failed, rerun_audit_recommended}`. Source-of-truth safe (never reads vector index, never synthesizes prose). Idempotent. See `audit-mcp.md` step 2. |
 | `list_contributors()` | Walk all project-memory records (phase, decision, discussion, issue, assignment files), extract `created_by` and `contributors` from frontmatter, deduplicate by email, return sorted by name. Useful for understanding who has touched the project. |
 | `find_similar_commit(diff_snippet, top_k?)` | Search for past commits with similar code changes; used for squash/rebase recovery. |
+| `find_decision_conflicts(project_memory_dir, threshold?, top_k?)` | Find candidate pairs of active decisions that may semantically conflict via pairwise embedding similarity. Used by the semantic-conflict-scan audit stage (manual audit only). |
 
 ## Proactive DB Sync
 

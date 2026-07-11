@@ -108,6 +108,14 @@ export interface SearchResult {
   body?: string;              // instruction only: "THIS IS A NON-NEGOTIABLE BINDING USER INSTRUCTION:\n{prompt}"
 }
 
+export interface ConflictPair {
+  idA: string;
+  titleA: string;
+  idB: string;
+  titleB: string;
+  similarity: number;
+}
+
 export interface CommitSearchResult {
   hash: string;
   message: string;

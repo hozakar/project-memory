@@ -36,6 +36,19 @@ This fallback ensures correctness while the MCP server is being upgraded.
 
 ---
 
+# Semantic Conflict Scan (manual audit only)
+
+After the structural audit categories are clean (step 4 above), if `find_decision_conflicts` is available as an MCP tool:
+
+1. Check gating: profile=standard, MCP available, at least one active decision in `decisions/index.md`.
+2. Prompt the user: "Run semantic conflict scan? (y/N)"
+3. On `y`: call `find_decision_conflicts(project_memory_dir, { threshold: 0.75, top_k: 10 })`.
+4. For each returned candidate pair, apply the LLM self-prompt with ambiguity test (see `audit.md` → Semantic Conflict Scan).
+5. Escalate up to 2 "yes" findings to the user (plus 1 user-initiated +1).
+6. Resolution: user answers → write new superseding DECISION; user dismisses → add `decision-contradiction:<ID1>:<ID2>` to `audit_ignore` in `config.yml`.
+
+---
+
 # MCP installation check
 
 **When `run_audit` is NOT available:**

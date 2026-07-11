@@ -13,6 +13,7 @@ import { indexNote } from "./tools/index_note";
 import { startBackgroundAudit, runAuditLocked, applyAuditFixesLocked } from "./tools/background_audit";
 import { listContributors } from "./tools/list_contributors";
 import { deleteNote } from "./tools/delete_note";
+import { findDecisionConflicts } from "./tools/find_decision_conflicts";
 import type { IndexEntry, PendingFix } from "./types";
 import { version } from "../package.json";
 
@@ -314,5 +315,20 @@ srv.tool(
   async () => {
     const result = await listContributors();
     return { content: [{ type: "text" as const, text: JSON.stringify(result) }] };
+  }
+);
+
+srv.tool(
+  "find_decision_conflicts",
+  "Find candidate pairs of active (non-superseded) decisions that may semantically conflict. Computes pairwise embedding similarity, filters by threshold, excludes pairs in audit_ignore. Returns top-K pairs sorted by similarity descending. Used by the semantic-conflict-scan audit stage (manual audit only). The LLM evaluates each pair for actual conflict.",
+  {
+    project_memory_dir: z.string().describe("Absolute path to the .project-memory/ directory"),
+    threshold: z.number().min(0).max(1).optional().default(0.75).describe("Minimum cosine similarity for candidate pairs (default 0.75)"),
+    top_k: z.number().int().min(1).max(50).optional().default(10).describe("Maximum number of candidate pairs to return (default 10)"),
+  },
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  async (args: any) => {
+    const results = await findDecisionConflicts(args.project_memory_dir, args.threshold, args.top_k);
+    return { content: [{ type: "text" as const, text: JSON.stringify(results) }] };
   }
 );

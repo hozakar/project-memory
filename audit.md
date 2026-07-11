@@ -52,7 +52,7 @@ The LLM answers the user's first message first; the drift audit (active categori
 
 `<profile>` is `standard`. The standard profile uses a reduced category set (5, 6, 8 (conditional), 9, 11, 13 (conditional), 14, 15 — phase-related categories retired, Cat 7 and 12 dropped).
 
-**Semantic Conflict Scan (`semantic-conflict-scan`)** was a legacy full-only optional stage. It is no longer available in the standard profile.
+**Semantic Conflict Scan (`semantic-conflict-scan`)** is an optional final stage of the interactive (manual) audit, gated by: user-triggered audit + MCP available + profile=standard + at least one non-superseded active decision. It narrows candidate pairs via the `find_decision_conflicts` MCP tool (pairwise embedding similarity → top-K), then the LLM evaluates each pair with an ambiguity-test self-prompt (yes/no only). Up to 2 findings are escalated to the user (plus 1 user-initiated). Resolution: user answers → new superseding DECISION (`provenance: directive`); user dismisses → permanent `audit-ignore` entry (`decision-contradiction:<ID1>:<ID2>`). See `DECISION-2026-06-17-semantic-conflict-scan` for full spec.
 
 The shared sections below (Severity, Permanent Skip, Era Auto-Clean, Output Format, Interactive Mode) apply to both paths and both profiles.
 
@@ -190,3 +190,65 @@ For each such finding, raise one question:
 > * **Mark ignored** — write to `audit_ignore` in `config.yml` and suppress future findings.
 
 When the user chooses "Mark ignored" or "mark ignored (permanent)" for any finding: write the corresponding `audit_ignore` entry to `.project-memory/config.yml` immediately, then move to the next finding.
+
+---
+
+# Semantic Conflict Scan
+
+An optional final stage of the interactive audit (`Skill project-memory audit`, standard profile only). Runs AFTER all structural audit categories are clean.
+
+## Gating (all four must hold)
+
+1. **User-triggered audit only.** Never runs in the background auto-run.
+2. **MCP available.** When MCP is unreachable, the stage is silently skipped.
+3. **Profile = `standard`.** `minimal` skips silently.
+4. **At least one non-superseded active decision** in `decisions/index.md` Active section.
+
+When gating holds, prompt the user at the end of the structural audit:
+
+> "Run semantic conflict scan? (y/N)"
+
+Default `n`. On `n` or skip, audit finishes.
+
+## Candidate Funnel
+
+1. Call `find_decision_conflicts(project_memory_dir, { threshold: 0.75, top_k: 10 })`.
+2. The tool returns candidate pairs of active decisions with high embedding similarity, excluding pairs already in `audit_ignore`.
+
+## LLM Self-Prompt (per pair)
+
+For each candidate pair (A, B), the LLM asks itself:
+
+> "If I tried to apply decision A today, would decision B require me to do something different in the same situation? And if so, is it ambiguous which one I should follow?"
+
+Outputs:
+- **no** — drop, no logging.
+- **yes** — eligible for user-facing escalation.
+
+If uncertain, err toward `no` — the next manual audit will re-evaluate.
+
+## Escalation Budget
+
+- **Hard cap: 2 user-facing questions per audit.**
+- After the budget is consumed, if the user explicitly asks ("anything else?", "what else do you have?"), **one additional finding** may be escalated. The +1 slot is user-initiated only.
+- **Skip does not refund.** If the user dismisses a question, that slot is consumed.
+
+## User-Facing Question Shape
+
+> "On `<date-A>` we decided: `<claim A>` (`<DECISION-A-id>`).
+> On `<date-B>` we decided: `<claim B>` (`<DECISION-B-id>`).
+> These may conflict because `<one-sentence reason>`. If this situation came up, I might be unsure which to follow. How should I resolve this?"
+
+User response options:
+- **Answer** — explain how to resolve. LLM proceeds to the supersede write step.
+- **"Ignore"** — pair is added to `audit_ignore` in `config.yml` as `decision-contradiction:<ID1>:<ID2>` (permanent, manual removal to re-enable). Slot consumed.
+
+## Supersede Write Step
+
+When the user provides a resolution, the LLM writes a new DECISION file:
+- Naming and frontmatter follow `conventions/decisions.md`.
+- `provenance: directive` (the user explicitly resolved the conflict).
+- `supersedes: [<DECISION-id-of-the-one-being-overridden>]` — usually one ID; may be multiple.
+- `context` section notes: *"Created via `semantic-conflict-scan` on `<date>`. User resolved a potential conflict between `<DECISION-A-id>` and `<DECISION-B-id>` with the following directive: `<paraphrase>`."*
+- All standard post-write steps: update `decisions/index.md` (move superseded row to Superseded section, add new row to Active), update superseded decision's `superseded_by` and `status`, append git identity to `contributors`, dedup by email.
+- If `adr_enabled: true`, also create the ADR mirror. If `adr_enabled: false`, skip.
