@@ -5,7 +5,7 @@ description: Shared Author Attribution schema (created_by, contributors) referen
 
 # Author Attribution Fields
 
-The `created_by` and `contributors` fields are **required** on decision / discussion / issue records. Full rules are in `conventions.md` → Author Attribution. This file covers the schema only.
+The `created_by` and `contributors` fields are **required** on decision / discussion / issue records. Full rules are in `conventions/maintainer.md` → Author Attribution. This file covers the schema only.
 
 **Shape:**
 ```yaml

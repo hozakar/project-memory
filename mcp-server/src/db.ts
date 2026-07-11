@@ -149,7 +149,7 @@ export async function search(
     // Build WHERE clauses for pre-filtering
     const whereClauses: string[] = [];
     if (typeFilter) {
-      whereClauses.push(`type = '${typeFilter}'`);
+      whereClauses.push(`type = '${escapeLike(typeFilter)}'`);
     }
     if (createdByEmail) {
       whereClauses.push(`createdByEmail = '${escapeLike(createdByEmail)}'`);
@@ -158,10 +158,10 @@ export async function search(
       whereClauses.push(`createdByName LIKE '%${escapeLike(createdByName)}%' ESCAPE '\\'`);
     }
     if (assignedToEmail) {
-      whereClauses.push(`assignedToEmail = '${assignedToEmail.replace(/'/g, "''")}'`);
+      whereClauses.push(`assignedToEmail = '${escapeLike(assignedToEmail)}'`);
     }
     if (assignedByEmail) {
-      whereClauses.push(`assignedByEmail = '${assignedByEmail.replace(/'/g, "''")}'`);
+      whereClauses.push(`assignedByEmail = '${escapeLike(assignedByEmail)}'`);
     }
     if (touchesFilter && touchesFilter.length > 0) {
       for (const touch of touchesFilter) {
@@ -249,7 +249,7 @@ export async function search(
 export async function deleteRecord(id: string): Promise<{ success: boolean; error?: string }> {
   try {
     const table = await getTable();
-    await table.delete(`id = '${id}'`);
+    await table.delete(`id = '${escapeLike(id)}'`);
     return { success: true };
   } catch (err) {
     return { success: false, error: (err as Error).message };
@@ -263,7 +263,7 @@ export async function deleteRecord(id: string): Promise<{ success: boolean; erro
 export async function getRecord(id: string): Promise<Record<string, unknown> | null> {
   try {
     const table = await getTable();
-    const rows = await table.query().where(`id = '${id}'`).limit(1).toArray();
+    const rows = await table.query().where(`id = '${escapeLike(id)}'`).limit(1).toArray();
     return rows.length > 0 ? rows[0] : null;
   } catch {
     return null;

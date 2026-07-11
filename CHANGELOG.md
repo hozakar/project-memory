@@ -17,6 +17,20 @@ All notable changes to the project-memory skill and MCP companion server.
 - **Stale category list fixed.** `audit.md:41` still listed Cat 7 and Cat 12 (the Cat 7/12
   drop commit missed it).
 
+### Cat 15 (decision supersession integrity) added
+
+- **New Cat 15 — decision supersession integrity.** Checks for five sub-types of
+  supersession chain issues: dangling pointers (superseded decision no longer
+  exists), zombie-active (superseded decision still marked active), asymmetric
+  (one-way supersession where both should reference each other), circular
+  (supersession cycle), and orphan-superseded (superseded decision never listed
+  as superseding any active decision). Resolved via `apply_audit_fixes`
+  `fix_decision_supersession_status` variant. Category count 7 → 8 active
+  ({5, 6, 8, 9, 11, 13, 14, 15}). Requires `find_decision_conflicts` MCP tool.
+- **`find_decision_conflicts` MCP tool added.** Registered at server.ts:302.
+  Finds candidate semantically-conflicting active decision pairs for manual
+  review using embedding similarity search. Excludes pairs in `audit_ignore`.
+
 ### Cat 7 + Cat 12 drop
 
 - **Cat 7 (orphan commit references) dropped + Cat 12 (tag inconsistency) dropped.**

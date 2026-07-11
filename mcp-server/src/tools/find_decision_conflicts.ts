@@ -117,7 +117,9 @@ export async function findDecisionConflicts(
       (r: Record<string, unknown>) => ({
         id: r.id as string,
         title: r.title as string,
-        vector: r.vector as number[],
+        // LanceDB returns Vectors as an Arrow Vector (iterable, `.get(i)`, NOT `[i]`).
+        // Convert to a plain number[] so cosineSimilarity's index access works.
+        vector: Array.from(r.vector as Iterable<number>),
       })
     );
 

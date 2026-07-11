@@ -38,7 +38,8 @@ export async function searchMemory(
     const vector = await embed(query);
     const results = await search(vector, topK, typeFilter, !include_commits, effectiveCreatedByEmail, createdByName, touchesFilter, tagsFilter, assignedToEmail, assignedByEmail, scopeFilter, outcomeTypeFilter, diversify, include_superseded);
     return results;
-  } catch {
+  } catch (err) {
+    console.error("search_memory failed:", err);
     return [];
   }
 }

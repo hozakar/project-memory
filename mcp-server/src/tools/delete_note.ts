@@ -1,6 +1,7 @@
 import * as fs from "fs";
 import * as path from "path";
 import { deleteRecord, getRecord, dbPath } from "../db";
+import { validateMemoryId } from "../validation.js";
 
 /**
  * Deletes a note from both the LanceDB vector index and the filesystem.
@@ -43,6 +44,7 @@ export async function deleteNote(
   // 2. Delete from filesystem
   try {
     const projectMemoryDir = path.dirname(dbPath());
+    validateMemoryId(id, "id");
     const notePath = path.join(projectMemoryDir, "notes", `${id}.md`);
     if (fs.existsSync(notePath)) {
       fs.unlinkSync(notePath);

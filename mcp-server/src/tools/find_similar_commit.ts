@@ -18,7 +18,8 @@ export async function findSimilarCommit(
         similarity: r.similarity,
       };
     });
-  } catch {
+  } catch (err) {
+    console.error("find_similar_commit failed:", err);
     return [];
   }
 }

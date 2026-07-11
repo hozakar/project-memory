@@ -6,11 +6,10 @@ description: Decision lifecycle, ADR creation steps, touches field guidance, and
 # Architectural Decision Records
 
 **Profile scope:**
-- `full` — DECISION files + `decisions/index.md` + optional ADR mirror (gated by `adr_enabled` flag in `config.yml`, orthogonal to profile).
-- `lite` — DECISION files + `decisions/index.md`. ADR mirror follows `adr_enabled` flag, same as `full`.
-- `minimal` — this file does not apply. Decisions are appended as single-line rows in `MEMORY.md → ## Decisions` per `minimal/minimal.md`. ADR mirror does not apply (no DECISION files are created).
+|- `standard` — DECISION files + `decisions/index.md` + optional ADR mirror (gated by `adr_enabled` flag in `config.yml`).
+|- `minimal` — this file does not apply. Decisions are appended as single-line rows in `MEMORY.md → ## Decisions` per `minimal/minimal.md`. ADR mirror does not apply (no DECISION files are created).
 
-The rules below describe `full` / `lite` behavior.
+The rules below describe `standard` behavior. Under `minimal`, this file does not apply.
 
 ---
 
@@ -30,7 +29,8 @@ status: active | superseded | amended
 provenance: directive | collaborative  # directive = user-imposed rule; collaborative = joint design
 primary_scope: <category>           # auth, persistence, deployment, ui, schema, ...
 touches: [entity1, entity2]         # concrete names — see Touches Field Guidance
-supersedes: DECISION-YYYY-MM-DD-... # null if none
+supersedes:
+  - DECISION-YYYY-MM-DD-... # null if none
 superseded_by: DECISION-YYYY-MM-DD-... # null if none; set when a later decision overrides this
 applies_globally: false              # default false; true = cross-cutting policy surfaced at every Pre-Implementation Gate regardless of touches overlap. See Decision Resolution Rules → Rule 0 (Global surface) and "When to use applies_globally: true" below.
 adr_id: null                         # assigned integer (0001, 0002, ...) at write time; matches adr/ filename prefix
@@ -61,12 +61,11 @@ Rejected alternatives are first-class content. Future agents need to know what w
 
 **After writing any DECISION file:**
 0. Set `created_by` and seed `contributors` from current git identity (see Author Attribution section above). On a status change (`active → superseded` / `amended`), append the current identity to `contributors` of BOTH the new decision and the affected superseded decision; dedup by email.
-1. Add a one-liner per rejected alternative to `project-memory.md` → Rejected Decisions. The DECISION file has the full reasoning; the summary entry is a one-line pointer (using the full DECISION-YYYY-MM-DD-slug identifier).
-2. Add a row to `decisions/index.md` (see `templates.md`) — this is the file Claude loads at session start to surface active decisions during the Pre-Implementation Gate.
-3. If `supersedes` is set, update the superseded file: change its `status` to `superseded` and set its `superseded_by` field. Move its row in `decisions/index.md` from the **Active** section to the **Superseded** section and update the Status cell. The index has two sections; only the Active section is scanned during the Pre-Implementation Gate.
-4. **If `adr_enabled: true`** (or absent) in `.project-memory/config.yml`: create the corresponding `adr/` file — count existing `.md` files in `adr_dir` (from config, default `adr/`), assign next integer zero-padded to 4 digits, set `adr_id` in the DECISION frontmatter to that value, write `<adr_dir>/<adr_id>-<slug>.md` using the ADR file template from `templates.md`. **If `adr_enabled: false`**: skip this step; leave `adr_id: null` in the DECISION frontmatter.
-5. If `supersedes` is set AND `adr_enabled: true`: also update the superseded DECISION's `adr/` counterpart — change its Status line to `Superseded by [NNNN-slug](NNNN-slug.md)`. If `adr_enabled: false`, skip.
-6. **Implementation offer:** After completing steps 0–5, if the decision entails concrete implementation work (new feature, schema migration, deployment change, etc.), ask once: *"Does this decision need implementing? (add to roadmap / skip)"*
+1. Add a row to `decisions/index.md` (see `templates/index.md`) — this is the file Claude loads at session start to surface active decisions during the Pre-Implementation Gate.
+2. If `supersedes` is set, update the superseded file: change its `status` to `superseded` and set its `superseded_by` field. Move its row in `decisions/index.md` from the **Active** section to the **Superseded** section and update the Status cell. The index has two sections; only the Active section is scanned during the Pre-Implementation Gate.
+3. **If `adr_enabled: true`** (absent → defaults to `false` for standard profile) in `.project-memory/config.yml`: create the corresponding `adr/` file — count existing `.md` files in `adr_dir` (from config, default `adr/`), assign next integer zero-padded to 4 digits, set `adr_id` in the DECISION frontmatter to that value, write `<adr_dir>/<adr_id>-<slug>.md` using the ADR file template from `templates/index.md`. **If `adr_enabled: false`**: skip this step; leave `adr_id: null` in the DECISION frontmatter.
+4. If `supersedes` is set AND `adr_enabled: true`: also update the superseded DECISION's `adr/` counterpart — change its Status line to `Superseded by [NNNN-slug](NNNN-slug.md)`. If `adr_enabled: false`, skip.
+5. **Implementation offer:** After completing steps 0–4, if the decision entails concrete implementation work (new feature, schema migration, deployment change, etc.), ask once: *"Does this decision need implementing? (add to roadmap / skip)"*
    - `add to roadmap` → add a roadmap entry in `summaries/roadmap.md` with a pointer to this decision ID.
    - `skip` → no action.
    Skip this step entirely if: (a) the decision is purely directive/policy (no code change expected), or (b) `spawned_from_discussion` is set and the originating discussion already handled the implementation offer.

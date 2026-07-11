@@ -14,7 +14,7 @@ Discussions capture exploratory conversations between the user and the LLM that 
 - Example: `DISCUSSION-2026-06-11-discussion-feature-design.md`
 
 **Frontmatter (required):**
-See `templates.md` for the full schema. Key fields:
+See `templates/index.md` for the full schema. Key fields:
 - `id`: unique identifier
 - `status`: `open` (still active / can be resumed) or `concluded` (finished)
 - `outcome.type`: `decision`, `issue`, `roadmap`, or `none` — plus the legacy type `phase` (existing files only; see `templates/discussions.md` → Backward compatibility)
