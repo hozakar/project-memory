@@ -71,7 +71,7 @@ All findings use a single Auto-fix tier — they are either auto-fixed directly 
 | 11 (discussion expiry auto-archive) | Auto-fixed: archived to `discussions/archive/` |
 | 13 (MCP consistency, conditional) | Auto-fixed: missing notes re-indexed, orphaned records deleted from DB |
 | 14 (assignment integrity: 14a target orphan, 14b stale pending, 14c completed without evidence) | Auto-fixed: frontmatter annotated with `target_orphaned_at`, `reminded: true`, or `completed_without_evidence_at` |
-| 15 (decision supersession integrity) | Auto-fixed: dangling pointers (supersedes/superseded_by cleared), asymmetric supersession (missing superseded_by link restored), circular supersession (cycle broken), superseded-but-authority (status restored to active); pending_fix: zombie-active (status flipped to superseded, index row moved to Superseded table) |
+| 15 (decision supersession integrity) | Auto-fixed: dangling pointers (supersedes/superseded_by cleared), asymmetric supersession (missing superseded_by link restored), circular supersession (cycle broken), orphan-superseded (status restored to active); pending_fix: zombie-active (status flipped to superseded, index row moved to Superseded table) |
 
 ---
 
@@ -106,9 +106,9 @@ audit_ignore:
 
 ```
 
-**Phase-keyed `audit_ignore` entries:** Existing phase-keyed ignore entries in `.project-memory/config.yml` (e.g. Cat 10 phase-completeness or Cat 4 phase-gap entries) stay put — they only ever match frozen phase artifacts, are harmless, and act as a historical record of past audit suppressions. There is no need to remove them.
+**Phase-keyed `audit_ignore` entries:** Existing phase-keyed ignore entries in `.project-memory/config.yml` (e.g. Cat 10 phase-completeness (retired) or Cat 4 phase-gap (retired) entries) stay put — they only ever match frozen phase artifacts, are harmless, and act as a historical record of past audit suppressions. There is no need to remove them.
 
-When the user chooses "mark ignored" during interactive triage, write the entry to `config.yml` immediately before moving to the next finding.
+Manually add the ignored finding's fingerprint to `audit_ignore` in `config.yml` to suppress future occurrences.
 ---
 
 
@@ -150,30 +150,17 @@ Replace `N` with the count of auto-fixed items. Omit any bullet that has no find
 
 ---
 
-# Interactive Mode
+# Explicit (Synchronous) Audit Invocation
 
-When the skill is invoked as `Skill project-memory audit` (standard only):
+When the skill is invoked as `Skill project-memory audit` (standard only), the audit runs synchronously and returns structured results — no interactive triage flow exists:
 
-1. Run the full detection procedure for the active profile. Collect all findings. Auto-fix categories are applied silently; only interactive findings (where `interactive: true`) are presented for triage.
-2. For each interactive finding, enter interactive triage using the question shapes below. After the user responds, apply the resolution.
-3. After all interactive findings are resolved and non-interactive findings auto-fixed, re-run the full detection. If new findings appear, repeat from step 1. Loop until clean.
-4. Do NOT re-run the on-load summary loading sequence.
+1. Call `run_audit(project_memory_dir, { profile: "standard" })` (background omitted/false). The MCP server scans all 8 active categories and returns `{ auto_fixed, pending_fixes }`.
+2. If `apply_audit_fixes` is available, forward the entire `pending_fixes` array to `apply_audit_fixes(project_memory_dir, pending_fixes)`. The tool returns `{ applied, partial, failed, rerun_audit_recommended }`.
+3. If `apply_audit_fixes` is NOT available, apply each `pending_fix` manually (edit frontmatter, index rows, etc.).
+4. Re-run the full detection. If new findings appear, repeat from step 1. Loop until clean.
+5. Do NOT re-run the on-load summary loading sequence.
 
-**Question shapes per category:**
-
-**Cat 14a — Orphaned assignment target (≤3 days old, medium severity)**
-
-An assignment's `targetType`/`targetId` points to a file that does not exist. The assignment may have been superseded, completed offline, or the file may have been renamed or removed.
-
-For each such finding, raise one question:
-
-> Assignment `<id>` targets `<targetId>`, which was not found. Is this assignment still relevant?
-> * **Reassign** — update the target to an existing file.
-> * **Close** — mark as no longer needed (set `status: rejected` or `status: completed` with a note).
-> * **Convert to a note** — save the content as a NOTE record.
-> * **Mark ignored** — write to `audit_ignore` in `config.yml` and suppress future findings.
-
-When the user chooses "Mark ignored" or "mark ignored (permanent)" for any finding: write the corresponding `audit_ignore` entry to `.project-memory/config.yml` immediately, then move to the next finding.
+All findings are either auto-fixed directly (Cat 5, 11, 13, 14a/14c, 15 dangling/asymmetric/circular/orphan-superseded) or queued as deterministic `pending_fixes` (Cat 6, 8, 9, 15 zombie-active) — there are no findings requiring user triage. Suppressions via `audit_ignore` (see Permanent Skip) are configured manually in `config.yml` outside the audit flow.
 
 ---
 

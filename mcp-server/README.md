@@ -16,6 +16,7 @@ Optional MCP companion server for the [project-memory](../) skill. Provides sema
 - `rebuild_index(entries[])` — full atomic rebuild of the vector index
 - `run_audit(project_memory_dir, profile?)` — execute all 8 audit categories; returns {auto_fixed, pending_fixes}; accepts `profile` parameter (`standard` | `minimal`)
 - `apply_audit_fixes(project_memory_dir, pending_fixes[])` — deterministically execute `PendingFix` variants returned by `run_audit`; source-of-truth-safe (reads `.project-memory/` files only, no LanceDB reads, no prose synthesis); idempotent; supports `fix_decision_supersession_status` for Cat 15 zombie-active decisions; returns {applied, partial, failed, rerun_audit_recommended}
+- `find_decision_conflicts(project_memory_dir, threshold?, top_k?)` — find candidate semantically-conflicting decision pairs for manual review; accepts optional `threshold` (cosine similarity, default 0.75) and `top_k` (max pairs, default 10); excludes pairs listed in `audit_ignore`
 - `list_contributors()` — walk all project-memory records, deduplicate contributors by email, return sorted list
 
 **Version:** 0.1.2

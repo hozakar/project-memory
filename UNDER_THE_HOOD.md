@@ -192,17 +192,18 @@ at any time via `.project-memory/config.yml`.
 
 ## Drift audit
 
-I run a 7-category drift audit each session, deferred to after the first user response so it doesn't add latency to session start. One exception runs synchronously: explicit `Skill project-memory audit` invocation. With the MCP companion server, all 7 categories are fully deterministic — no LLM judgment involved. Without MCP, the same categories run via file-system detection with the same deterministic logic.
+I run an 8-category drift audit each session, deferred to after the first user response so it doesn't add latency to session start. One exception runs synchronously: explicit `Skill project-memory audit` invocation. With the MCP companion server, all 8 categories are fully deterministic — no LLM judgment involved. Without MCP, the same categories run via file-system detection with the same deterministic logic.
 
 | Category | Description | Resolution |
 |---|---|---|
 | 5 | Issue files in wrong directory | Auto-fix (file move) |
-|| 6 | Decision index drift | Auto-fix (orphan rows) + pending fixes (missing rows, status mismatches) |
-|| 8 | ADR sync drift (when ADR enabled) | Pending fixes (missing adr_id, missing ADR files) |
-| 9 | Active | Discussion index drift (low, non-interactive report) |
-| 11 | Active | Discussion expiry auto-archive |
-| 13 | DB/filesystem consistency | Auto-index missing entries |
-| 14 | Assignment orphans / stale pending | Escalate |
+| 6 | Decision index drift | Auto-fix (orphan rows) + pending fixes (missing rows, status mismatches) |
+| 8 | ADR sync drift (when ADR enabled) | Pending fixes (missing adr_id, missing ADR files) |
+| 9 | Discussion index drift (low, non-interactive report) | Low/non-interactive report |
+| 11 | Discussion expiry auto-archive | Auto-archive |
+| 13 | MCP consistency (conditional, auto-fix) | Auto-index missing entries |
+| 14 | Assignment orphans / stale pending | Auto-fix |
+| 15 | Decision supersession integrity: dangling pointers + zombie-active + asymmetric + circular + orphan-superseded | Auto-fix (pending fixes) |
 
 ---
 
@@ -218,7 +219,7 @@ and past work with high accuracy, even when keyword overlap is low.
 
 **Tools provided:**
 - `search_memory` — semantic search across all record types with filters
-- `run_audit` — all 7 audit categories in a single deterministic call
+- `run_audit` — all 8 audit categories in a single deterministic call
 - `index_decision`, `index_discussion`,
   `index_instruction`, `index_assignment`, `index_note`, `delete_note` — upsert and
   delete records in the vector index
@@ -226,6 +227,7 @@ and past work with high accuracy, even when keyword overlap is low.
 - `find_similar_commit` — squash/rebase recovery via diff-based similarity search
 - `check_consistency` and `rebuild_index` — DB/filesystem sync and full index rebuild
 - `list_contributors` — deduplicated contributor list across all record types
+- `find_decision_conflicts` — find candidate semantically-conflicting decision pairs for manual review
 
 **Stack:** LanceDB + `all-MiniLM-L6-v2` local embeddings. No API key, no external
 service. Runs locally alongside the skill.
@@ -253,7 +255,7 @@ that don't diverge across profiles stay at the root.
 
 | File | Purpose |
 |---|---|
-| `gates/` (5 files) | commit.md (significance + pre-commit), implementation.md (pre-impl gate), close.md, lifecycle.md, mcp-triggers.md (MCP index triggers) |
+| `gates.md` | Pre-Implementation Gate + turn-boundary sweep per standard/gates.md |
 | `protocol.md` | Agent thinking protocol, memory loading strategy, knowledge preservation |
 | `cheatsheet.md` | Quick reference, event-based trigger table |
 | `audit-fs.md` | Drift audit — filesystem detection path |
