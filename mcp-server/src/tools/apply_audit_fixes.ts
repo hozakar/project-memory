@@ -41,128 +41,6 @@ function readConfigField(projectMemoryDir: string, key: string): string | null {
 }
 
 // ---------------------------------------------------------------------------
-// assign_commit — append commit hash to phases/<phase_id>/phase.yml `commits:`
-// list AND mirror to phases/index.yml entry. Idempotent.
-// ---------------------------------------------------------------------------
-
-function applyAssignCommit(
-  fix: PendingFix,
-  projectMemoryDir: string,
-): AppliedFix | FailedFix {
-  const phaseId = fix.phaseId;
-  const hash = fix.commitHash;
-  if (!phaseId || !hash) {
-    return { fix_type: "assign_commit", reason: "schema_mismatch", details: "missing phaseId/commitHash" };
-  }
-  validateMemoryId(phaseId, "phaseId");
-  const phasePath = path.join(projectMemoryDir, "phases", phaseId, "phase.yml");
-  const indexPath = path.join(projectMemoryDir, "phases", "index.yml");
-  if (!fileExists(phasePath)) {
-    return { fix_type: "assign_commit", reason: "file_not_found", details: phasePath };
-  }
-
-  // 1. phase.yml — append to commits: list
-  const phaseContent = readFile(phasePath);
-  // Idempotency: a substring scan over the whole file matches prefixes of longer
-  // hashes and unrelated fields (notes, merge_commit). Scope the check to a
-  // line-anchored `- <hash>` list entry under the commits: block.
-  const phaseAlreadyHasHash = new RegExp(`^\\s+-\\s+${hash}(?![0-9a-f])`, "m").test(phaseContent);
-  if (phaseAlreadyHasHash) {
-    return {
-      fix_type: "assign_commit",
-      target_file: path.relative(path.dirname(projectMemoryDir), phasePath),
-      summary: `Commit ${hash} already in ${phaseId} (no-op)`,
-    };
-  }
-
-  // Find `commits:` line; handle `commits: []` and `commits:\n  - <hash>` forms.
-  let updated: string;
-  if (/^commits:\s*\[\]\s*$/m.test(phaseContent)) {
-    updated = phaseContent.replace(/^commits:\s*\[\]\s*$/m, `commits:\n  - ${hash}`);
-  } else if (/^commits:\s*$/m.test(phaseContent) || /^commits:\s*\n(\s+-)/m.test(phaseContent)) {
-    // Multi-line list: append after last entry. Find last `^  - <hash>` directly after `commits:`
-    const lines = phaseContent.split("\n");
-    let inCommits = false;
-    let lastIdx = -1;
-    for (let i = 0; i < lines.length; i++) {
-      if (/^commits:\s*$/.test(lines[i])) { inCommits = true; continue; }
-      if (inCommits) {
-        if (/^\s+- /.test(lines[i])) { lastIdx = i; continue; }
-        if (lines[i].trim() === "" || !/^\s/.test(lines[i])) { inCommits = false; }
-      }
-    }
-    if (lastIdx >= 0) {
-      lines.splice(lastIdx + 1, 0, `  - ${hash}`);
-      updated = lines.join("\n");
-    } else {
-      // commits: with no entries yet → append first
-      updated = phaseContent.replace(/^commits:\s*$/m, `commits:\n  - ${hash}`);
-    }
-  } else {
-    return { fix_type: "assign_commit", reason: "schema_mismatch", details: "could not locate commits: field" };
-  }
-
-  fs.writeFileSync(phasePath, updated, "utf-8");
-
-  // 2. phases/index.yml — append to the matching phase entry's commits: list
-  if (fileExists(indexPath)) {
-    const idxContent = readFile(indexPath);
-    // Per-phase-block idempotency: scope the hash check to the target phase's
-    // own block, not the whole file (the same abbreviated hash can legitimately
-    // appear in other phase blocks, and we should still write to the right one).
-    const blockRe = new RegExp(`^  - id:\\s+['"]?${phaseId}['"]?[\\s\\S]*?(?=^  - id:|\\Z)`, "m");
-    const blockMatch = idxContent.match(blockRe);
-    const alreadyInBlock = blockMatch
-      ? new RegExp(`^\\s+-\\s+${hash}(?![0-9a-f])`, "m").test(blockMatch[0])
-      : false;
-    if (!alreadyInBlock) {
-      const lines = idxContent.split("\n");
-      let inTarget = false;
-      let inCommits = false;
-      let lastIdx = -1;
-      let commitsLineIdx = -1;
-      for (let i = 0; i < lines.length; i++) {
-        const m = lines[i].match(/^\s{2}-\s+id:\s+(\S+)/);
-        if (m) {
-          inTarget = m[1].replace(/^['"]|['"]$/g, "") === phaseId;
-          inCommits = false;
-          continue;
-        }
-        if (!inTarget) continue;
-        const cm = lines[i].match(/^(\s+)commits:\s*(\[\])?\s*$/);
-        if (cm) { inCommits = true; commitsLineIdx = i; continue; }
-        if (inCommits) {
-          // A sibling key at the same indent as `commits:` (4 spaces) ends the
-          // commits block. Without this, lists under sibling keys (e.g. `tags:`)
-          // would be miscounted as commit entries and the new hash would land
-          // in the wrong list.
-          if (/^\s{4}\w/.test(lines[i])) { inCommits = false; continue; }
-          if (/^\s{6,}- /.test(lines[i])) { lastIdx = i; continue; }
-          if (!/^\s{4,}/.test(lines[i]) || lines[i].trim() === "") { inCommits = false; }
-        }
-      }
-      if (commitsLineIdx >= 0) {
-        if (lines[commitsLineIdx].includes("[]")) {
-          lines[commitsLineIdx] = lines[commitsLineIdx].replace(/\[\]/, "");
-          lines.splice(commitsLineIdx + 1, 0, `      - ${hash}`);
-        } else if (lastIdx >= 0) {
-          lines.splice(lastIdx + 1, 0, `      - ${hash}`);
-        } else {
-          lines.splice(commitsLineIdx + 1, 0, `      - ${hash}`);
-        }
-        fs.writeFileSync(indexPath, lines.join("\n"), "utf-8");
-      }
-    }
-  }
-
-  return {
-    fix_type: "assign_commit",
-    target_file: path.relative(path.dirname(projectMemoryDir), phasePath),
-    summary: `Assigned commit ${hash} to ${phaseId}`,
-  };
-}
-
-// ---------------------------------------------------------------------------
 // add_decision_index_row — prepend a row to decisions/index.md Active table.
 // Claim cell is left as TODO placeholder for LLM to fill.
 // Returns PartialFix.
@@ -710,9 +588,6 @@ export async function applyAuditFixes(
   for (const fix of pendingFixes) {
     let result: AppliedFix | PartialFix | FailedFix;
     switch (fix.type) {
-      case "assign_commit":
-        result = applyAssignCommit(fix, projectMemoryDir);
-        break;
       case "add_decision_index_row":
         result = applyAddDecisionIndexRow(fix, projectMemoryDir);
         break;
@@ -746,7 +621,7 @@ export async function applyAuditFixes(
   }
 
   // Recommend re-audit if any write happened that changes cross-file state.
-  const rerunTypes: PendingFix["type"][] = ["assign_commit", "add_decision_index_row", "fix_decision_index_status", "assign_adr_id", "add_discussion_index_row", "fix_decision_supersession_status"];
+  const rerunTypes: PendingFix["type"][] = ["add_decision_index_row", "fix_decision_index_status", "assign_adr_id", "add_discussion_index_row", "fix_decision_supersession_status"];
   const rerun_audit_recommended = applied.some(a => rerunTypes.includes(a.fix_type))
     || partial.some(p => rerunTypes.includes(p.fix_type));
 

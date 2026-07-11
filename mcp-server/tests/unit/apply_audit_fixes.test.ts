@@ -28,31 +28,6 @@ afterEach(() => {
   fs.rmSync(tmpRoot, { recursive: true, force: true });
 });
 
-describe("apply_audit_fixes — assign_commit", () => {
-  it("appends a commit to phase.yml commits: [] and index.yml", async () => {
-    w("phases/index.yml", `phases:\n  - id: phase-x\n    commits: []\n`);
-    w("phases/phase-x/phase.yml", `id: phase-x\ncommits: []\n`);
-
-    const fix: PendingFix = { type: "assign_commit", phaseId: "phase-x", commitHash: "abc1234", files: ["x.ts"] };
-    const result = await applyAuditFixes(pmDir, [fix]);
-
-    expect(result.applied).toHaveLength(1);
-    expect(r("phases/phase-x/phase.yml")).toContain("- abc1234");
-    expect(r("phases/index.yml")).toContain("- abc1234");
-  });
-
-  it("is idempotent — hash already present is a no-op", async () => {
-    w("phases/index.yml", `phases:\n  - id: phase-x\n    commits:\n      - abc1234\n`);
-    w("phases/phase-x/phase.yml", `id: phase-x\ncommits:\n  - abc1234\n`);
-
-    const fix: PendingFix = { type: "assign_commit", phaseId: "phase-x", commitHash: "abc1234", files: [] };
-    const result = await applyAuditFixes(pmDir, [fix]);
-
-    expect(result.applied[0].summary).toMatch(/already in/);
-    expect(r("phases/phase-x/phase.yml").match(/abc1234/g)?.length).toBe(1);
-  });
-});
-
 describe("apply_audit_fixes — add_decision_index_row", () => {
   it("prepends a row with TODO claim placeholder and returns partial", async () => {
     w("decisions/DECISION-2026-06-17-foo.md", `---\nid: DECISION-2026-06-17-foo\nstatus: active\nprimary_scope: workflow\napplies_globally: false\n---\n# Foo\n`);
@@ -219,55 +194,6 @@ describe("apply_audit_fixes — create_adr_file", () => {
 });
 
 describe("apply_audit_fixes — regression guards from review", () => {
-  it("assign_commit: hash appearing in unrelated field (notes) is not mistaken for already-present", async () => {
-    w("phases/index.yml", `phases:\n  - id: phase-x\n    commits: []\n`);
-    w("phases/phase-x/phase.yml", `id: phase-x\nnotes: "see abc1234 for context"\ncommits: []\n`);
-    const fix: PendingFix = { type: "assign_commit", phaseId: "phase-x", commitHash: "abc1234", files: [] };
-    const result = await applyAuditFixes(pmDir, [fix]);
-    expect(result.applied[0].summary).toMatch(/^Assigned/);
-    expect(r("phases/phase-x/phase.yml")).toMatch(/commits:\s*\n\s+- abc1234/);
-  });
-
-  it("assign_commit index.yml: new hash lands under commits:, not under sibling tags: list", async () => {
-    w("phases/index.yml",
-      `phases:\n` +
-      `  - id: phase-x\n` +
-      `    commits:\n` +
-      `      - oldhash1\n` +
-      `    tags:\n` +
-      `      - foo\n` +
-      `      - bar\n` +
-      `    summary: x\n`,
-    );
-    w("phases/phase-x/phase.yml", `id: phase-x\ncommits:\n  - oldhash1\n`);
-    const fix: PendingFix = { type: "assign_commit", phaseId: "phase-x", commitHash: "newhash9", files: [] };
-    await applyAuditFixes(pmDir, [fix]);
-    const idx = r("phases/index.yml");
-    // newhash9 must appear under commits:, BEFORE tags: line
-    const newhashLineIdx = idx.indexOf("- newhash9");
-    const tagsLineIdx = idx.indexOf("tags:");
-    expect(newhashLineIdx).toBeGreaterThan(-1);
-    expect(tagsLineIdx).toBeGreaterThan(-1);
-    expect(newhashLineIdx).toBeLessThan(tagsLineIdx);
-  });
-
-  it("assign_commit index.yml: writes to the correct phase block when multiple phases exist with same-prefix hashes", async () => {
-    w("phases/index.yml",
-      `phases:\n` +
-      `  - id: phase-a\n` +
-      `    commits:\n` +
-      `      - sharedhash\n` +
-      `  - id: phase-b\n` +
-      `    commits: []\n`,
-    );
-    w("phases/phase-b/phase.yml", `id: phase-b\ncommits: []\n`);
-    // phase-a already has `sharedhash`. We want to assign `sharedhash` to phase-b.
-    // The block-scoped idempotency must allow this (different phase blocks).
-    const fix: PendingFix = { type: "assign_commit", phaseId: "phase-b", commitHash: "sharedhash", files: [] };
-    await applyAuditFixes(pmDir, [fix]);
-    expect(r("phases/index.yml").match(/- sharedhash/g)?.length).toBe(2);
-  });
-
   it("assign_adr_id: works on CRLF frontmatter (Windows line endings)", async () => {
     w("decisions/DECISION-2026-06-17-foo.md", `---\r\nid: DECISION-2026-06-17-foo\r\nstatus: active\r\n---\r\n# Body\r\n`);
     const fix: PendingFix = { type: "assign_adr_id", decisionId: "DECISION-2026-06-17-foo", adrId: "7" };
@@ -278,17 +204,6 @@ describe("apply_audit_fixes — regression guards from review", () => {
     // Insertion must be INSIDE the frontmatter block (before closing ---)
     const closingIdx = content.indexOf("---", content.indexOf("---") + 3);
     expect(content.indexOf("adr_id: 7")).toBeLessThan(closingIdx);
-  });
-
-  it("two consecutive calls with the same payload — true idempotency", async () => {
-    w("phases/index.yml", `phases:\n  - id: phase-x\n    commits: []\n`);
-    w("phases/phase-x/phase.yml", `id: phase-x\ncommits: []\n`);
-    const fix: PendingFix = { type: "assign_commit", phaseId: "phase-x", commitHash: "abc1234", files: [] };
-    await applyAuditFixes(pmDir, [fix]);
-    const afterFirst = r("phases/phase-x/phase.yml");
-    const second = await applyAuditFixes(pmDir, [fix]);
-    expect(second.applied[0].summary).toMatch(/already in/);
-    expect(r("phases/phase-x/phase.yml")).toBe(afterFirst);
   });
 });
 
@@ -306,7 +221,7 @@ outcome:
     w("discussions/index.md", `# Discussions
 
 | Date | ID | Status | Outcome | Tags | Summary |
-|---|---|---|---|---|---|
+|---|---|---|---|---|---|---|
 | 2026-07-07 | DISCUSSION-2026-07-07-prev | open | none | - | earlier |
 `);
 
@@ -327,7 +242,7 @@ status: open
 # Body
 `);
     w("discussions/index.md", `| Date | ID | Status | Outcome | Tags | Summary |
-|---|---|---|---|---|---|
+|---|---|---|---|---|---|---|
 | 2026-07-08 | DISCUSSION-2026-07-08-test | open | none | - | existing |
 `);
     const fix: PendingFix = { type: "add_discussion_index_row", discussionId: "DISCUSSION-2026-07-08-test", status: "open", date: "2026-07-08" };
@@ -345,7 +260,7 @@ outcome: DECISION-2026-07-08-something
 # Foo
 `);
     w("discussions/index.md", `| Date | ID | Status | Outcome | Tags | Summary |
-|---|---|---|---|---|---|
+|---|---|---|---|---|---|---|
 `);
     const fix: PendingFix = { type: "add_discussion_index_row", discussionId: "DISCUSSION-2026-07-08-foo", status: "concluded", date: "2026-07-08" };
     const result = await applyAuditFixes(pmDir, [fix]);
@@ -357,7 +272,7 @@ outcome: DECISION-2026-07-08-something
 describe("apply_audit_fixes — fix_discussion_index_status", () => {
   it("flips the Status cell of an existing row", async () => {
     w("discussions/index.md", `| Date | ID | Status | Outcome | Tags | Summary |
-|---|---|---|---|---|---|
+|---|---|---|---|---|---|---|
 | 2026-07-08 | DISCUSSION-2026-07-08-test | open | none | - | summary |
 `);
     const fix: PendingFix = { type: "fix_discussion_index_status", discussionId: "DISCUSSION-2026-07-08-test", correctStatus: "concluded" };
@@ -368,7 +283,7 @@ describe("apply_audit_fixes — fix_discussion_index_status", () => {
 
   it("is no-op when status already correct", async () => {
     w("discussions/index.md", `| Date | ID | Status | Outcome | Tags | Summary |
-|---|---|---|---|---|---|
+|---|---|---|---|---|---|---|
 | 2026-07-08 | DISCUSSION-2026-07-08-test | concluded | none | - | summary |
 `);
     const fix: PendingFix = { type: "fix_discussion_index_status", discussionId: "DISCUSSION-2026-07-08-test", correctStatus: "concluded" };
@@ -380,7 +295,7 @@ describe("apply_audit_fixes — fix_discussion_index_status", () => {
     w("discussions/index.md", `## Discussions   
 
 | Date | ID | Status | Outcome | Tags | Summary |
-|---|---|---|---|---|---|
+|---|---|---|---|---|---|---|
 | 2026-07-08 | DISCUSSION-2026-07-08-test | open | none | - | s |
 `);
     const fix: PendingFix = { type: "fix_discussion_index_status", discussionId: "DISCUSSION-2026-07-08-test", correctStatus: "concluded" };
@@ -401,11 +316,6 @@ describe("apply_audit_fixes — batch + flags", () => {
 });
 
 describe("apply_audit_fixes — path traversal hardening", () => {
-  it("assign_commit: rejects phaseId with traversal sequence", async () => {
-    const fix: PendingFix = { type: "assign_commit", phaseId: "../../etc/passwd", commitHash: "abc1234", files: [] };
-    await expect(applyAuditFixes(pmDir, [fix])).rejects.toThrow("Invalid memory ID");
-  });
-
   it("add_decision_index_row: rejects decisionId with traversal sequence", async () => {
     const fix: PendingFix = { type: "add_decision_index_row", decisionId: "../../etc/passwd", status: "active", touches: [], date: "2026-06-17" };
     await expect(applyAuditFixes(pmDir, [fix])).rejects.toThrow("Invalid memory ID");
@@ -425,12 +335,5 @@ describe("apply_audit_fixes — path traversal hardening", () => {
   it("fix_decision_index_status: rejects decisionId with traversal sequence", async () => {
     const fix: PendingFix = { type: "fix_decision_index_status", decisionId: "../../etc/passwd", correctStatus: "active" };
     await expect(applyAuditFixes(pmDir, [fix])).rejects.toThrow("Invalid memory ID");
-  });
-
-  it("assign_commit: accepts a plain slug phaseId without throwing", async () => {
-    w("phases/index.yml", `phases:\n  - id: phase-x\n    commits: []\n`);
-    w("phases/phase-x/phase.yml", `id: phase-x\ncommits: []\n`);
-    const fix: PendingFix = { type: "assign_commit", phaseId: "phase-x", commitHash: "abc1234", files: [] };
-    await expect(applyAuditFixes(pmDir, [fix])).resolves.not.toThrow();
   });
 });
