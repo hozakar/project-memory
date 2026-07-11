@@ -170,9 +170,10 @@ the MCP server automatically.
 ## Verify
 
 You should see these tools available: `search_memory`, `index_decision`,
-`index_discussion`, `index_era`, `index_instruction`, `index_assignment`,
+`index_discussion`, `index_instruction`, `index_assignment`,
 `index_note`, `delete_note`, `find_similar_commit`, `check_consistency`,
-`rebuild_index`, `run_audit`, `apply_audit_fixes`, `list_contributors`.
+`rebuild_index`, `run_audit`, `apply_audit_fixes`, `find_decision_conflicts`,
+`list_contributors`.
 
 Legacy phase rows remain searchable via `search_memory`.
 

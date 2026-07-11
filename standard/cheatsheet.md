@@ -60,7 +60,7 @@ One judgment per turn, not N per commit. Decision-moment awareness (DECISION-202
 | Turn with a commit | Turn-boundary sweep: update `summaries/current-state.md` (once, covering the turn's commits); also update `summaries/roadmap.md` on scope change. |
 | User asks about past decisions/discussions (MCP available) | `search_memory` per `mcp-integration.md`. Pass `include_superseded: true` only when explicitly researching past/superseded decisions. |
 | Drift audit (post-first-response) — `run_audit` available | Default: deferred. Call `run_audit(project_memory_dir, { profile: "standard" })`. Apply pending_fixes via apply_audit_fixes. |
-| Drift audit (post-first-response) — `run_audit` NOT available | Default: deferred. Run file-based detection (7 active categories). |
+| Drift audit (post-first-response) — `run_audit` NOT available | Default: deferred. Run file-based detection (8 active categories). |
 | User mentions lost commits after squash/rebase | `find_similar_commit` per `mcp-integration.md`. |
 | User triggers manual audit (`Skill project-memory audit`) + MCP available | After structural categories clean: offer semantic conflict scan via `find_decision_conflicts` per `audit.md` → Semantic Conflict Scan. |
 | Assignment created / status changed | Update `assignments/index.yml`, re-call `index_assignment` if MCP. |

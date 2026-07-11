@@ -22,7 +22,7 @@ overhead I introduce automatically. Choose at first run; switch at any time.
 | | `standard` | `minimal` |
 |---|---|---|
 | Pre-Impl Gate | Steps 0–3 (GATE 0 + Steps 1–3) | Step 0 only |
-| Drift audit | 7 categories | none |
+| Drift audit | 8 categories | none |
 | Summaries | `roadmap.md` + `current-state.md` | inline in `MEMORY.md` |
 | Author attribution | `created_by` only | none |
 | Topic-shift detection | off | n/a |
