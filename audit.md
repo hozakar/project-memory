@@ -1,6 +1,6 @@
 ---
 name: project-memory-audit
-description: Drift audit dispatcher for project-memory. Routes by active profile and MCP availability. Contains shared sections — severity model, permanent skip, era auto-clean, output format, and interactive mode — used by both MCP and FS paths.
+description: Drift audit dispatcher for project-memory. Routes by active profile and MCP availability. Contains shared sections — severity model, permanent skip, output format, and interactive mode — used by both MCP and FS paths.
 ---
 
 # When To Run
@@ -54,7 +54,7 @@ The LLM answers the user's first message first; the drift audit (active categori
 
 **Semantic Conflict Scan (`semantic-conflict-scan`)** is an optional final stage of the interactive (manual) audit, gated by: user-triggered audit + MCP available + profile=standard + at least one non-superseded active decision. It narrows candidate pairs via the `find_decision_conflicts` MCP tool (pairwise embedding similarity → top-K), then the LLM evaluates each pair with an ambiguity-test self-prompt (yes/no only). Up to 2 findings are escalated to the user (plus 1 user-initiated). Resolution: user answers → new superseding DECISION (`provenance: directive`); user dismisses → permanent `audit-ignore` entry (`decision-contradiction:<ID1>:<ID2>`). See `DECISION-2026-06-17-semantic-conflict-scan` for full spec.
 
-The shared sections below (Severity, Permanent Skip, Era Auto-Clean, Output Format, Interactive Mode) apply to both paths and both profiles.
+The shared sections below (Severity, Permanent Skip, Output Format, Interactive Mode) apply to both paths and both profiles.
 
 ---
 
@@ -109,25 +109,9 @@ audit_ignore:
 **Phase-keyed `audit_ignore` entries:** Existing phase-keyed ignore entries in `.project-memory/config.yml` (e.g. Cat 10 phase-completeness or Cat 4 phase-gap entries) stay put — they only ever match frozen phase artifacts, are harmless, and act as a historical record of past audit suppressions. There is no need to remove them.
 
 When the user chooses "mark ignored" during interactive triage, write the entry to `config.yml` immediately before moving to the next finding.
-
 ---
 
-# Era-Based Auto-Clean
 
-When an era (`era-NNN.md`) is created or updated in `.project-memory/eras/`:
-
-1. Read the new or updated era file's frontmatter `records:` list and `date_range:` field — these define the scope of records (DECISION-* / DISCUSSION-* docs) covered by this era.
-2. Open `.project-memory/config.yml` and read the `audit_ignore` list (if absent, nothing to clean — skip).
-3. For each `audit_ignore` entry, check whether its `key` references any record ID in the era's `records` list. A reference is any match where the record ID appears as a segment in the key (between `:` delimiters or as the full key for single-segment keys).
-4. Remove any entry that matches — the record is now archived in an era, so suppressing its findings is no longer needed.
-5. If entries were removed, log: `Era auto-clean: removed N audit_ignore entry/entries for archived record(s) in era-XXX` (with `date_range: YYYY-MM-DD to YYYY-MM-DD` appended).
-6. This cleanup runs automatically when the era is created/updated. Do NOT prompt the user — it is a maintenance operation.
-
-> **Backward compatibility:** Legacy era files using a `phases:` field (instead of `records:` + `date_range:`) are treated as historical records. Their `phases` list is not auto-cleaned by this procedure — the phase-keyed ignore entries they reference are left in place as a historical record of past suppressions.
-
-**MCP note:** When Cat 13 (MCP consistency) detects a new `era-` entry during `check_consistency` and indexes it, the auto-clean does NOT re-trigger. Auto-clean fires only on explicit era file creation/update, not on DB sync.
-
----
 
 # Output Format
 

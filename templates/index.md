@@ -15,7 +15,7 @@ This file is a dispatcher. Record templates and attribution schemas are shared a
 | **Assignment** | `templates/assignments.md` | `ASSIGNMENT-*.md`, `assignments/index.yml` |
 | **Note** | `templates/notes.md` | `NOTE-*.md` — personal, deletable, user-scoped |
 | **Author Attribution** | `templates/attribution.md` | `created_by` + `contributors` schema (standard omits `contributors`; minimal omits both) |
-| **Config** | `<profile>/templates-config.md` | `.project-memory/config.yml`, `maintainers.md`, summary scaffolding |
+| **Config** | `<profile>/templates-config.md` | `.project-memory/config.yml`, summary scaffolding |
 | **Summaries** | `<profile>/templates-config.md` | standard: roadmap + current-state; minimal: inline `MEMORY.md` sections |
 
 `<profile>` is `standard`. Config templates live under `<profile>/`. For `minimal`, all template needs are covered by `minimal/minimal.md`.
@@ -30,7 +30,7 @@ Creating a discussion?      → read templates/discussions.md (DISCUSSION + disc
 Creating an instruction?    → read templates/instructions.md
 Creating an assignment?     → read templates/assignments.md (ASSIGNMENT + assignments/index.yml)
 Creating a note?            → read templates/notes.md
-Setting up config?          → read <profile>/templates-config.md (config.yml + maintainers.md)
+Setting up config?          → read <profile>/templates-config.md
 Writing summaries?          → read <profile>/templates-config.md
 Need attribution fields?    → read templates/attribution.md (note profile-specific scope)
 ```

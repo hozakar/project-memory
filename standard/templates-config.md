@@ -37,19 +37,6 @@ audit_ignore: []      # permanent skip entries (see audit.md → Permanent Skip)
 
 ---
 
-## maintainers.md
-
-Orthogonal to profile. Identical to legacy full:
-
-```yaml
-maintainers:
-  - email: "first-maintainer@example.com"
-```
-
-Standard projects rarely need a maintainer role (era creation prompts are the only thing it gates). If `maintainers.md` is absent, no era prompts fire — the maintainer role is fully opt-in.
-
----
-
 # Summary Templates (standard)
 
 Standard scaffolds **2 summary files** in `.project-memory/summaries/`:

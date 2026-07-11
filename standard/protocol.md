@@ -53,7 +53,7 @@ The session-start work happens in this order. Each step may be a no-op depending
    - **MCP available:** CALL `search_memory(type_filter="instruction", created_by_email="<run: git config user.email>")`. Each result carries a `body` field prefixed with `THIS IS A NON-NEGOTIABLE BINDING USER INSTRUCTION:`. Output every returned `body` verbatim — this is the binding content. Warn if ≥ 5 active instructions.
    - **MCP unavailable:** SCAN `.project-memory/instructions/` for `INSTRUCTION-*.md` files, filter by `created_by.email`, read the full `# Prompt` section from each.
 
-   **Self-check:** If you have NOT executed a `search_memory` call with `type_filter="instruction"` or scanned the instructions directory, you have NOT completed this step. Do it NOW — before the header emission (step 7).
+    **Self-check:** If you have NOT executed a `search_memory` call with `type_filter="instruction"` or scanned the instructions directory, you have NOT completed this step. Do it NOW — before the header emission (step 6).
 
    **Standard scope:** Re-injects at Pre-Impl Gate (`standard/gates.md` GATE 0), turn-boundary sweep, and Discussion trigger. The session-start load gives you the body once; gates re-assert before significant operations.
 5. **Assignment load** — load pending/ongoing/rejected assignments for the current user:
@@ -61,9 +61,8 @@ The session-start work happens in this order. Each step may be a no-op depending
    - Rejected: `search_memory(type_filter="assignment", assigned_by_email="<run: git config user.email>")`
    - Emit passive single-line summaries per `conventions/records.md` (Assignment lifecycle — Session-start UX).
    - MCP unavailable fallback: scan `.project-memory/assignments/` ASSIGNMENT-*.md files, filter by frontmatter email fields.
-6. **Era prompt** — same as full (orthogonal, maintainer-only).
-7. **Header emission** — output `🧠 PROJECT MEMORY LOADED` (memory loaded indicator only).
-8. **Post-First-Response Drift Audit** — deferred to after the LLM answers the user's first message. Run the drift audit (standard category set) via `audit.md` (MCP fast path if available, otherwise file-based detection from `standard/audit-fs.md`). Emit the drift report as a follow-up block. Exceptions (audit runs synchronously): (a) explicit `Skill project-memory audit` or natural-language trigger per `DECISION-2026-06-17-audit-implicit-triggers`; (b) first user message is itself an audit trigger — run synchronously; (c) `minimal` profile — no audit, no deferral.
+6. **Header emission** — output `🧠 PROJECT MEMORY LOADED` (memory loaded indicator only).
+7. **Post-First-Response Drift Audit** — deferred to after the LLM answers the user's first message. Run the drift audit (standard category set) via `audit.md` (MCP fast path if available, otherwise file-based detection from `standard/audit-fs.md`). Emit the drift report as a follow-up block. Exceptions (audit runs synchronously): (a) explicit `Skill project-memory audit` or natural-language trigger per `DECISION-2026-06-17-audit-implicit-triggers`; (b) first user message is itself an audit trigger — run synchronously; (c) `minimal` profile — no audit, no deferral.
 
 ---
 
@@ -105,7 +104,7 @@ The session-start work happens in this order. Each step may be a no-op depending
 |---|---|---|
 | Tier 3 contradiction detection | ≥ 30 days since closure | Offer the user an override path on old decisions |
 
-Standard does NOT use the era-back threshold (eras are an orthogonal maintainer feature). Discussion expiry is handled by Cat 11 audit (auto-archive of DISCUSSION files with `outcome: none` older than 30 days into `discussions/archive/`).
+Standard does NOT use an era-based staleness threshold. Discussion expiry is handled by Cat 11 audit (auto-archive of DISCUSSION files with `outcome: none` older than 30 days into `discussions/archive/`).
 
 ---
 
@@ -136,7 +135,6 @@ See `mcp-integration.md` for the full tool catalog. MCP behavior in standard is 
 - **Assignment search:** same (orthogonal feature).
 - **Squash/rebase recovery:** same (`find_similar_commit`).
 - **Drift audit via MCP:** same — `run_audit` if available. The standard category set is enforced by `standard/audit-mcp.md` (Cat 9, 11 included — discussion index drift and expiry).
-- **Era creation prompt:** same (maintainer-only, orthogonal).
 
 When MCP is unavailable: identical behavior using the file-based fallbacks. MCP is an accelerator, never a requirement.
 

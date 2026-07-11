@@ -1,7 +1,7 @@
 import { embed } from "../embedder";
 import { atomicRebuild } from "../db";
-import { buildDecisionText, buildDiscussionText, buildCommitText, buildEraText, buildInstructionText, buildAssignmentText, buildNoteText, deriveOutcomeType } from "../utils";
-import type { IndexEntry, LanceRecord, CommitDiff, PhaseIndexData, DecisionIndexData, DiscussionIndexData, EraIndexData, InstructionIndexData, AssignmentIndexData, NoteIndexData, Identity } from "../types";
+import { buildDecisionText, buildDiscussionText, buildCommitText, buildInstructionText, buildAssignmentText, buildNoteText, deriveOutcomeType } from "../utils";
+import type { IndexEntry, LanceRecord, CommitDiff, PhaseIndexData, DecisionIndexData, DiscussionIndexData, InstructionIndexData, AssignmentIndexData, NoteIndexData, Identity } from "../types";
 
 const UNKNOWN_IDENTITY: Identity = { name: "unknown", email: "unknown" };
 
@@ -35,8 +35,8 @@ export async function rebuildIndex(entries: IndexEntry[]): Promise<{ indexed: nu
         createdBy = d.createdBy ?? UNKNOWN_IDENTITY;
         contributors = d.contributors ?? [];
       } else if (entry.type === "era") {
-        text = buildEraText(entry.data as EraIndexData);
-        // Eras are out of scope for author attribution
+        // era: legacy type — no build handler (era concept dropped 2026-07-11). Historical era rows remain in DB but are not rebuilt.
+        continue;
       } else if (entry.type === "instruction") {
         const d = entry.data as InstructionIndexData;
         text = buildInstructionText(d);
@@ -64,7 +64,7 @@ export async function rebuildIndex(entries: IndexEntry[]): Promise<{ indexed: nu
       }
 
       const vector = await embed(text);
-      const title = entry.type === "instruction" ? entry.data.id : (entry.data as PhaseIndexData | DecisionIndexData | DiscussionIndexData | EraIndexData | NoteIndexData).title;
+      const title = entry.type === "instruction" ? entry.data.id : (entry.data as PhaseIndexData | DecisionIndexData | DiscussionIndexData | NoteIndexData).title;
       const record: LanceRecord = {
         id: entry.data.id,
         type: entry.type,

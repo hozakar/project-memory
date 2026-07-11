@@ -27,7 +27,7 @@ overhead I introduce automatically. Choose at first run; switch at any time.
 | Author attribution | `created_by` only | none |
 | Topic-shift detection | off | n/a |
 
-Features you trigger explicitly — discussions, issues, assignments, instructions, eras,
+Features you trigger explicitly — discussions, issues, assignments, instructions,
 ADR, MCP — are available in all profiles regardless of which you choose.
 
 ---
@@ -39,7 +39,7 @@ ADR, MCP — are available in all profiles regardless of which you choose.
 > looks wrong, just tell me; I can fix it.
 
 **Standard profile** uses a `.project-memory/` directory (scaffolds a
-leaner tree at init — no `discussions/`, `issues/`, `assignments/`, `eras/`, or
+leaner tree at init — no `discussions/`, `issues/`, `assignments/`, or
 `instructions/` until you use those features for the first time):
 
 ```
@@ -50,9 +50,6 @@ leaner tree at init — no `discussions/`, `issues/`, `assignments/`, `eras/`, o
 ├── discussions/
 │   ├── index.md
 │   └── DISCUSSION-YYYY-MM-DD-slug.md
-├── eras/
-│   ├── index.yml
-│   └── era-NNN.md
 ├── instructions/
 │   └── INSTRUCTION-YYYY-MM-DD-slug.md
 ├── assignments/
@@ -103,8 +100,8 @@ active decisions before any work starts. The gate has 4 steps (GATE 0 + Steps 1�
 In `minimal`, only Step 0 (instruction re-injection) runs.
 
 There is no phase concept. Work continuity across sessions is provided by
-`current-state.md` (what exists now), `roadmap.md` (what's next), and era
-narratives (long-term retrospectives). If a named unit of work is useful for
+`current-state.md` (what exists now) and `roadmap.md` (what's next).
+If a named unit of work is useful for
 your team, capture it as a DECISION or DISCUSSION — that's what they're for.
 
 ---
@@ -168,13 +165,6 @@ feature; for day-to-day task management, use your existing tools.
 
 ---
 
-## Eras
-
-Over time, I periodically write an `era-NNN.md` narrative summarizing
-that period's work. Eras provide long-term continuity — when a project has months
-of work recorded, era summaries let me load a compressed view of history rather than
-scanning everything. Era creation is gated to maintainers.
-
 ---
 
 ## Author attribution
@@ -188,14 +178,6 @@ In all cases I capture git identity at write time and soft-fail to an `unknown`
 sentinel if identity cannot be determined — no escalation, no blocked workflow.
 
 ---
-
-## Maintainer role
-
-A lightweight two-role system controls who receives era creation prompts.
-**Maintainers** are listed in `.project-memory/maintainers.md` by email; they
-get prompted when ~6 weeks or ~30 significant commits have accumulated since the
-last era. **Developers** work identically — they just don't see era maintenance
-prompts.
 
 ---
 
@@ -237,7 +219,7 @@ and past work with high accuracy, even when keyword overlap is low.
 **Tools provided:**
 - `search_memory` — semantic search across all record types with filters
 - `run_audit` — all 7 audit categories in a single deterministic call
-- `index_decision`, `index_discussion`, `index_era`,
+- `index_decision`, `index_discussion`,
   `index_instruction`, `index_assignment`, `index_note`, `delete_note` — upsert and
   delete records in the vector index
 - `apply_audit_fixes` — deterministic execution of all `PendingFix` variants from `run_audit`; source-of-truth-safe, idempotent, prose cells left as `<!-- TODO -->` markers
@@ -291,7 +273,7 @@ that don't diverge across profiles stay at the root.
 | `conventions/decisions.md` | Decision lifecycle, ADR steps, touches guidance |
 | `conventions/discussions.md` | Discussion lifecycle, relevancy scoring, expiry |
 | `conventions/records.md` | Issue, instruction, assignment lifecycles |
-| `conventions/maintainer.md` | Language policy, author attribution rules, maintainer role |
+| `conventions/maintainer.md` | Language policy, author attribution rules |
 | `templates/decisions.md` | DECISION + ADR + decisions/index.md templates |
 | `templates/discussions.md` | DISCUSSION + discussions/index.md templates |
 | `templates/instructions.md` | INSTRUCTION template |

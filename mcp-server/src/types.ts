@@ -48,15 +48,6 @@ export interface DiscussionIndexData {
   contributors?: Identity[];
 }
 
-export interface EraIndexData {
-  id: string;              // e.g. "era-001"
-  title: string;
-  records: string[];       // primary record IDs (DECISION/DISCUSSION) covered
-  phases?: string[];       // legacy: frozen historical eras use phases instead of records
-  date_range: string;       // e.g. "2026-06-08 to 2026-06-11"
-  narrative: string;       // full body text, up to 3000 chars
-}
-
 export interface InstructionIndexData {
   id: string;              // e.g. "INSTRUCTION-2026-06-13-branch-per-phase"
   prompt: string;          // the instruction prompt text
@@ -129,7 +120,7 @@ export interface ConsistencyReport {
 
 export interface IndexEntry {
   type: "phase" | "decision" | "discussion" | "era" | "instruction" | "assignment" | "note";
-  data: PhaseIndexData | DecisionIndexData | DiscussionIndexData | EraIndexData | InstructionIndexData | AssignmentIndexData | NoteIndexData;
+  data: PhaseIndexData | DecisionIndexData | DiscussionIndexData | InstructionIndexData | AssignmentIndexData | NoteIndexData;
 }
 
 // removed: 'create_phase_stub' from PendingFix.type in 2026-07-06 phase-removal

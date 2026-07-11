@@ -6,7 +6,6 @@ import { indexDiscussion } from "./tools/index_discussion";
 import { checkConsistency } from "./tools/check_consistency";
 import { rebuildIndex } from "./tools/rebuild_index";
 import { findSimilarCommit } from "./tools/find_similar_commit";
-import { indexEra } from "./tools/index_era";
 import { indexInstruction } from "./tools/index_instruction";
 import { indexAssignment } from "./tools/index_assignment";
 import { indexNote } from "./tools/index_note";
@@ -27,7 +26,7 @@ const srv = server as any;
 
 srv.tool(
   "search_memory",
-  "Semantic search over indexed project memory (phases, decisions, discussions, eras, instructions, notes). Returns top-K results sorted by similarity. Use at Pre-Implementation Gate and when user asks about past work.",
+  "Semantic search over indexed project memory (decisions, discussions, instructions, notes, assignments). Returns top-K results sorted by similarity. Use at Pre-Implementation Gate and when user asks about past work.",
   {
     query: z.string().describe("Natural language search query"),
     top_k: z.number().int().min(1).max(20).optional().default(8).describe("Number of results"),
@@ -36,7 +35,7 @@ srv.tool(
     created_by_name: z.string().optional().describe("Filter results to a specific creator name (partial match via LIKE %...%). Default: no filter."),
     assigned_to_email: z.string().optional(),
     assigned_by_email: z.string().optional(),
-    type_filter: z.string().optional().describe("Filter results to a specific type (phase, decision, discussion, era, instruction, note, assignment). Default: no filter. When type is 'note', created_by_email is auto-applied if not provided — users can only search their own notes."),
+    type_filter: z.string().optional().describe("Filter results to a specific type (decision, discussion, instruction, note, assignment). Default: no filter. When type is 'note', created_by_email is auto-applied if not provided — users can only search their own notes."),
     touches_filter: z.array(z.string()).optional().describe("Exact AND-filter on decision touches field. E.g. [\"conventions_md\"] returns only decisions that touch conventions_md. Multiple values narrow further (AND semantics). Only effective on type=decision records."),
     tags_filter: z.array(z.string()).optional().describe("Exact AND-filter on phase/discussion tags field. E.g. [\"mcp\", \"schema\"] returns records tagged with both. Only effective on type=phase and type=discussion records."),
     scope_filter: z.array(z.string()).optional().describe("Exact OR-filter on decision primary_scope field. E.g. [\"constraint\"] returns only decisions with primary_scope=constraint. Multiple values broaden (OR semantics). Only effective on type=decision records."),
@@ -212,7 +211,7 @@ srv.tool(
 
 srv.tool(
   "check_consistency",
-  "Compare vector DB index against .project-memory/ filesystem. Returns missing IDs (file exists, not in DB) and orphaned IDs (in DB, file gone). Covers phases, decisions, discussions, eras, instructions, and notes.",
+  "Compare vector DB index against .project-memory/ filesystem. Returns missing IDs (file exists, not in DB) and orphaned IDs (in DB, file gone). Covers decisions, discussions, instructions, and notes.",
   {
     project_memory_dir: z.string().describe("Absolute path to the .project-memory/ directory"),
   },
@@ -286,24 +285,6 @@ srv.tool(
   async (args: any) => {
     const fixes = args.pending_fixes as PendingFix[];
     const result = await applyAuditFixesLocked(args.project_memory_dir, fixes);
-    return { content: [{ type: "text" as const, text: JSON.stringify(result) }] };
-  }
-);
-
-srv.tool(
-  "index_era",
-  "Index or update an era summary in the vector DB. Call when a new era-NNN.md is written. New eras pass `records` (list of DECISION/DISCUSSION IDs) + `date_range`; legacy eras may pass `phases` for backward-compat re-indexing. Upsert by ID.",
-  {
-    id: z.string().regex(/^era-[0-9]{3,}$/).describe("Era ID, e.g. era-001"),
-    title: z.string(),
-    records: z.array(z.string()).optional().default([]).describe("Primary record IDs (DECISION/DISCUSSION) covered by this era. Omit (or pass []) for legacy eras that use phases instead."),
-    phases: z.array(z.string()).optional().describe("Legacy: frozen historical era phase IDs for backward-compat re-indexing"),
-    date_range: z.string(),
-    narrative: z.string(),
-  },
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  async (args: any) => {
-    const result = await indexEra(args);
     return { content: [{ type: "text" as const, text: JSON.stringify(result) }] };
   }
 );

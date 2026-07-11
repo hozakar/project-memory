@@ -23,8 +23,6 @@ Read only when the user picked `standard` in the SKILL.md init UX. Create this d
 - `instructions/` — created on first user instruction.
 - `notes/` — created on first note.
 - `assignments/` — created on first assignment.
-- `eras/` — created on first era (maintainer-only, rare).
-- `maintainers.md` — optional; create only if the user opts into the maintainer role.
 
 This keeps a fresh project visually clean — empty dirs aren't created speculatively.
 

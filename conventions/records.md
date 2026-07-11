@@ -146,7 +146,7 @@ Completed assignments are shown ONCE (not persistent). Options:
 - At least one evidence field required: `completion_note`, `completed_decision_id`, or `completed_discussion_id`
 
 **Permission model:**
-Open — anyone can assign to anyone. Maintainer role is not extended (scope remains era creation gating). Rejection mechanism is the safety net against misuse.
+Open — anyone can assign to anyone. Rejection mechanism is the safety net against misuse.
 
 **Expiry:**
 No automatic expiry. Assignments persist until explicitly resolved (completed or rejected + resolved by assigner). Cat 14b (stale pending >30d) serves as the backstop for abandoned assignments.

@@ -72,7 +72,7 @@ When the user says "switch project-memory to <standard|minimal>" or similar phra
 
 This skill supports two profiles (`standard`, `minimal`). Profiles gate ceremony-bearing features (gate steps, audit categories, summaries, attribution depth, instruction re-injection scope, decisions storage shape).
 
-User-triggered features (discussions, issues, assignments, instructions, notes creation, eras, maintainer role, ADR mirror, MCP companion) are **NOT** tier-bound — they remain opt-in regardless of profile.
+User-triggered features (discussions, issues, assignments, instructions, notes creation, ADR mirror, MCP companion) are **NOT** tier-bound — they remain opt-in regardless of profile.
 
 **Backward compatibility:** Legacy config.yml files with `profile: full` or `profile: lite` are treated as `profile: standard` at read time. The `profile_history` retains original values for audit-aware checks. No migration action is needed.
 
@@ -126,7 +126,6 @@ Records carry author attribution via `created_by` and `contributors` frontmatter
 ├── instructions/     INSTRUCTION-YYYY-MM-DD-slug.md
 ├── notes/            NOTE-YYYY-MM-DD-slug.md
 ├── assignments/      ASSIGNMENT-YYYY-MM-DD-slug.md + index.yml
-├── eras/             era-NNN.md + index.yml
 └── summaries/        2 files: roadmap.md + current-state.md
 ```
 
@@ -159,7 +158,7 @@ Records carry author attribution via `created_by` and `contributors` frontmatter
 │   ├── decisions.md           ← Shared (lifecycle identical across profiles)
 │   ├── discussions.md         ← Shared
 │   ├── records.md             ← Shared
-│   └── maintainer.md          ← Shared (with profile-specific notes for attribution)
+│   └── maintainer.md          ← Shared (language policy, author attribution)
 ├── templates/                 ← Dispatcher (shared) — routes to templates/*.md
 │   ├── index.md               ← Dispatcher
 │   ├── decisions.md           ← Shared
@@ -180,7 +179,7 @@ For naming conventions, file templates, lifecycle rules, and the Decision Resolu
 For decision lifecycle, ADR steps, touches guidance → `conventions/decisions.md`.
 For discussion lifecycle, relevancy scoring, expiry → `conventions/discussions.md`.
 For issue, instruction, assignment lifecycles → `conventions/records.md`.
-For language policy, author attribution, maintainer role → `conventions/maintainer.md`.
+For language policy and author attribution → `conventions/maintainer.md`.
 
 ---
 

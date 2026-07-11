@@ -71,7 +71,7 @@ User says "switch project-memory to standard". SKILL.md → change-profile flow:
 1. Expand `.project-memory/` with the target profile's skeleton (see `<target>/init.md`). `config.yml` and `MEMORY.md` are already there.
 2. Seed `summaries/roadmap.md` from `.project-memory/MEMORY.md → ## Roadmap`.
 3. Seed `decisions/index.md` from `.project-memory/MEMORY.md → ## Decisions` (one row per decision — sufficient as a starting state).
-4. Archive `## Log` content into `.project-memory/eras/` or leave `MEMORY.md` in place as a historical artifact — user's choice.
+4. Leave `MEMORY.md` in place as a historical artifact — user's choice.
 5. Update `config.yml`: append new `profile_history` entry, set top-level `profile` to the new value.
 6. Rename `.project-memory/MEMORY.md` to `.project-memory/MEMORY.legacy.md` to avoid confusion with the new structure.
 

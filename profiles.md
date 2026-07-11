@@ -7,7 +7,7 @@ description: Tier matrix, init UX, migration semantics, and orthogonal-feature l
 
 Project-memory supports two profiles. They differ only in ceremony-bearing features — audit categories, summaries, gate procedure depth.
 
-**User-triggered features are NOT tier-bound.** Discussions, issues, assignments, instruction *creation*, notes, eras, the maintainer role, the ADR mirror, and the MCP companion remain opt-in regardless of profile.
+**User-triggered features are NOT tier-bound.** Discussions, issues, assignments, instruction *creation*, notes, the ADR mirror, and the MCP companion remain opt-in regardless of profile.
 
 The right axis for choosing a profile is **longevity × revisit frequency × reasoning density** — will future-me (or someone else) need to ask "why?" in a way that git + code don't already answer?
 
@@ -65,7 +65,6 @@ These remain user-triggered or config-flagged regardless of profile. They cost n
 - **Assignments** — user delegates; `assignments/` created on first use.
 - **Notes** — user takes note; `notes/` created on first use.
 - **Instructions creation** — user gives instruction; file created on demand.
-- **Eras + maintainer role** — maintainer opt-in via `maintainers.md`.
 
 Note: instruction **re-injection** IS tier-bound (Row 6). The feature itself is orthogonal; the per-gate injection ceremony is not.
 
@@ -153,7 +152,7 @@ User changes profile via natural language ("switch project-memory to minimal"). 
 │   ├── decisions.md               ← shared
 │   ├── discussions.md             ← shared
 │   ├── records.md                 ← shared
-│   └── maintainer.md              ← shared (with profile-specific attribution notes)
+
 ├── templates/                     ← dispatcher (shared) — routes to templates/*.md
 │   ├── index.md                   ← Dispatcher
 │   ├── decisions.md               ← shared

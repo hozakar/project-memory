@@ -1,5 +1,5 @@
 // removed: buildPhaseText in 2026-07-06 phase-removal
-import type { DecisionIndexData, DiscussionIndexData, CommitDiff, EraIndexData, InstructionIndexData, AssignmentIndexData, NoteIndexData } from "./types";
+import type { DecisionIndexData, DiscussionIndexData, CommitDiff, InstructionIndexData, AssignmentIndexData, NoteIndexData } from "./types";
 
 export function buildDecisionText(data: DecisionIndexData): string {
   return [
@@ -37,23 +37,6 @@ export function buildCommitText(diff: CommitDiff): string {
   ]
     .join("\n")
     .slice(0, 3000);
-}
-
-export function buildEraText(data: EraIndexData): string {
-  const content = (data.records && data.records.length > 0)
-    ? data.records.join(" ")
-    : (data.phases && data.phases.length > 0)
-      ? data.phases.join(" ")
-      : "";
-  return [
-    data.id,
-    data.title,
-    data.date_range,
-    content,
-    data.narrative,
-  ]
-    .join("\n")
-    .slice(0, 4000);
 }
 
 export function buildInstructionText(data: InstructionIndexData): string {

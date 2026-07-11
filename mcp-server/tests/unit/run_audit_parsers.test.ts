@@ -124,18 +124,18 @@ describe("parseSupersedesList", () => {
   });
 
   it("returns multi-ID array for bracket list format", () => {
-    const content = "---\nid: TEST\nsupersedes: [DECISION-2026-06-13-branch-per-phase, DECISION-2026-06-13-era-maintenance]\n---\n# Body";
+    const content = "---\nid: TEST\nsupersedes: [DECISION-2026-06-13-branch-per-phase, DECISION-2026-06-13-foo-bar]\n---\n# Body";
     expect(parseSupersedesList(content)).toEqual([
       "DECISION-2026-06-13-branch-per-phase",
-      "DECISION-2026-06-13-era-maintenance",
+      "DECISION-2026-06-13-foo-bar",
     ]);
   });
 
   it("returns multi-ID array for YAML block list format", () => {
-    const content = "---\nid: TEST\nsupersedes:\n  - DECISION-2026-06-13-branch-per-phase\n  - DECISION-2026-06-13-era-maintenance\n---\n# Body";
+    const content = "---\nid: TEST\nsupersedes:\n  - DECISION-2026-06-13-branch-per-phase\n  - DECISION-2026-06-13-foo-bar\n---\n# Body";
     expect(parseSupersedesList(content)).toEqual([
       "DECISION-2026-06-13-branch-per-phase",
-      "DECISION-2026-06-13-era-maintenance",
+      "DECISION-2026-06-13-foo-bar",
     ]);
   });
 

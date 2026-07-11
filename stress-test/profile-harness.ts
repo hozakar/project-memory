@@ -33,7 +33,6 @@ function initFullProfile(dir: string): void {
     "issues/open",
     "issues/closed",
     "instructions",
-    "eras",
     "summaries",
   ];
   for (const sub of subdirs) {

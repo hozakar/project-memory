@@ -3,7 +3,6 @@ import {
   buildDecisionText,
   buildDiscussionText,
   buildCommitText,
-  buildEraText,
   buildInstructionText,
   buildNoteText,
   buildAssignmentText,
@@ -68,22 +67,6 @@ describe("buildCommitText", () => {
     expect(result).toContain("fix: bug");
     expect(result).toContain("src/db.ts");
     expect(result).toContain("-old\n+new");
-  });
-});
-
-describe("buildEraText", () => {
-  it("includes id, title, date_range, phases, and narrative", () => {
-    const result = buildEraText({
-      id: "era-001",
-      title: "Era 1",
-      phases: ["phase-a", "phase-b"],
-      date_range: "2026-06-08 to 2026-06-11",
-      narrative: "narrative text",
-    });
-    expect(result).toContain("era-001");
-    expect(result).toContain("Era 1");
-    expect(result).toContain("phase-a phase-b");
-    expect(result).toContain("narrative text");
   });
 });
 

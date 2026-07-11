@@ -17,7 +17,6 @@ This file is a dispatcher. Read the appropriate sub-file:
 | **Notes** | `conventions/records.md` | Note lifecycle (create → update → delete), naming, search rules, deletion rules |
 | **Language** | `conventions/maintainer.md` | English-only rule for skill files, rationale |
 | **Author Attribution** | `conventions/maintainer.md` | `created_by` + `contributors` capture rules, soft-fail to `unknown`, dedup by email, growth triggers per record type, out-of-scope records |
-| **Maintainer Role** | `conventions/maintainer.md` | Two-role system (maintainer/developer), era creation gating, `maintainers.md` format, role determination |
 
 ---
 
@@ -32,5 +31,5 @@ Creating an instruction?    → read conventions/records.md (Instructions sectio
 Creating an assignment?     → read conventions/records.md (Assignments section)
 Creating a note?            → read conventions/records.md (Notes section)
 Need attribution fields?    → read conventions/maintainer.md (Author Attribution)
-Checking your role?         → read conventions/maintainer.md (Maintainer Role)
+
 ```

@@ -7,7 +7,7 @@ import type { ConsistencyReport } from "../types";
  * Compares the vector DB index against the filesystem to find inconsistencies.
  *
  * @param {string} projectMemoryDir - Absolute path to the `.project-memory/` directory.
- * Covers phases, decisions, discussions, eras, instructions, assignments, and notes.
+ * Covers phases, decisions, discussions, instructions, assignments, and notes.
  * @returns {Promise<ConsistencyReport>} Report with missing and orphaned IDs.
  */
 export async function checkConsistency(
@@ -55,18 +55,7 @@ export async function checkConsistency(
       }
     }
 
-    // d. Extract era IDs from eras/era-NNN.md filenames
-    const erasDir = path.join(projectMemoryDir, "eras");
-    if (fs.existsSync(erasDir)) {
-      const entries = fs.readdirSync(erasDir);
-      for (const entry of entries) {
-        if (/^era-[0-9]{3,}\.md$/.test(entry)) {
-          filesystemIds.add(entry.slice(0, -3)); // "era-001"
-        }
-      }
-    }
-
-    // e. Extract instruction IDs from instructions/INSTRUCTION-*.md filenames
+    // d. Extract instruction IDs from instructions/INSTRUCTION-*.md filenames
     const instructionsDir = path.join(projectMemoryDir, "instructions");
     if (fs.existsSync(instructionsDir)) {
       const entries = fs.readdirSync(instructionsDir);
