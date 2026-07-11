@@ -37,6 +37,105 @@ export function parseFrontmatter(content: string): Record<string, string> {
   return result;
 }
 
+/**
+ * Parse the `supersedes` field from frontmatter, handling both formats:
+ * - `supersedes: null` → returns []
+ * - `supersedes: DECISION-X` → returns ["DECISION-X"]
+ * - `supersedes: [DECISION-X, DECISION-Y]` → returns ["DECISION-X", "DECISION-Y"]
+ * - `supersedes:\n  - DECISION-X\n  - DECISION-Y` → returns ["DECISION-X", "DECISION-Y"]
+ */
+export function parseSupersedesList(content: string): string[] {
+  const normalized = content.replace(/\r\n/g, "\n").replace(/\r/g, "\n").replace(/^\uFEFF/, "");
+  const match = normalized.match(/^---\n([\s\S]*?)\n---/);
+  if (!match) return [];
+
+  const fmBody = match[1];
+  // Try single-line format: "supersedes: null" or "supersedes: DECISION-X"
+  // IMPORTANT: Use [ \t] not \s to avoid matching across newlines (captures next line as value)
+  const singleLine = fmBody.match(/^supersedes:[ \t]*(.+)$/m);
+  if (singleLine) {
+    const val = singleLine[1].trim().replace(/^['"]|['"]$/g, "");
+    if (val === "null" || val === "[]" || val === "") return [];
+    // Could be a single ID or a bracket list [A, B]
+    if (val.startsWith("[")) {
+      // bracket list: [DECISION-X, DECISION-Y]
+      return val.replace(/[\[\]]/g, "").split(",").map(s => s.trim().replace(/^['"]|['"]$/g, "")).filter(s => s.length > 0);
+    }
+    return [val];
+  }
+  // Try YAML block list format: "supersedes:\n  - DECISION-X\n  - DECISION-Y"
+  const blockMatch = fmBody.match(/^supersedes:[ \t]*\n((?:\s+-\s+.+\n?)+)/m);
+  if (blockMatch) {
+    return blockMatch[1].split("\n")
+      .map(line => line.match(/^\s+-\s+(.+)$/)?.[1]?.trim()?.replace(/^['"]|['"]$/g, ""))
+      .filter((s): s is string => s !== undefined && s.length > 0);
+  }
+  return [];
+}
+
+/**
+ * Parse the `superseded_by` field from frontmatter.
+ * Always single-line: `superseded_by: null` or `superseded_by: DECISION-X`
+ */
+export function parseSupersededBy(content: string): string | null {
+  const fm = parseFrontmatter(content);
+  const val = (fm["superseded_by"] || "null").trim();
+  return val === "null" ? null : val;
+}
+
+/**
+ * Extract the date portion from a DECISION-YYYY-MM-DD-* ID.
+ * Returns "9999-99-99" as a sentinel (sorts last) for malformed IDs.
+ */
+export function extractDateFromDecisionId(id: string): string {
+  const m = id.match(/^DECISION-(\d{4}-\d{2}-\d{2})/);
+  return m ? m[1] : "9999-99-99";
+}
+
+/**
+ * Detect cycles in a supersedes graph.
+ * The graph is a Map from node ID → array of supersedes targets.
+ * Returns an array of cycles, each cycle represented as [n0, n1, ..., nk, n0]
+ * where each adjacent pair is a supersedes edge.
+ */
+export function findSupersessionCycles(graph: Map<string, string[]>): string[][] {
+  const UNVISITED = 0;
+  const IN_STACK = 1;
+  const DONE = 2;
+  const color = new Map<string, number>();
+  const cycles: string[][] = [];
+  const path: string[] = [];
+
+  for (const node of graph.keys()) color.set(node, UNVISITED);
+
+  function dfs(node: string): void {
+    color.set(node, IN_STACK);
+    path.push(node);
+
+    for (const neighbor of graph.get(node) || []) {
+      if (!graph.has(neighbor)) continue; // skip dangling pointers
+      if (color.get(neighbor) === IN_STACK) {
+        // Back edge: found a cycle
+        const startIdx = path.indexOf(neighbor);
+        const cycle = path.slice(startIdx);
+        cycle.push(neighbor);
+        cycles.push(cycle);
+      } else if (color.get(neighbor) === UNVISITED) {
+        dfs(neighbor);
+      }
+    }
+
+    path.pop();
+    color.set(node, DONE);
+  }
+
+  for (const node of graph.keys()) {
+    if (color.get(node) === UNVISITED) dfs(node);
+  }
+
+  return cycles;
+}
+
 // ---------------------------------------------------------------------------
 // Frontmatter field setter helper
 // ---------------------------------------------------------------------------
@@ -378,98 +477,227 @@ function cat15DecisionSupersession(
   const pendingFixes: PendingFix[] = [];
   const indexPath = path.join(decisionsDir, "index.md");
 
+  // -----------------------------------------------------------------------
+  // Phase 1: Collect all decision entries
+  // -----------------------------------------------------------------------
+  interface Entry {
+    id: string;
+    filePath: string;
+    original: string;
+    working: string;
+    supersedesList: string[];
+    supersededBy: string | null;
+    status: string;
+  }
+  const entries = new Map<string, Entry>();
+
   for (const filename of fs.readdirSync(decisionsDir)) {
     if (!filename.startsWith("DECISION-") || !filename.endsWith(".md")) continue;
     const id = filename.slice(0, -3);
     const filePath = path.join(decisionsDir, filename);
     const content = readFile(filePath);
     if (!content) continue;
-    const fm = parseFrontmatter(content);
-    let working = content;
+    entries.set(id, {
+      id,
+      filePath,
+      original: content,
+      working: content,
+      supersedesList: parseSupersedesList(content),
+      supersededBy: parseSupersededBy(content),
+      status: parseFrontmatter(content)["status"]?.trim() ?? "",
+    });
+  }
 
-    const supersededBy = (fm["superseded_by"] || "null").trim();
-    const supersedes = (fm["supersedes"] || "null").trim();
-    const status = (fm["status"] || "").trim();
+  // Helper: write all modified entry files to disk
+  function flushEntries(): void {
+    for (const [, entry] of entries) {
+      if (entry.working !== entry.original) {
+        fs.writeFileSync(entry.filePath, entry.working, "utf-8");
+        entry.original = entry.working; // keep in sync for subsequent flushes
+      }
+    }
+  }
 
-    // --- Sub-check A: Dangling supersession pointer (auto-fix) ---
+  // -----------------------------------------------------------------------
+  // Sub-check A: Dangling supersession pointer (auto-fix)
+  // -----------------------------------------------------------------------
+  const danglingSupersededByIds = new Set<string>();
+
+  for (const [id, entry] of entries) {
     // Check superseded_by pointing to non-existent file
-    if (supersededBy !== "null") {
-      const targetPath = path.join(decisionsDir, `${supersededBy}.md`);
+    if (entry.supersededBy !== null) {
+      const targetPath = path.join(decisionsDir, `${entry.supersededBy}.md`);
       if (!fs.existsSync(targetPath)) {
         if (!ignored.has(`decision-supersession:${id}:dangling`)) {
-          working = setFrontmatterField(working, "superseded_by", "null");
-          fs.writeFileSync(filePath, working, "utf-8");
-          autoFixed.push(`Cat 15: cleared dangling superseded_by on ${id} (target ${supersededBy} missing)`);
-
-          // Also clear the Superseded By cell in the Superseded index table row if present
-          const indexContent = readFile(indexPath);
-          if (indexContent && indexContent.includes(`## Superseded`)) {
-            const lines = indexContent.split("\n");
-            let inSuperseded = false;
-            let modified = false;
-            for (let i = 0; i < lines.length; i++) {
-              const line = lines[i].trim();
-              if (line.startsWith("## Superseded")) {
-                inSuperseded = true;
-                continue;
-              }
-              if (inSuperseded && line.startsWith("##")) break; // next section
-              if (inSuperseded && line.startsWith("|")) {
-                const cells = lines[i].split("|").map(c => c.trim());
-                if (cells[2] === id) {
-                  // This is a row in the Superseded table — find last `|` cell and replace content with ` -`
-                  const parts = lines[i].split("|");
-                  if (parts.length >= 10) {
-                    // Last cell (index -2 after stripping empty first/last from split) is Superseded By
-                    // parts[0] is empty (before first |), parts[1]=Date, ..., parts[8]=Superseded By, parts[9] might be empty
-                    const supersededByCellIdx = parts.length - 2; // second-to-last part is the last cell content
-                    if (parts[supersededByCellIdx].trim() === supersededBy) {
-                      parts[supersededByCellIdx] = " - ";
-                      lines[i] = parts.join("|");
-                      modified = true;
-                    }
-                  }
-                  break;
-                }
-              }
-            }
-            if (modified) {
-              fs.writeFileSync(indexPath, lines.join("\n"), "utf-8");
-            }
-          }
+          autoFixed.push(`Cat 15: cleared dangling superseded_by on ${id} (target ${entry.supersededBy} missing)`);
+          entry.working = setFrontmatterField(entry.working, "superseded_by", "null");
+          danglingSupersededByIds.add(id);
+          entry.supersededBy = null;
         }
       }
     }
 
-    // Check supersedes pointing to non-existent file
-    if (supersedes !== "null") {
-      const targetPath = path.join(decisionsDir, `${supersedes}.md`);
+    // Check each supersedes target for dangling
+    const remaining: string[] = [];
+    for (const target of entry.supersedesList) {
+      const targetPath = path.join(decisionsDir, `${target}.md`);
       if (!fs.existsSync(targetPath)) {
         if (!ignored.has(`decision-supersession:${id}:dangling`)) {
-          working = setFrontmatterField(working, "supersedes", "null");
-          fs.writeFileSync(filePath, working, "utf-8");
-          autoFixed.push(`Cat 15: cleared dangling supersedes on ${id} (target ${supersedes} missing)`);
+          autoFixed.push(`Cat 15: cleared dangling supersedes on ${id} (target ${target} missing)`);
+          // skip — do not add to remaining
+        } else {
+          remaining.push(target);
         }
+      } else {
+        remaining.push(target);
       }
     }
+    if (remaining.length !== entry.supersedesList.length) {
+      if (remaining.length === 0) {
+        entry.working = setFrontmatterField(entry.working, "supersedes", "null");
+      } else {
+        entry.working = setFrontmatterField(entry.working, "supersedes", `[${remaining.join(", ")}]`);
+      }
+      entry.supersedesList = remaining;
+    }
+  }
 
-    // --- Sub-check B: Zombie-active (pending fix) ---
-    if (supersededBy !== "null") {
-      const targetPath = path.join(decisionsDir, `${supersededBy}.md`);
-      if (fs.existsSync(targetPath)) {
-        // superseded_by target exists, check if THIS file's status is NOT superseded
-        if (status !== "superseded") {
-          if (!ignored.has(`decision-supersession:${id}:zombie`)) {
-            pendingFixes.push({
-              type: "fix_decision_supersession_status",
-              decisionId: id,
-              supersededBy: supersededBy,
-            });
+  flushEntries();
+
+  // Clear Superseded By cells in index.md for dangling-superseded_by decisions
+  if (danglingSupersededByIds.size > 0) {
+    const indexContent = readFile(indexPath);
+    if (indexContent && indexContent.includes("## Superseded")) {
+      const lines = indexContent.split("\n");
+      let inSuperseded = false;
+      let modified = false;
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i].trim();
+        if (line.startsWith("## Superseded")) { inSuperseded = true; continue; }
+        if (inSuperseded && line.startsWith("##")) break;
+        if (inSuperseded && line.startsWith("|")) {
+          const id = lines[i].split("|")[2]?.trim() ?? "";
+          if (danglingSupersededByIds.has(id)) {
+            const parts = lines[i].split("|");
+            if (parts.length >= 10) {
+              const supersededByCellIdx = parts.length - 2;
+              parts[supersededByCellIdx] = " - ";
+              lines[i] = parts.join("|");
+              modified = true;
+            }
           }
+        }
+      }
+      if (modified) fs.writeFileSync(indexPath, lines.join("\n"), "utf-8");
+    }
+  }
+
+  // -----------------------------------------------------------------------
+  // Sub-check B: Zombie-active — superseded_by set but status still active
+  // (pending fix)
+  // -----------------------------------------------------------------------
+  for (const [id, entry] of entries) {
+    if (entry.supersededBy !== null) {
+      const targetPath = path.join(decisionsDir, `${entry.supersededBy}.md`);
+      if (fs.existsSync(targetPath) && entry.status !== "superseded") {
+        if (!ignored.has(`decision-supersession:${id}:zombie`)) {
+          pendingFixes.push({
+            type: "fix_decision_supersession_status",
+            decisionId: id,
+            supersededBy: entry.supersededBy,
+          });
         }
       }
     }
   }
+
+  // -----------------------------------------------------------------------
+  // Sub-check C: Asymmetric supersession — A supersedes B but B's
+  // superseded_by is not A (auto-fix)
+  // -----------------------------------------------------------------------
+  for (const [, entryA] of entries) {
+    for (const targetB of entryA.supersedesList) {
+      const entryB = entries.get(targetB);
+      if (!entryB) continue;
+      if (entryB.supersededBy !== entryA.id) {
+        if (!ignored.has(`decision-supersession:${targetB}:asymmetric`)) {
+          entryB.working = setFrontmatterField(entryB.working, "superseded_by", entryA.id);
+          entryB.supersededBy = entryA.id;
+          autoFixed.push(`Cat 15: fixed asymmetric supersession — set ${targetB}.superseded_by = ${entryA.id}`);
+        }
+      }
+    }
+  }
+
+  flushEntries();
+
+  // -----------------------------------------------------------------------
+  // Sub-check D: Circular supersession — detect cycles in the supersedes
+  // graph and break them (auto-fix)
+  // -----------------------------------------------------------------------
+  const graph = new Map<string, string[]>();
+  for (const [id, entry] of entries) {
+    graph.set(id, [...entry.supersedesList]);
+  }
+  const cycles = findSupersessionCycles(graph);
+  // Track already-removed edges to avoid duplicate log entries
+  const removedEdges = new Set<string>();
+
+  for (const cycle of cycles) {
+    // Find the edge with the earliest-date source that points to a later-date node
+    let bestSrc = "";
+    let bestTgt = "";
+    let bestDate = "9999-99-99";
+    let found = false;
+
+    for (let i = 0; i < cycle.length - 1; i++) {
+      const src = cycle[i];
+      const tgt = cycle[i + 1];
+      const edgeKey = `${src}\x00${tgt}`;
+      if (removedEdges.has(edgeKey)) continue;
+      const srcDate = extractDateFromDecisionId(src);
+      const tgtDate = extractDateFromDecisionId(tgt);
+      if (srcDate < bestDate && tgtDate > srcDate) {
+        bestSrc = src;
+        bestTgt = tgt;
+        bestDate = srcDate;
+        found = true;
+      }
+    }
+
+    if (!found) continue;
+
+    const entry = entries.get(bestSrc);
+    if (!entry) continue;
+
+    const remaining = entry.supersedesList.filter(t => t !== bestTgt);
+    if (remaining.length === 0) {
+      entry.working = setFrontmatterField(entry.working, "supersedes", "null");
+    } else {
+      entry.working = setFrontmatterField(entry.working, "supersedes", `[${remaining.join(", ")}]`);
+    }
+    entry.supersedesList = remaining;
+    removedEdges.add(`${bestSrc}\x00${bestTgt}`);
+    autoFixed.push(`Cat 15: broke circular supersession — removed ${bestTgt} from ${bestSrc}.supersedes`);
+  }
+
+  flushEntries();
+
+  // -----------------------------------------------------------------------
+  // Sub-check E: Superseded-but-authority — status is superseded but no
+  // superseded_by pointer (auto-fix)
+  // -----------------------------------------------------------------------
+  for (const [id, entry] of entries) {
+    if (entry.status === "superseded" && entry.supersededBy === null) {
+      if (!ignored.has(`decision-supersession:${id}:orphan-superseded`)) {
+        entry.working = setFrontmatterField(entry.working, "status", "active");
+        entry.status = "active";
+        autoFixed.push(`Cat 15: restored ${id} status to active (superseded but no superseded_by pointer)`);
+      }
+    }
+  }
+
+  flushEntries();
 
   return { autoFixed, pendingFixes };
 }

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { parseFrontmatter, matchesIgnorePattern, AuditIgnoreSet } from "../../src/tools/run_audit";
+import { parseFrontmatter, matchesIgnorePattern, AuditIgnoreSet, parseSupersedesList, parseSupersededBy, findSupersessionCycles } from "../../src/tools/run_audit";
 
 describe("parseFrontmatter", () => {
   it("parses basic key-value pairs", () => {
@@ -109,5 +109,134 @@ describe("AuditIgnoreSet", () => {
     expect(s.has("tag-typo:any-phase:decisions")).toBe(true);
     expect(s.has("tag-typo:any-phase:discussions")).toBe(true);
     expect(s.has("tag-typo:any-phase:security")).toBe(false);
+  });
+});
+
+describe("parseSupersedesList", () => {
+  it("returns empty array for supersedes: null", () => {
+    const content = "---\nid: TEST\nsupersedes: null\n---\n# Body";
+    expect(parseSupersedesList(content)).toEqual([]);
+  });
+
+  it("returns single ID for supersedes: DECISION-X", () => {
+    const content = "---\nid: TEST\nsupersedes: DECISION-2026-06-13-branch-per-phase\n---\n# Body";
+    expect(parseSupersedesList(content)).toEqual(["DECISION-2026-06-13-branch-per-phase"]);
+  });
+
+  it("returns multi-ID array for bracket list format", () => {
+    const content = "---\nid: TEST\nsupersedes: [DECISION-2026-06-13-branch-per-phase, DECISION-2026-06-13-era-maintenance]\n---\n# Body";
+    expect(parseSupersedesList(content)).toEqual([
+      "DECISION-2026-06-13-branch-per-phase",
+      "DECISION-2026-06-13-era-maintenance",
+    ]);
+  });
+
+  it("returns multi-ID array for YAML block list format", () => {
+    const content = "---\nid: TEST\nsupersedes:\n  - DECISION-2026-06-13-branch-per-phase\n  - DECISION-2026-06-13-era-maintenance\n---\n# Body";
+    expect(parseSupersedesList(content)).toEqual([
+      "DECISION-2026-06-13-branch-per-phase",
+      "DECISION-2026-06-13-era-maintenance",
+    ]);
+  });
+
+  it("returns empty array for empty block list", () => {
+    const content = "---\nid: TEST\nsupersedes:\n---\n# Body";
+    expect(parseSupersedesList(content)).toEqual([]);
+  });
+
+  it("returns empty array when no supersedes field exists", () => {
+    const content = "---\nid: TEST\nstatus: active\n---\n# Body";
+    expect(parseSupersedesList(content)).toEqual([]);
+  });
+
+  it("handles CRLF line endings with block list", () => {
+    const content = "---\r\nid: TEST\r\nsupersedes:\r\n  - DECISION-2026-06-13-branch-per-phase\r\n---\r\n# Body";
+    expect(parseSupersedesList(content)).toEqual(["DECISION-2026-06-13-branch-per-phase"]);
+  });
+
+  it("returns empty array for supersedes: []", () => {
+    const content = "---\nid: TEST\nsupersedes: []\n---\n# Body";
+    expect(parseSupersedesList(content)).toEqual([]);
+  });
+
+  it("handles single ID with surrounding quotes", () => {
+    const content = "---\nid: TEST\nsupersedes: 'DECISION-2026-06-13-branch-per-phase'\n---\n# Body";
+    expect(parseSupersedesList(content)).toEqual(["DECISION-2026-06-13-branch-per-phase"]);
+  });
+
+  it("returns empty array when no frontmatter", () => {
+    expect(parseSupersedesList("No frontmatter here")).toEqual([]);
+  });
+});
+
+describe("parseSupersededBy", () => {
+  it("returns null for superseded_by: null", () => {
+    const content = "---\nid: TEST\nsuperseded_by: null\n---\n# Body";
+    expect(parseSupersededBy(content)).toBeNull();
+  });
+
+  it("returns the ID for superseded_by: DECISION-X", () => {
+    const content = "---\nid: TEST\nsuperseded_by: DECISION-2026-06-13-branch-per-phase\n---\n# Body";
+    expect(parseSupersededBy(content)).toBe("DECISION-2026-06-13-branch-per-phase");
+  });
+
+  it("returns null when no superseded_by field exists", () => {
+    const content = "---\nid: TEST\nstatus: active\n---\n# Body";
+    expect(parseSupersededBy(content)).toBeNull();
+  });
+
+  it("handles surrounding quotes", () => {
+    const content = "---\nid: TEST\nsuperseded_by: 'DECISION-2026-06-13-branch-per-phase'\n---\n# Body";
+    expect(parseSupersededBy(content)).toBe("DECISION-2026-06-13-branch-per-phase");
+  });
+});
+
+describe("findSupersessionCycles", () => {
+  it("returns empty for acyclic graph", () => {
+    const graph = new Map([
+      ["DECISION-A", ["DECISION-B"]],
+      ["DECISION-B", ["DECISION-C"]],
+      ["DECISION-C", []],
+    ]);
+    expect(findSupersessionCycles(graph)).toEqual([]);
+  });
+
+  it("detects a 2-cycle", () => {
+    const graph = new Map([
+      ["DECISION-A", ["DECISION-B"]],
+      ["DECISION-B", ["DECISION-A"]],
+    ]);
+    const cycles = findSupersessionCycles(graph);
+    expect(cycles.length).toBeGreaterThan(0);
+    // Each cycle should have the form [X, Y, X] (closing back to start)
+    const cycle = cycles[0];
+    expect(cycle.length).toBe(3);
+    expect(cycle[0]).toBe(cycle[2]);
+  });
+
+  it("detects a 3-cycle A→B→C→A", () => {
+    const graph = new Map([
+      ["DECISION-2026-06-01-A", ["DECISION-2026-06-02-B"]],
+      ["DECISION-2026-06-02-B", ["DECISION-2026-06-03-C"]],
+      ["DECISION-2026-06-03-C", ["DECISION-2026-06-01-A"]],
+    ]);
+    const cycles = findSupersessionCycles(graph);
+    expect(cycles.length).toBeGreaterThan(0);
+    const cycle = cycles[0];
+    expect(cycle[0]).toBe(cycle[cycle.length - 1]);
+    expect(cycle.length).toBeGreaterThanOrEqual(3);
+  });
+
+  it("skips dangling neighbors (not in graph)", () => {
+    // D neighbor does not exist in graph keys
+    const graph = new Map([
+      ["DECISION-A", ["DECISION-B"]],
+      ["DECISION-B", ["DECISION-MISSING"]],
+    ]);
+    expect(findSupersessionCycles(graph)).toEqual([]);
+  });
+
+  it("returns empty for empty graph", () => {
+    expect(findSupersessionCycles(new Map())).toEqual([]);
   });
 });

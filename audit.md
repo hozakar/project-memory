@@ -71,7 +71,7 @@ All findings use a single Auto-fix tier — they are either auto-fixed directly 
 | 11 (discussion expiry auto-archive) | Auto-fixed: archived to `discussions/archive/` |
 | 13 (MCP consistency, conditional) | Auto-fixed: missing notes re-indexed, orphaned records deleted from DB |
 | 14 (assignment integrity: 14a target orphan, 14b stale pending, 14c completed without evidence) | Auto-fixed: frontmatter annotated with `target_orphaned_at`, `reminded: true`, or `completed_without_evidence_at` |
-| 15 (decision supersession integrity) | Auto-fixed (dangling supersedes/superseded_by pointers cleared in frontmatter and Superseded index table) + pending_fix (zombie-active: status flipped to superseded, index row moved to Superseded table) |
+| 15 (decision supersession integrity) | Auto-fixed: dangling pointers (supersedes/superseded_by cleared), asymmetric supersession (missing superseded_by link restored), circular supersession (cycle broken), superseded-but-authority (status restored to active); pending_fix: zombie-active (status flipped to superseded, index row moved to Superseded table) |
 
 ---
 
@@ -97,7 +97,7 @@ Before suppressing any finding (auto-fix or pending fix), check the `audit_ignor
 | 8 | `adr-drift:<DECISION-ID>:<missing-adr_id|missing-file|status-mismatch>` |
 | 9 | `discussion-drift:<DISCUSSION-ID>:<missing-row|orphan-row|status-mismatch>` |
 | 14 | `assignment-orphan:<ASSIGNMENT-ID>` / `assignment-stale:<ASSIGNMENT-ID>` / `assignment-no-evidence:<ASSIGNMENT-ID>` |
-| 15 | `decision-supersession:<DECISION-ID>:<dangling|zombie>` |
+| 15 | `decision-supersession:<DECISION-ID>:<dangling|zombie|asymmetric|circular|orphan-superseded>` |
 
 **`config.yml` format:**
 
