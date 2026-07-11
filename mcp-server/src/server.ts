@@ -21,6 +21,7 @@ export const server = new McpServer({
   version
 });
 
+// MCP SDK types don't expose the protected tool() registration method, so `as any` is required here.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const srv = server as any;
 
@@ -67,7 +68,7 @@ srv.tool(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async (args: any) => {
     if (!args.touches && args.touchesJson) {
-      try { args.touches = JSON.parse(args.touchesJson); } catch {}
+      try { args.touches = JSON.parse(args.touchesJson); } catch (err) { console.error("Failed to parse touchesJson:", err); }
     }
     const result = await indexDecision({ ...args, primaryScope: args.primary_scope });
     return { content: [{ type: "text" as const, text: JSON.stringify(result) }] };
@@ -91,7 +92,7 @@ srv.tool(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async (args: any) => {
     if (!args.tags && args.tagsJson) {
-      try { args.tags = JSON.parse(args.tagsJson); } catch {}
+      try { args.tags = JSON.parse(args.tagsJson); } catch (err) { console.error("Failed to parse tagsJson (index_discussion):", err); }
     }
     const result = await indexDiscussion(args);
     return { content: [{ type: "text" as const, text: JSON.stringify(result) }] };
@@ -179,7 +180,7 @@ srv.tool(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async (args: any) => {
     if (!args.tags && args.tagsJson) {
-      try { args.tags = JSON.parse(args.tagsJson); } catch {}
+      try { args.tags = JSON.parse(args.tagsJson); } catch (err) { console.error("Failed to parse tagsJson (index_note):", err); }
     }
     const data = {
       id: args.id,

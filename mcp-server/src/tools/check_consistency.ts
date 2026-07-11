@@ -113,7 +113,8 @@ export async function checkConsistency(
     }
 
     return { missing, orphaned };
-  } catch {
+  } catch (err) {
+    console.error("check_consistency failed:", err);
     return { missing: [], orphaned: [] };
   }
 }

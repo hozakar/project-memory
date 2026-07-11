@@ -99,7 +99,8 @@ export async function rebuildIndex(entries: IndexEntry[]): Promise<{ indexed: nu
         record.assignedByEmail = aData.assignedBy.email;
       }
       records.push(record);
-    } catch {
+    } catch (err) {
+      console.error("rebuild_index entry failed:", err);
       failCount++;
     }
   }
@@ -122,7 +123,8 @@ export async function rebuildIndex(entries: IndexEntry[]): Promise<{ indexed: nu
           status: "",
         });
       }
-    } catch {
+    } catch (err) {
+      console.error("rebuild_index commit entry failed:", err);
       failCount++;
     }
   }
@@ -130,7 +132,8 @@ export async function rebuildIndex(entries: IndexEntry[]): Promise<{ indexed: nu
   try {
     const result = await atomicRebuild(records);
     return { indexed: result.indexed, failed: result.failed + failCount };
-  } catch {
+  } catch (err) {
+    console.error("rebuild_index atomicRebuild failed:", err);
     return { indexed: 0, failed: entries.length };
   }
 }
