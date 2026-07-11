@@ -16,11 +16,10 @@ This applies to all text inside the skill files: prose, comments, placeholder id
 # Author Attribution
 
 **Profile scope:**
-- `full` — both `created_by` and `contributors` are required (the rules below apply in full).
-- `lite` — only `created_by` is written. Omit the `contributors` field entirely. Status-changing writes do not append to anything.
-- `minimal` — no attribution metadata at all. Git already records the author; minimal does not duplicate it into record frontmatter.
+|- `standard` — both `created_by` and `contributors` are required (the rules below apply in full).
+|- `minimal` — no attribution metadata at all. Git already records the author; minimal does not duplicate it into record frontmatter.
 
-The rules below describe the `full` behavior. Under `lite`, ignore every mention of `contributors`. Under `minimal`, this section does not apply.
+The rules below describe `standard` behavior. Under `minimal`, this section does not apply.
 
 ---
 
