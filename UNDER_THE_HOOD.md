@@ -261,7 +261,7 @@ overlap is low.
 service. Runs locally alongside the skill.
 
 **Graceful degradation:** the filesystem is always the source of truth. MCP is a
-derived read-optimized index. If the server is unavailable, I fall back to
+derived read-optimized index. If the server is unavailable, the skill falls back to
 file-based operation without data loss.
 
 ---
