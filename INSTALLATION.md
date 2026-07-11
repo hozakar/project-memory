@@ -1,189 +1,227 @@
-# Installation Guide
+# project-memory setup
 
-This guide explains how to make me available **globally** — across all your
-projects — on the most popular AI coding platforms.
+You are being asked to install the project-memory skill — a memory and context system for agentic coding. It captures engineering decisions, discussions, and rationale alongside git history, and loads that context at session start so the agent does not re-learn the same lessons twice.
 
-For per-project installation (one project only), see [README.md](README.md).
+This guide places the skill files, wires the session-start protocol, and (optionally) registers the MCP companion server. Follow the steps in order. At Step 2, ask the user the questions — do not guess.
+
+## What the project-memory skill is
+
+A memory layer for LLM coding agents. Runs silently at session start, loads engineering context from `.project-memory/`, and takes notes in the background while you work. Git tracks what changed; project-memory tracks *why* it was changed, what alternatives were rejected, what constraints existed, and what should happen next.
+
+It is a markdown-based skill: no server, no binary, no runtime dependency. The entry point is `SKILL.md` — the on-load instructions in that file bootstrap everything else (profile detection, memory loading, drift audit, gates). An optional MCP companion server adds semantic search and deterministic audits for larger projects.
+
+## Step 0 — Locate the skill files
+
+`<SKILL_DIR>` = absolute path to the project-memory skill directory (the one containing `SKILL.md`).
+
+1. Find the skill on disk. Common locations: alongside this file, in `~/.claude/skills/project-memory/`, or wherever the user cloned it.
+2. If the skill directory is missing `SKILL.md`, it is incomplete — ask the user to clone or copy it.
+3. If you cannot find the skill at all, clone it: `git clone https://github.com/hozakar/project-memory.git <target>` (or ask the user for their fork/URL), then proceed.
+
+Resolve `<SKILL_DIR>` to an absolute path now. You will need it in Steps 3–5.
+
+## Step 1 — Detect your host(s)
+
+Every host uses a different instructions file and format. Identify which hosts are present:
+
+| Signal | Host |
+|---|---|
+| `~/.claude/` or `CLAUDE.md` | Claude Code |
+| `.cursor/` or `~/.cursor/` | Cursor |
+| `opencode.json` or `~/.config/opencode/` | opencode |
+| `~/.codex/` or `.codex/` | Codex CLI |
+| `~/.gemini/` or `.gemini/` | Gemini CLI |
+| `.clinerules` or `~/.cline/` | Cline |
+| `~/.pi/agent/` | pi |
+| `~/.windsurf/` or `.windsurf/` | Windsurf |
+
+Record the list AND note which host you are running in right now. Step 2 will ask the user about scope.
+
+## Step 2 — Ask the user
+
+Present all 3 questions in a single message. Do not guess — let the user decide.
+
+**Question 1: Enforcement tier**
+
+- **easy** — one line in the instructions file: `Load the project-memory skill from <SKILL_DIR>/SKILL.md at session start.`
+- **reinforced (recommended)** — a 6-line block with the mandatory session-start protocol. Sufficient for all users and hosts.
+
+*Recommend: reinforced.*
+
+**Question 2: Which platforms?**
+
+- All hosts detected in Step 1.
+- Only the current host.
+
+*Recommend: current host (or all if the user regularly switches between hosts).*
+
+**Question 3: Scope**
+
+- **Global** — skill available in every project. Place files in a central location and wire the global instructions file.
+- **Project-only** — skill available in this repo only. Place files inside the project and wire the project-level instructions file.
+
+*Recommend: global if the user wants project-memory everywhere; project-only if this is a one-off evaluation.*
+
+## Step 3 — Place the skill files
+
+### Global scope
+
+Place the skill files in a central, stable location:
+
+| Host | Recommended path |
+|---|---|
+| Claude Code | `~/.claude/skills/project-memory/` |
+| Cursor | `~/.cursor/skills/project-memory/` |
+| opencode | `~/.config/opencode/skills/project-memory/` |
+| Codex CLI | `~/.codex/skills/project-memory/` |
+| Gemini CLI | `~/.gemini/skills/project-memory/` |
+| Cline | `~/.cline/skills/project-memory/` |
+| pi | `~/.pi/skills/project-memory/` |
+| Windsurf | `~/.windsurf/skills/project-memory/` |
+
+If the files are already in a good location, do not move them — just use the current path as `<SKILL_DIR>`.
+
+### Project-only scope
+
+Place the skill files inside the project:
+
+```
+<project-root>/.claude/skills/project-memory/
+```
+
+Or any directory the user prefers — the path just needs to be referenced correctly in the instructions file.
+
+## Step 4 — Wire the session-start instruction
+
+Depending on the chosen tier, add one of the blocks below to the host's instructions file.
+
+**Host -> instructions file mapping:**
+
+| Host | File | Notes |
+|---|---|---|
+| Claude Code | `CLAUDE.md` | If repo uses `AGENTS.md`, create `CLAUDE.md` with `@AGENTS.md` at top then the tier block. |
+| Cursor | `AGENTS.md` | Cursor reads it natively. Alternative: `.cursor/rules/project-memory.mdc` with `alwaysApply: true`. |
+| opencode | `AGENTS.md` | --- |
+| Codex CLI | `AGENTS.md` | --- |
+| Gemini CLI | `GEMINI.md` | Or set `context.fileName: ["AGENTS.md", "GEMINI.md"]` to reuse `AGENTS.md`. |
+| Cline | `.clinerules` | Or `.clinerules/project-memory.md` (directory mode). |
+| pi | `AGENTS.md` | --- |
+| Windsurf | Rules (Cascade UI) | Or `~/.codeium/windsurf/rules/project-memory.md`. |
+
+### Global instructions file location
+
+| Host | Global file |
+|---|---|
+| Claude Code | `~/.claude/CLAUDE.md` |
+| Cursor | `~/.cursor/rules/` (User Rules) |
+| opencode | `~/.config/opencode/AGENTS.md` |
+| Codex CLI | `~/.codex/AGENTS.md` |
+| Gemini CLI | `~/.gemini/GEMINI.md` |
+| Cline | `~/.cline/` (Custom Instructions) |
+| pi | `~/.pi/agent/AGENTS.md` |
+| Windsurf | `~/.codeium/windsurf/rules/` |
 
 ---
 
-## How global installation works
-
-Every platform has a way to give your AI assistant persistent instructions that
-apply to every session. Global installation means:
-
-1. **Put my files somewhere central** — a single location on your machine
-2. **Tell your agent where I am** — one line in your global instructions file
-
-From that point on, I'm available in every project without copying anything.
-
----
-
-## Claude Code
-
-**Recommended skill location:** `~/.claude/skills/project-memory/`
-
-```bash
-git clone <repo-url> ~/.claude/skills/project-memory
-```
-
-Then add this to your global `~/.claude/CLAUDE.md` (create it if it doesn't exist):
-
-```markdown
-At the start of every session, load the project-memory skill from
-~/.claude/skills/project-memory/SKILL.md and follow its on-load instructions.
-```
-
-**That's it.** Every new Claude Code session in any project will load me
-automatically.
-
-> **Enterprise-wide installation:**
-> - macOS: `/Library/Application Support/ClaudeCode/CLAUDE.md`
-> - Linux: `/etc/claude-code/CLAUDE.md`
-> - Windows: `C:\ProgramData\ClaudeCode\CLAUDE.md`
-
----
-
-## Gemini CLI
-
-**Recommended skill location:** `~/.gemini/skills/project-memory/`
-
-```bash
-git clone <repo-url> ~/.gemini/skills/project-memory
-```
-
-Add this to your global `~/.gemini/GEMINI.md` (create it if it doesn't exist):
-
-```markdown
-At the start of every session, read ~/.gemini/skills/project-memory/SKILL.md
-and follow its on-load instructions.
-```
-
-Gemini CLI discovers `GEMINI.md` files hierarchically — the `~/.gemini/GEMINI.md`
-file applies to all projects.
-
----
-
-## Cursor
-
-**Recommended skill location:** `~/.cursor/skills/project-memory/`
-
-```bash
-git clone <repo-url> ~/.cursor/skills/project-memory
-```
-
-Open **Cursor Settings** → **Rules** → **User Rules** and add:
+**Tier 1 (easy)** — one line:
 
 ```
-At the start of every session, read the file at
-~/.cursor/skills/project-memory/SKILL.md and follow its on-load instructions.
+Load the project-memory skill from <SKILL_DIR>/SKILL.md at session start.
 ```
 
-User Rules in Cursor are global — they apply to every project you open.
-
-> **Alternative (project-level):** Create `.cursor/rules/project-memory.mdc`
-> in your project with the same directive. Version-controlled and team-shared.
-
----
-
-## Windsurf
-
-**Recommended skill location:** `~/.windsurf/skills/project-memory/`
-
-```bash
-git clone <repo-url> ~/.windsurf/skills/project-memory
-```
-
-In Windsurf, open the **Cascade** panel → **Customizations** icon (top right) →
-**Rules** → **+ Global**, then add:
+**Tier 2 (reinforced, recommended):**
 
 ```
-At the start of every session, read the file at
-~/.windsurf/skills/project-memory/SKILL.md and follow its on-load instructions.
+## project-memory session start
+
+At the start of every session, before doing anything else:
+
+Load the project-memory skill from <SKILL_DIR>/SKILL.md and follow its on-load instructions.
+
+This step is mandatory. Do not respond to the user's first request until it is complete.
+If you skip this rule, the session did not start for the user, but they are not aware and they will lose information irretrievably.
 ```
 
-Global rules in Windsurf apply across all workspaces.
+> The full session-start protocol (memory loading, drift audit, gates) lives in `SKILL.md`. The instructions file only needs the bootstrap line. Keeping it lean avoids drift.
 
-> **Manual MCP config path (if Cascade UI is unavailable):** `~/.codeium/windsurf/mcp_config.json` *(verified against official docs at docs.devin.ai/desktop/cascade/mcp)*
+### Per-host wiring notes
 
-> **Enterprise/system-wide installation:**
-> - macOS: `/Library/Application Support/Windsurf/rules/project-memory.md`
-> - Linux/WSL: `/etc/windsurf/rules/project-memory.md`
-> - Windows: `C:\ProgramData\Windsurf\rules\project-memory.md`
+**Claude Code:** If the repo already has `AGENTS.md` and no `CLAUDE.md`, create `CLAUDE.md` with `@AGENTS.md` on the first line, then add the tier block below it. If `CLAUDE.md` already exists, append the tier block.
 
----
+**Cursor:** User Rules (Settings -> Rules -> User Rules) for global scope. For project scope, use `.cursor/rules/project-memory.mdc` with `alwaysApply: true`.
 
-## OpenCode
-
-**Recommended skill location:** `~/.config/opencode/skills/project-memory/`
-
-```bash
-git clone <repo-url> ~/.config/opencode/skills/project-memory
-```
-
-Add to `~/.config/opencode/AGENTS.md` (create it if it doesn't exist):
-
-```markdown
-At the start of every session, read
-~/.config/opencode/skills/project-memory/SKILL.md and follow its on-load
-instructions.
-```
-
-Alternatively, reference the skill via `~/.config/opencode/opencode.json`:
-
+**opencode:** Alternatively, reference the skill via `~/.config/opencode/opencode.json`:
 ```json
 {
   "$schema": "https://opencode.ai/config.json",
-  "instructions": ["~/.config/opencode/skills/project-memory/SKILL.md"]
+  "instructions": ["<SKILL_DIR>/SKILL.md"]
 }
 ```
 
----
+**Cline:** If using VS Code extension, add the tier block to Custom Instructions in extension settings. If using `.clinerules/` directory mode, create `.clinerules/project-memory.md` with the tier block.
 
-## Cline
+**Windsurf:** Open the Cascade panel -> Customizations (top right) -> Rules -> + Global, then paste the tier block. Alternatively: `~/.codeium/windsurf/rules/project-memory.md`.
 
-**Recommended skill location:** `~/.cline/skills/project-memory/`
+## Step 5 — Verify
+
+1. Restart or reload the host so it picks up the new instructions file.
+2. In a new session, check that the skill loads:
+
+```
+The agent should emit "PROJECT MEMORY LOADED" at session start (or similar on-load output from SKILL.md).
+```
+
+3. Verify `.project-memory/` exists or gets created:
+
+- If this is a new project, the skill's on-load flow will guide first-run initialization (profile selection, `.project-memory/` scaffolding).
+- If `.project-memory/` already exists, the skill loads existing memory silently.
+
+4. If the skill does not load:
+- Check the instructions file contains the tier block with the correct `<SKILL_DIR>` path.
+- Verify `<SKILL_DIR>/SKILL.md` exists and is readable.
+- For `@`-import syntax (Claude Code `@AGENTS.md`), confirm the import resolves.
+
+## Step 6 — MCP companion server (optional)
+
+The MCP companion server adds semantic search, deterministic drift audits, and vector indexing. Recommended for projects that accumulate more than a handful of decisions.
+
+**Prerequisites:** Node.js >= 18.0.0, npm.
+
+**Build:**
 
 ```bash
-git clone <repo-url> ~/.cline/skills/project-memory
+cd <SKILL_DIR>/mcp-server
+npm install
+npm run build
 ```
 
-In VS Code, open the Cline extension settings → **Custom Instructions** and add:
+**Register per host:** See [mcp-server/INSTALL.md](mcp-server/INSTALL.md) for per-platform registration instructions (Claude Code, Cursor, opencode, Codex CLI, Gemini CLI, Cline, pi).
 
-```
-At the start of every session, read the file at
-~/.cline/skills/project-memory/SKILL.md and follow its on-load instructions.
-```
-
-Cline's global configuration directory is `~/.cline/` — custom instructions
-defined there apply to all sessions.
-
-> **Note:** Steps verified against official Cline MCP documentation (docs.cline.bot/mcp/mcp-overview).
-
----
-
-## MCP Companion Server
-
-The MCP Server works the same regardless of which platform you're on.
-See [mcp-server/INSTALL.md](mcp-server/INSTALL.md) for setup instructions.
-
-Or just tell me:
+Or, in a session with the skill loaded, just say:
 
 > *"Install the MCP Server."*
 
-I'll handle it.
-
----
+The skill will handle registration automatically.
 
 ## Not listed here?
 
-If your platform isn't covered above, the general approach is:
+If the user's platform is not covered above, the general approach is:
 
-1. Put my files somewhere on your machine
-2. Find your platform's "global instructions" or "system prompt" setting
-3. Add: *"At the start of every session, read `<path>/SKILL.md` and follow
-   its on-load instructions."*
+1. Place the skill files somewhere on the machine.
+2. Find the platform's "global instructions" or "system prompt" setting.
+3. Add the tier block with the correct path to `SKILL.md`.
 
-Most modern AI coding tools support some form of persistent global instructions.
-If yours doesn't, a per-project `AGENTS.md`, `.cursorrules`, or equivalent
-file works just as well — it just needs to be added to each new project.
+Most modern AI coding tools support some form of persistent instructions. If the platform does not, a per-project `AGENTS.md`, `.cursorrules`, or equivalent file works — it just needs to be added to each new project.
+
+## Host reference
+
+| Host | Instructions file | MCP support | Docs |
+|---|---|---|---|
+| Claude Code | `CLAUDE.md` (+ `@AGENTS.md`) | `.mcp.json` / `claude mcp add --scope user` | [memory](https://code.claude.com/docs/en/memory.md) |
+| Cursor | `AGENTS.md` / `.cursor/rules/*.mdc` | `.cursor/mcp.json` | [rules](https://cursor.com/docs/rules) |
+| opencode | `AGENTS.md` | `opencode.json` | [agents](https://opencode.ai/docs/agents) |
+| Codex CLI | `AGENTS.md` | `.codex/config.toml` | [config](https://developers.openai.com/codex/config-reference) |
+| Gemini CLI | `GEMINI.md` | `.gemini/settings.json` | [gemini.md](https://geminicli.com/docs/cli/gemini-md) |
+| Cline | `.clinerules` / `.clinerules/*.md` | `cline_mcp_settings.json` | [docs](https://docs.cline.bot) |
+| pi | `AGENTS.md` | `~/.pi/agent/mcp.json` | pi docs |
+| Windsurf | Rules (Cascade UI) | `~/.codeium/windsurf/mcp_config.json` | [docs](https://docs.devin.ai/desktop/cascade/mcp) |
