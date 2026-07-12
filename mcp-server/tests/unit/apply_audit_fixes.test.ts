@@ -235,6 +235,52 @@ describe("apply_audit_fixes — fix_decision_index_status (non-canonical schema)
   });
 });
 
+describe("apply_audit_fixes — fix_decision_index_status (annotated status preservation)", () => {
+  it("annotated cell preserved on canonical match (no-op)", async () => {
+    w("decisions/index.md", `| Date | ID | Scope | Status | Global | Touches | Claim |
+|---|---|---|---|---|---|---|---|
+| 2026-07-03 | DECISION-2026-07-03-foo | s | active — implemented (branch feat/x; 337/337 tests) | - | t | c |
+`);
+    const fix: PendingFix = { type: "fix_decision_index_status", decisionId: "DECISION-2026-07-03-foo", correctStatus: "active" };
+    const result = await applyAuditFixes(pmDir, [fix]);
+    expect(result.applied).toHaveLength(1);
+    expect(result.applied[0].summary).toMatch(/already.*annotation preserved/);
+    // The annotated cell must be preserved byte-identical
+    const content = r("decisions/index.md");
+    expect(content).toContain("active — implemented (branch feat/x; 337/337 tests)");
+  });
+
+  it("annotated cell: canonical mismatch flips only token, suffix preserved", async () => {
+    w("decisions/index.md", `| Date | ID | Scope | Status | Global | Touches | Claim |
+|---|---|---|---|---|---|---|---|
+| 2026-07-03 | DECISION-2026-07-03-foo | s | active — implemented (branch feat/x; 337/337 tests) | - | t | c |
+`);
+    const fix: PendingFix = { type: "fix_decision_index_status", decisionId: "DECISION-2026-07-03-foo", correctStatus: "superseded" };
+    const result = await applyAuditFixes(pmDir, [fix]);
+    expect(result.applied).toHaveLength(1);
+    const content = r("decisions/index.md");
+    // The annotation suffix should be preserved; only "active" → "superseded"
+    expect(content).toContain("superseded — implemented (branch feat/x; 337/337 tests)");
+    expect(content).not.toContain("active — implemented");
+  });
+
+  it("defensive guard: correctStatus 'unknown' is rejected and index unchanged", async () => {
+    w("decisions/index.md", `| Date | ID | Scope | Status | Global | Touches | Claim |
+|---|---|---|---|---|---|---|---|
+| 2026-07-03 | DECISION-2026-07-03-foo | s | active | - | t | c |
+`);
+    const fix: PendingFix = { type: "fix_decision_index_status", decisionId: "DECISION-2026-07-03-foo", correctStatus: "unknown" };
+    const result = await applyAuditFixes(pmDir, [fix]);
+    expect(result.failed).toHaveLength(1);
+    expect(result.failed[0].reason).toBe("schema_mismatch");
+    expect(result.failed[0].details).toMatch(/refusing to write non-canonical status/i);
+    // Index must be unchanged
+    const content = r("decisions/index.md");
+    expect(content).toMatch(/\| active \|/);
+    expect(content).toContain("DECISION-2026-07-03-foo");
+  });
+});
+
 describe("apply_audit_fixes — regression guards from review", () => {
   it("assign_adr_id: works on CRLF frontmatter (Windows line endings)", async () => {
     w("decisions/DECISION-2026-06-17-foo.md", `---\r\nid: DECISION-2026-06-17-foo\r\nstatus: active\r\n---\r\n# Body\r\n`);

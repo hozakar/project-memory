@@ -114,6 +114,20 @@ export function parseIndexHeader(content: string): Map<string, number> | null {
 }
 
 /**
+ * Extract the canonical status token from an index Status cell.
+ * Annotated cells like "active — implemented (branch X; 337/337 tests)"
+ * start with a canonical word (active|superseded) followed by a word
+ * boundary. If the cell starts with one of these, return it; otherwise
+ * return the trimmed cell (preserving custom single-token statuses like
+ * on-hold, in-progress). Never returns "unknown".
+ */
+export function canonicalStatusFromCell(cell: string): string {
+  const trimmed = cell.trim();
+  const m = trimmed.match(/^(active|superseded)\b/);
+  return m ? m[1] : trimmed;
+}
+
+/**
  * Extract the date portion from a DECISION-YYYY-MM-DD-* ID.
  * Returns "9999-99-99" as a sentinel (sorts last) for malformed IDs.
  */
@@ -297,6 +311,8 @@ function cat6DecisionDrift(projectMemoryDir: string, ignored: AuditIgnoreSet): {
     fileIds.add(id);
     const fm = parseFrontmatter(readFile(path.join(decisionsDir, filename)));
     const fileStatus = fm["status"] || "unknown";
+    // Skip files with unparseable status — never emit "unknown" into the index.
+    if (fileStatus === "unknown") continue;
     const touchesRaw = fm["touches"] || "";
     const touches = touchesRaw ? touchesRaw.split(/[,;\s]+/).filter(Boolean) : [];
 
@@ -310,7 +326,7 @@ function cat6DecisionDrift(projectMemoryDir: string, ignored: AuditIgnoreSet): {
           date: today(),
         });
       }
-    } else if (indexRows.get(id) !== fileStatus) {
+    } else if (canonicalStatusFromCell(indexRows.get(id) ?? "") !== fileStatus) {
       if (!ignored.has(`decision-drift:${id}:status-mismatch`)) {
         pendingFixes.push({
           type: "fix_decision_index_status",

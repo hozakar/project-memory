@@ -7,7 +7,7 @@ import type {
   PartialFix,
   FailedFix,
 } from "../types";
-import { parseFrontmatter, setFrontmatterField, parseIndexHeader } from "./run_audit";
+import { parseFrontmatter, setFrontmatterField, parseIndexHeader, canonicalStatusFromCell } from "./run_audit";
 import { validateMemoryId } from "../validation.js";
 
 // ---------------------------------------------------------------------------
@@ -125,6 +125,9 @@ function applyFixDecisionIndexStatus(
   if (!decisionId || !correctStatus) {
     return { fix_type: "fix_decision_index_status", reason: "schema_mismatch", details: "missing decisionId/correctStatus" };
   }
+  if (correctStatus === "unknown") {
+    return { fix_type: "fix_decision_index_status", reason: "schema_mismatch", details: "correctStatus is 'unknown' — refusing to write non-canonical status" };
+  }
   validateMemoryId(decisionId, "decisionId");
   const indexPath = path.join(projectMemoryDir, "decisions", "index.md");
   if (!fileExists(indexPath)) {
@@ -156,15 +159,16 @@ function applyFixDecisionIndexStatus(
     if (idCell !== decisionId) continue;
 
     const currentStatus = cells[statusColIdx]?.trim();
-    if (currentStatus === correctStatus) {
+    if (canonicalStatusFromCell(currentStatus) === correctStatus) {
       return {
         fix_type: "fix_decision_index_status",
         target_file: path.relative(path.dirname(projectMemoryDir), indexPath),
-        summary: `Status for ${decisionId} already ${correctStatus} (no-op)`,
+        summary: `Status for ${decisionId} already ${correctStatus} (no-op, annotation preserved)`,
       };
     }
-    // Replace only the status cell content, preserving surrounding whitespace
-    cells[statusColIdx] = cells[statusColIdx].replace(currentStatus, correctStatus);
+    // Replace only the canonical token, preserving any " — annotation" suffix.
+    const currentCanonical = canonicalStatusFromCell(currentStatus);
+    cells[statusColIdx] = cells[statusColIdx].replace(currentCanonical, correctStatus);
     lines[i] = cells.join("|");
     fs.writeFileSync(indexPath, lines.join("\n"), "utf-8");
     return {

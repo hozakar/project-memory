@@ -701,3 +701,146 @@ describe("Cat 15: decision supersession integrity", () => {
     expect(content).toContain("supersedes: null");
   });
 });
+
+describe("runAudit — Cat 6: annotated status + unknown guard", () => {
+  let cat6tmp: TmpDir;
+  let cat6DecisionsDir: string;
+
+  beforeEach(() => {
+    cat6tmp = createTmpDir();
+    fs.writeFileSync(join(cat6tmp.pmDir, "config.yml"), "adr_enabled: false\naudit_ignore: []\n");
+    const phasesDir = join(cat6tmp.pmDir, "phases");
+    fs.mkdirSync(phasesDir, { recursive: true });
+    fs.writeFileSync(join(phasesDir, "index.yml"), "phases: []\n");
+    cat6DecisionsDir = join(cat6tmp.pmDir, "decisions");
+    fs.mkdirSync(cat6DecisionsDir, { recursive: true });
+  });
+
+  afterEach(() => {
+    try { cat6tmp.cleanup(); } catch { /* Windows cleanup */ }
+  });
+
+  function writeDecisionFile(id: string, frontmatterLines: string[], body = "# Test\n"): void {
+    const lines = ["---", ...frontmatterLines, "---", "", body];
+    fs.writeFileSync(join(cat6DecisionsDir, `${id}.md`), lines.join("\n"), "utf-8");
+  }
+
+  function writeIndex(rows: string[]): void {
+    const lines = [
+      "# Decisions Index",
+      "",
+      "| Date | ID | Scope | Status | Global | Touches | Claim |",
+      "|---|---|---|---|---|---|---|",
+      ...rows,
+    ];
+    fs.writeFileSync(join(cat6DecisionsDir, "index.md"), lines.join("\n"), "utf-8");
+  }
+
+  function readIndex(): string {
+    return fs.readFileSync(join(cat6DecisionsDir, "index.md"), "utf-8");
+  }
+
+  // -----------------------------------------------------------------------
+  // Test a: Annotated row matches canonical → no pending_fix
+  // -----------------------------------------------------------------------
+  it("annotated status matches canonical → no fix_decision_index_status emitted, index unchaged", async () => {
+    writeDecisionFile("DECISION-2026-07-03-foo", [
+      "id: DECISION-2026-07-03-foo",
+      "status: active",
+      "primary_scope: test",
+    ]);
+    writeIndex([
+      `| 2026-07-03 | DECISION-2026-07-03-foo | test | active — implemented (branch feat/x; 337/337 tests) | - | t | c |`,
+    ]);
+    const indexBefore = readIndex();
+
+    const report = await runAudit(cat6tmp.pmDir);
+    const statusFix = report.pending_fixes.find(
+      f => f.type === "fix_decision_index_status" && f.decisionId === "DECISION-2026-07-03-foo",
+    );
+    expect(statusFix).toBeUndefined();
+
+    // Index must be byte-unchanged
+    const indexAfter = readIndex();
+    expect(indexAfter).toBe(indexBefore);
+  });
+
+  // -----------------------------------------------------------------------
+  // Test b: Annotated row canonical mismatch → pending_fix emitted, apply preserves annotation
+  // -----------------------------------------------------------------------
+  it("annotated status canonical mismatch → pending_fix indexedStatus flip preserves annotation", async () => {
+    writeDecisionFile("DECISION-2026-07-03-foo", [
+      "id: DECISION-2026-07-03-foo",
+      "status: superseded",
+      "primary_scope: test",
+    ]);
+    writeIndex([
+      `| 2026-07-03 | DECISION-2026-07-03-foo | test | active — implemented (branch feat/x; 337/337 tests) | - | t | c |`,
+    ]);
+
+    // Run audit → detect mismatch
+    const report = await runAudit(cat6tmp.pmDir);
+    const statusFix = report.pending_fixes.find(
+      f => f.type === "fix_decision_index_status" && f.decisionId === "DECISION-2026-07-03-foo",
+    );
+    expect(statusFix).toBeDefined();
+    expect(statusFix!.correctStatus).toBe("superseded");
+
+    // Apply the fix
+    const applyResult = await applyAuditFixes(cat6tmp.pmDir, [statusFix!]);
+    const applied = applyResult.applied.find(a => a.fix_type === "fix_decision_index_status");
+    expect(applied).toBeDefined();
+
+    // Index must have the annotation suffix preserved, only "active" flipped to "superseded"
+    const indexContent = readIndex();
+    expect(indexContent).toContain("superseded — implemented (branch feat/x; 337/337 tests)");
+    expect(indexContent).not.toContain("active — implemented");
+  });
+
+  // -----------------------------------------------------------------------
+  // Test c: Unknown guard — file with unparseable frontmatter does NOT cause "unknown" in index
+  // -----------------------------------------------------------------------
+  it("file with unparseable status does not produce unknown-status fix or clobber index cell", async () => {
+    // Decision file with a valid frontmatter block but NO `status:` line
+    writeDecisionFile("DECISION-2026-07-03-no-status", [
+      "id: DECISION-2026-07-03-no-status",
+      "touches: test",
+    ]);
+    // Another decision with proper status to ensure audit still works
+    writeDecisionFile("DECISION-2026-07-03-other", [
+      "id: DECISION-2026-07-03-other",
+      "status: active",
+      "primary_scope: test",
+    ]);
+    // Index has a row for the no-status decision with Status = "active"
+    writeIndex([
+      `| 2026-07-03 | DECISION-2026-07-03-no-status | - | active | - | test | c |`,
+      `| 2026-07-03 | DECISION-2026-07-03-other | test | active | - | t | c |`,
+    ]);
+
+    const report = await runAudit(cat6tmp.pmDir);
+
+    // No pending_fix with correctStatus "unknown" should exist
+    const unknownFixes = report.pending_fixes.filter(f => f.correctStatus === "unknown");
+    expect(unknownFixes).toHaveLength(0);
+
+    // The no-status file should NOT trigger a missing-row fix either (skipped entirely)
+    const noStatusFixes = report.pending_fixes.filter(f =>
+      f.decisionId === "DECISION-2026-07-03-no-status",
+    );
+    expect(noStatusFixes).toHaveLength(0);
+
+    // The other decision's missing-row fix should still be detected
+    // (it IS in indexRows, so no missing-row fix — only no-status one should be missing)
+    const otherFix = report.pending_fixes.find(f => f.decisionId === "DECISION-2026-07-03-other");
+    expect(otherFix).toBeUndefined(); // row exists, status matches → no fix
+
+    // Now apply all pending fixes (none for no-status case)
+    const applyResult = await applyAuditFixes(cat6tmp.pmDir, report.pending_fixes);
+    expect(applyResult.applied).toHaveLength(0);
+
+    // Index Status cell for no-status row is STILL "active" (not clobbered to "unknown")
+    const indexContent = readIndex();
+    expect(indexContent).toContain("| DECISION-2026-07-03-no-status | - | active | - | test | c |");
+  });
+});
