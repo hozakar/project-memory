@@ -7,7 +7,7 @@ import type {
   PartialFix,
   FailedFix,
 } from "../types";
-import { parseFrontmatter, setFrontmatterField } from "./run_audit";
+import { parseFrontmatter, setFrontmatterField, parseIndexHeader } from "./run_audit";
 import { validateMemoryId } from "../validation.js";
 
 // ---------------------------------------------------------------------------
@@ -131,26 +131,49 @@ function applyFixDecisionIndexStatus(
     return { fix_type: "fix_decision_index_status", reason: "file_not_found", details: indexPath };
   }
   const content = readFile(indexPath);
-  // Row pattern: | Date | ID | Scope | Status | ...
-  const rowRe = new RegExp(`^(\\|\\s*\\d{4}-\\d{2}-\\d{2}\\s*\\|\\s*${decisionId}\\s*\\|\\s*[^|]+\\|\\s*)([\\w-]+)(\\s*\\|)`, "m");
-  const m = content.match(rowRe);
-  if (!m) {
-    return { fix_type: "fix_decision_index_status", reason: "ambiguous_target", details: `row for ${decisionId} not found` };
+
+  // Parse header to find ID and Status column indices by name
+  const headerMap = parseIndexHeader(content);
+  if (!headerMap) {
+    return { fix_type: "fix_decision_index_status", reason: "ambiguous_target", details: "could not locate Active table header" };
   }
-  if (m[2] === correctStatus) {
+  const idColIdx = headerMap.get("id");
+  const statusColIdx = headerMap.get("status");
+  if (idColIdx === undefined || statusColIdx === undefined) {
+    return { fix_type: "fix_decision_index_status", reason: "ambiguous_target", details: "header missing ID or Status column" };
+  }
+
+  // Find the target row by matching the ID column
+  const lines = content.split("\n");
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    if (!line.startsWith("|")) continue;
+    if (/^\|[-\s|]+\|$/.test(line)) continue; // separator
+    if (/^\|\s*Date\s*\|/.test(line)) continue; // header row
+    const cells = line.split("|");
+    if (cells.length <= statusColIdx) continue;
+    const idCell = cells[idColIdx]?.trim();
+    if (idCell !== decisionId) continue;
+
+    const currentStatus = cells[statusColIdx]?.trim();
+    if (currentStatus === correctStatus) {
+      return {
+        fix_type: "fix_decision_index_status",
+        target_file: path.relative(path.dirname(projectMemoryDir), indexPath),
+        summary: `Status for ${decisionId} already ${correctStatus} (no-op)`,
+      };
+    }
+    // Replace only the status cell content, preserving surrounding whitespace
+    cells[statusColIdx] = cells[statusColIdx].replace(currentStatus, correctStatus);
+    lines[i] = cells.join("|");
+    fs.writeFileSync(indexPath, lines.join("\n"), "utf-8");
     return {
       fix_type: "fix_decision_index_status",
       target_file: path.relative(path.dirname(projectMemoryDir), indexPath),
-      summary: `Status for ${decisionId} already ${correctStatus} (no-op)`,
+      summary: `Fixed ${decisionId} status: ${currentStatus} → ${correctStatus}`,
     };
   }
-  const updated = content.replace(rowRe, `$1${correctStatus}$3`);
-  fs.writeFileSync(indexPath, updated, "utf-8");
-  return {
-    fix_type: "fix_decision_index_status",
-    target_file: path.relative(path.dirname(projectMemoryDir), indexPath),
-    summary: `Fixed ${decisionId} status: ${m[2]} → ${correctStatus}`,
-  };
+  return { fix_type: "fix_decision_index_status", reason: "ambiguous_target", details: `row for ${decisionId} not found` };
 }
 
 // ---------------------------------------------------------------------------

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { parseFrontmatter, matchesIgnorePattern, AuditIgnoreSet, parseSupersedesList, parseSupersededBy, findSupersessionCycles } from "../../src/tools/run_audit";
+import { parseFrontmatter, matchesIgnorePattern, AuditIgnoreSet, parseSupersedesList, parseSupersededBy, findSupersessionCycles, parseIndexHeader } from "../../src/tools/run_audit";
 
 describe("parseFrontmatter", () => {
   it("parses basic key-value pairs", () => {
@@ -188,6 +188,52 @@ describe("parseSupersededBy", () => {
   it("handles surrounding quotes", () => {
     const content = "---\nid: TEST\nsuperseded_by: 'DECISION-2026-06-13-branch-per-phase'\n---\n# Body";
     expect(parseSupersededBy(content)).toBe("DECISION-2026-06-13-branch-per-phase");
+  });
+});
+
+describe("parseIndexHeader", () => {
+  it("canonical 7-col header", () => {
+    const content = "| Date | ID | Scope | Status | Global | Touches | Claim |\n|---|---|---|---|---|---|---|\n| 2026-07-03 | DECISION-2026-07-03-foo | workflow | active | - | a | c |\n";
+    const map = parseIndexHeader(content);
+    expect(map).not.toBeNull();
+    expect(map!.get("status")).toBe(4);
+    expect(map!.get("id")).toBe(2);
+    expect(map!.get("scope")).toBe(3);
+    expect(map!.get("global")).toBe(5);
+  });
+
+  it("non-canonical 6-col header (missing Scope)", () => {
+    const content = "| Date | ID | Status | Global | Claim | Touches |\n|---|---|---|---|---|---|\n| 2026-07-03 | DECISION-2026-07-03-foo | active | No | Claim text | touch1, touch2 |\n";
+    const map = parseIndexHeader(content);
+    expect(map).not.toBeNull();
+    expect(map!.get("status")).toBe(3);
+    expect(map!.get("global")).toBe(4);
+  });
+
+  it("non-canonical 6-col header (missing Scope, different order)", () => {
+    const content = "| Date | ID | Status | Global | Touches | Claim |\n|---|---|---|---|---|---|\n";
+    const map = parseIndexHeader(content);
+    expect(map).not.toBeNull();
+    expect(map!.get("status")).toBe(3);
+  });
+
+  it("returns null when no header found", () => {
+    const content = "# Just a heading\n\nSome text without a table.\n";
+    expect(parseIndexHeader(content)).toBeNull();
+  });
+
+  it("returns null when header without separator row", () => {
+    const content = "| Date | ID | Status | Global |\n| 2026-07-03 | DECISION-foo | active | No |\n";
+    // No separator row after header → null
+    expect(parseIndexHeader(content)).toBeNull();
+  });
+
+  it("column names are lowercased in the map", () => {
+    const content = "| Date | ID | Scope | STATUS | Global | Touches | Claim |\n|---|---|---|---|---|---|---|\n";
+    const map = parseIndexHeader(content);
+    expect(map).not.toBeNull();
+    expect(map!.get("status")).toBe(4);
+    expect(map!.get("STATUS")).toBeUndefined();
   });
 });
 

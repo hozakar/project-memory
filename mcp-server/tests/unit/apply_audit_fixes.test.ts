@@ -193,6 +193,48 @@ describe("apply_audit_fixes — create_adr_file", () => {
   });
 });
 
+describe("apply_audit_fixes — fix_decision_index_status (non-canonical schema)", () => {
+  it("non-canonical 6-col (missing Scope, Claim/Touches swapped)", async () => {
+    w("decisions/index.md", `| Date | ID | Status | Global | Claim | Touches |
+|---|---|---|---|---|---|
+| 2026-07-03 | DECISION-2026-07-03-foo | active | No | Claim text | touch1, touch2 |
+`);
+    const fix: PendingFix = { type: "fix_decision_index_status", decisionId: "DECISION-2026-07-03-foo", correctStatus: "superseded" };
+    const result = await applyAuditFixes(pmDir, [fix]);
+    expect(result.applied).toHaveLength(1);
+    const content = r("decisions/index.md");
+    // Status column (3rd) should be updated, Global column (4th) should remain unchanged
+    expect(content).toMatch(/\| superseded \| No \|/);
+    // Specifically verify the full line
+    const expectedRow = "| 2026-07-03 | DECISION-2026-07-03-foo | superseded | No | Claim text | touch1, touch2 |";
+    expect(content).toContain(expectedRow);
+  });
+
+  it("non-canonical schema no-op when status already correct", async () => {
+    w("decisions/index.md", `| Date | ID | Status | Global | Claim | Touches |
+|---|---|---|---|---|---|
+| 2026-07-03 | DECISION-2026-07-03-foo | superseded | No | Claim text | touch1, touch2 |
+`);
+    const fix: PendingFix = { type: "fix_decision_index_status", decisionId: "DECISION-2026-07-03-foo", correctStatus: "superseded" };
+    const result = await applyAuditFixes(pmDir, [fix]);
+    expect(result.applied[0].summary).toMatch(/already/);
+  });
+
+  it("canonical schema still works (regression)", async () => {
+    w("decisions/index.md", `| Date | ID | Scope | Status | Global | Touches | Claim |
+|---|---|---|---|---|---|---|---|
+| 2026-06-17 | DECISION-2026-06-17-foo | s | active | - | t | c |
+`);
+    const fix: PendingFix = { type: "fix_decision_index_status", decisionId: "DECISION-2026-06-17-foo", correctStatus: "superseded" };
+    const result = await applyAuditFixes(pmDir, [fix]);
+    expect(result.applied).toHaveLength(1);
+    const content = r("decisions/index.md");
+    expect(content).toMatch(/\| superseded \|/);
+    // Scope (-), Global (-), Touches (t), Claim (c) all unchanged
+    expect(content).toContain("| s | superseded | - | t | c |");
+  });
+});
+
 describe("apply_audit_fixes — regression guards from review", () => {
   it("assign_adr_id: works on CRLF frontmatter (Windows line endings)", async () => {
     w("decisions/DECISION-2026-06-17-foo.md", `---\r\nid: DECISION-2026-06-17-foo\r\nstatus: active\r\n---\r\n# Body\r\n`);

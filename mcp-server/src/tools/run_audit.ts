@@ -84,6 +84,36 @@ export function parseSupersededBy(content: string): string | null {
 }
 
 /**
+ * Parse a markdown table header row to build a column-name → index map.
+ * Scans content for the first `| Date | ID | ... |` header row followed by
+ * a separator row. Returns a Map of lowercase-trimmed column names to their
+ * index in the split-by-| array (1-based: index 0 is the empty string before
+ * the first |). Returns null if no valid header found.
+ *
+ * Used by cat6DecisionDrift and applyFixDecisionIndexStatus to resolve
+ * column positions by name instead of hard-coded positions, making the
+ * parser resilient to schema variations (missing Scope, reordered columns).
+ */
+export function parseIndexHeader(content: string): Map<string, number> | null {
+  const lines = content.split("\n");
+  for (let i = 0; i < lines.length; i++) {
+    if (/^\|\s*Date\s*\|\s*ID\s*\|/.test(lines[i])) {
+      if (i + 1 < lines.length && /^\|[-\s|]+\|$/.test(lines[i + 1])) {
+        const cells = lines[i].split("|").map(c => c.trim());
+        const headerMap = new Map<string, number>();
+        for (let j = 0; j < cells.length; j++) {
+          if (cells[j]) {
+            headerMap.set(cells[j].toLowerCase(), j);
+          }
+        }
+        return headerMap;
+      }
+    }
+  }
+  return null;
+}
+
+/**
  * Extract the date portion from a DECISION-YYYY-MM-DD-* ID.
  * Returns "9999-99-99" as a sentinel (sorts last) for malformed IDs.
  */
@@ -239,9 +269,22 @@ function cat6DecisionDrift(projectMemoryDir: string, ignored: AuditIgnoreSet): {
   const indexPath = path.join(decisionsDir, "index.md");
   const indexContent = readFile(indexPath);
   const indexRows = new Map<string, string>(); // id -> status
-  for (const line of indexContent.split("\n")) {
-    const m2 = line.match(/^\|\s*[\d-]+\s*\|\s*(DECISION-[\w-]+)\s*\|\s*\S+\s*\|\s*(\w+)\s*\|/);
-    if (m2) indexRows.set(m2[1], m2[2]);
+  const headerMap = parseIndexHeader(indexContent);
+  const idColIdx = headerMap?.get("id");
+  const statusColIdx = headerMap?.get("status");
+  if (headerMap && idColIdx !== undefined && statusColIdx !== undefined) {
+    for (const line of indexContent.split("\n")) {
+      if (!line.startsWith("|")) continue;
+      if (/^\|[-\s|]+\|$/.test(line)) continue; // separator
+      if (/^\|\s*Date\s*\|/.test(line)) continue; // header row
+      const cells = line.split("|");
+      if (cells.length <= Math.max(idColIdx, statusColIdx)) continue;
+      const id = cells[idColIdx]?.trim();
+      const status = cells[statusColIdx]?.trim();
+      if (id && id.startsWith("DECISION-") && status) {
+        indexRows.set(id, status);
+      }
+    }
   }
 
   const autoFixed: string[] = [];
