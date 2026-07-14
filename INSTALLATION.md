@@ -44,7 +44,7 @@ Present all 3 questions in a single message. Do not guess — let the user decid
 **Question 1: Enforcement tier**
 
 - **easy** — one line in the instructions file: `Load the project-memory skill from <SKILL_DIR>/SKILL.md at session start.`
-- **reinforced (recommended)** — a 6-line block with the mandatory session-start protocol. Sufficient for all users and hosts.
+- **reinforced (recommended)** — a short block with the mandatory session-start protocol. Sufficient for all users and hosts.
 
 *Recommend: reinforced.*
 
@@ -136,10 +136,11 @@ Load the project-memory skill from <SKILL_DIR>/SKILL.md at session start.
 
 At the start of every session, before doing anything else:
 
-Load the project-memory skill from <SKILL_DIR>/SKILL.md and follow its on-load instructions.
+Load the project-memory skill from <SKILL_DIR>/SKILL.md, follow its on-load instructions, and keep its gates and protocols in force for the rest of the session.
 
 This step is mandatory. Do not respond to the user's first request until it is complete.
-If you skip this rule, the session did not start for the user, but they are not aware and they will lose information irretrievably.
+If SKILL.md cannot be read or the skill fails to load, tell the user before proceeding — do not continue silently.
+If you skip this step, prior decisions and constraints are not loaded and nothing from this session is captured in project memory — the user loses that context irretrievably, without ever knowing.
 ```
 
 > The full session-start protocol (memory loading, drift audit, gates) lives in `SKILL.md`. The instructions file only needs the bootstrap line. Keeping it lean avoids drift.
