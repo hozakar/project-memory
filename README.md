@@ -130,7 +130,8 @@ it varies quite a bit:
   installed, audits become deterministic and instant: a background worker runs the
   full pipeline and applies all fixes with zero tokens and zero LLM judgment.
   Semantic search is also server-side. This is where the MCP Server earns its keep
-  in `standard`.
+  in `standard`. In short: everything still works without MCP — you just pay for it
+  in tokens, wall-clock time, and LLM judgment where deterministic code would do the job.
 
 ---
 
