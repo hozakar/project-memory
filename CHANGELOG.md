@@ -2,6 +2,17 @@
 
 All notable changes to the project-memory skill and MCP companion server.
 
+## Unreleased
+
+### Fixes
+
+- **CI matrix Node 18/20 → 20/22; Node floor raised to >= 20.** The first real CI
+  run (post billing unlock) failed on Node 18: vitest 4 imports `styleText` from
+  `node:util`, which requires Node >= 20.12 — the test suite cannot run on 18 at
+  all. Node 18 and 20 are both past end-of-life; the matrix now tests 20.x (floor)
+  and 22.x (active LTS). `engines.node` bumped to `>=20.0.0`; prerequisites
+  updated in `INSTALLATION.md` and `mcp-server/INSTALL.md`.
+
 ## [0.1.3] — 2026-07-15 — Audit category consolidation + go-public
 
 ### Go-public

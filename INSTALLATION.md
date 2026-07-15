@@ -186,7 +186,7 @@ The agent should emit "PROJECT MEMORY LOADED" at session start (or similar on-lo
 
 The MCP companion server adds semantic search, deterministic drift audits, and vector indexing. Recommended for projects that accumulate more than a handful of decisions.
 
-**Prerequisites:** Node.js >= 18.0.0, npm.
+**Prerequisites:** Node.js >= 20.0.0, npm.
 
 **Build:**
 
