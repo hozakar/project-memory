@@ -1,6 +1,6 @@
 {
   "name": "project-memory-mcp-server",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "MCP companion server for project-memory skill — semantic search over phases and decisions",
   "main": "dist/index.js",
   "scripts": {

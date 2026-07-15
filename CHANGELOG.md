@@ -2,7 +2,16 @@
 
 All notable changes to the project-memory skill and MCP companion server.
 
-## Unreleased
+## [0.1.3] — 2026-07-15 — Audit category consolidation + go-public
+
+### Go-public
+
+- **Repository opened up for public release.** MIT `LICENSE` added; GitHub Actions
+  CI workflow (Node 18/20 matrix: build, lint, typecheck, test); self-contained
+  `CONTRIBUTING.md`; README memory-loop Mermaid diagram; `INSTALLATION.md`
+  version-control guidance (private/team → commit `.project-memory/`; public →
+  gitignore, with optional `adr_enabled` curated ADR mirror). Repository history
+  rewritten to remove maintainer-personal files.
 
 ### Cat 9 + Cat 11 active; audit category index tidy
 
