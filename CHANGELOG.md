@@ -4,6 +4,11 @@ All notable changes to the project-memory skill and MCP companion server.
 
 ## Unreleased
 
+### Added
+
+- **`CODE_OF_CONDUCT.md`** — Contributor Covenant v2.1, linked from
+  `CONTRIBUTING.md`. Completes the GitHub community-profile checklist.
+
 ### Fixes
 
 - **CI matrix Node 18/20 → 20/22; Node floor raised to >= 20.** The first real CI

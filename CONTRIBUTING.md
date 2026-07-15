@@ -3,6 +3,9 @@
 Thank you for considering contributing to project-memory. This document covers
 the practical guidelines for making changes.
 
+By participating in this project you agree to abide by its
+[Code of Conduct](CODE_OF_CONDUCT.md).
+
 project-memory is a skill for agentic coding AI assistants. It has two
 contribution surfaces that differ in language, tooling, and verification
 requirements.
