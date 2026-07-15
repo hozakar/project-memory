@@ -26,6 +26,18 @@ And if you are about to do something that conflicts with a previous decision, th
 
 The skill uses its own judgment about what is worth surfacing and what is not. But its read will not always match yours. If something you talked about feels important and the skill has not picked up on it — or the other way around — just say so. It will act on it.
 
+Here is how the memory loop works:
+
+```mermaid
+flowchart LR
+    A["Coding Session"] --> B["Capture Decisions<br/>& Discussions"]
+    B --> C["Write to<br/>.project-memory/"]
+    C --> D["Load at Start<br/>of Next Session"]
+    D --> E["Pre-Implementation Gate:<br/>Cross-reference Decisions"]
+    E --> F["Inform Future Work"]
+    F --> A
+```
+
 ---
 
 ## Remembering your preferences
@@ -52,9 +64,9 @@ The skill will save it privately — only you can search your own notes. No stat
 Copy the skill files into a directory in your project. A path like
 `.claude/skills/project-memory/` works well.
 
-> You will notice a `.project-memory/` folder in this repository — that is the
-> skill's own memory from being built with itself. Do not copy it over; your
-> project will get its own fresh one the first time you work together.
+> The skill will create a `.project-memory/` directory in your own project the
+> first time you work together. Do not copy it from another project — yours
+> will get its own fresh one automatically.
 
 Then tell your agent:
 

@@ -2,13 +2,15 @@
 .husky/
 mcp-server/node_modules/
 mcp-server/dist/
-.project-memory/vector-index/
+.project-memory/
 docs/
 scripts/
 stress-test/generated/
-.kyck/*
-!.kyck/sync.json
-!.kyck/events.*.enc
+.kyck/
 .pi-subagents/
 # pi subagent run scratch logs
 .pi-runs/
+AGENTS.md
+CLAUDE.md
+# hermes-coder-pipeline worktrees
+.hermes/

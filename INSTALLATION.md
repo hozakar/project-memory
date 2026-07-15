@@ -226,3 +226,15 @@ Most modern AI coding tools support some form of persistent instructions. If the
 | Cline | `.clinerules` / `.clinerules/*.md` | `cline_mcp_settings.json` | [docs](https://docs.cline.bot) |
 | pi | `AGENTS.md` | `~/.pi/agent/mcp.json` | pi docs |
 | Windsurf | Rules (Cascade UI) | `~/.codeium/windsurf/mcp_config.json` | [docs](https://docs.devin.ai/desktop/cascade/mcp) |
+
+## Version control considerations
+
+The `.project-memory/` directory that the skill creates in consuming projects warrants a deliberate version-control decision. The guidance below applies to the *consuming project's* repository, not to this repository.
+
+**Private or team repositories** — committing `.project-memory/` is recommended. The directory captures engineering decisions, rejected alternatives, and session rationale that function as shared engineering documentation for the team. Committing it ensures the memory travels with the code and is available to every contributor's agentic tooling.
+
+**Public repositories** — adding `.project-memory/` to `.gitignore` is recommended. The content is agent-written from live session context and not consciously authored for publication. Anything that reaches public git history is effectively irreversible: forks, clones, and SHA-reachable orphaned commits persist even after a subsequent deletion commit.
+
+A project that wants to expose decisions deliberately can enable the ADR mirror by setting `adr_enabled: true` in `.project-memory/config.yml`. The mirror maintains a curated, consciously written public decision log in a separate location that can be included in the repository independently of the full `.project-memory/` directory.
+
+The choice belongs to the user — this is guidance, not a rule.
