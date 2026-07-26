@@ -6,6 +6,21 @@ All notable changes to the project-memory skill and MCP companion server.
 
 ### Fixes
 
+- **`# Prompt` is now mandatory in INSTRUCTION records, with a hard length budget.**
+  The parser resolves an instruction's injected payload as `# Prompt` section →
+  frontmatter `prompt:` → empty string, with no fallback to the file body and no
+  warning. An active instruction lacking `# Prompt` therefore injects nothing and
+  is silently inert — which had already happened:
+  `INSTRUCTION-2026-06-14-deep-review-every-5-phases` was `state: active` and
+  injecting an empty payload for six weeks. `templates/instructions.md` now states
+  the resolution order, requires `# Prompt`, sets a budget of 5 lines / ~60 words
+  (the payload is re-read every turn), restricts the Prompt to trigger plus
+  required action, and sends rationale below `##` headings or into the motivating
+  DECISION. It also documents a trap: `extractSection` reads to the next `##`, so
+  anything between `# Prompt` and the following `##` heading leaks into the
+  payload. The template's stale "injected at session start" wording is corrected
+  to the per-turn contract.
+
 - **Instructions are now loaded per turn, not only when a gate fires.** Instruction
   re-injection lived entirely inside the gates' GATE 0 steps, so its reliability
   was the gates' reliability — measured at zero turn-boundary-sweep firings across
