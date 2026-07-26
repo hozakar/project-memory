@@ -5,6 +5,11 @@ description: Project memory system. Loads at every session start to provide engi
 
 # On Load
 
+**Subagent exemption — check this before step 1.** If you were dispatched as a subagent to
+execute a specific task, do NOT run this on-load flow and do NOT write to `.project-memory/`.
+Proceed with the task as briefed and report results to your parent, which owns all memory
+writes. See `standard/gates.md` → Actor Scope.
+
 When this skill activates:
 
 1. Output exactly this line:

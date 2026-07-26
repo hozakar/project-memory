@@ -6,6 +6,21 @@ All notable changes to the project-memory skill and MCP companion server.
 
 ### Added
 
+- **Subagent guard — gates bind the primary agent only.** Nothing previously
+  distinguished the primary agent from a dispatched subagent, so a subagent
+  inheriting the instructions file would load project memory (~20k tokens) and
+  honor the turn-boundary sweep and decision-moment awareness as if it owned the
+  memory. Parallel subagents writing the single rolling `current-state.md` is a
+  clobbering race, and task-local reasoning could be persisted as project-wide
+  record. Subagents now skip the session-start load and both gates, and are
+  prohibited from writing to `.project-memory/` at all; the parent owns every
+  memory write and injects task-relevant constraints into the subagent's prompt.
+  The guard is in the Tier 2 (reinforced) block in `INSTALLATION.md` — where
+  subagents actually read, since they inherit the instructions file but may never
+  invoke the skill — with `SKILL.md` On Load as a backstop and `standard/gates.md`
+  → Actor Scope as the canonical statement. Read-side skip is an optimization;
+  the write-side prohibition is absolute.
+
 - **`CODE_OF_CONDUCT.md`** — Contributor Covenant v2.1, linked from
   `CONTRIBUTING.md`. Completes the GitHub community-profile checklist.
 

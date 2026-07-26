@@ -141,6 +141,8 @@ Load the project-memory skill from <SKILL_DIR>/SKILL.md, follow its on-load inst
 This step is mandatory. Do not respond to the user's first request until it is complete.
 If SKILL.md cannot be read or the skill fails to load, tell the user before proceeding — do not continue silently.
 If you skip this step, prior decisions and constraints are not loaded and nothing from this session is captured in project memory — the user loses that context irretrievably, without ever knowing.
+
+Subagents are exempt: if you were dispatched as a subagent for a specific task, skip this block, and never write to `.project-memory/` — report to your parent instead. The parent owns all memory writes and briefs you with the constraints your task needs.
 ```
 
 > The full session-start protocol (memory loading, drift audit, gates) lives in `SKILL.md`. The instructions file only needs the bootstrap line. Keeping it lean avoids drift.

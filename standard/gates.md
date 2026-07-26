@@ -12,6 +12,17 @@ TURN END             → turn-boundary sweep (GATE 0 re-injection + did this tur
 
 > **Turn-boundary-driven writes (T6 contract):** The turn-boundary sweep below is the sole trigger for summary file updates. At turn end, the sweep asks "did this turn include a commit?" — if yes, it updates `current-state.md` (always) and `roadmap.md` (on scope change). One judgment per turn, not N per commit. No per-commit gate fires. Decision-moment awareness (DECISION-2026-06-25-decision-moment-awareness) is independent — decisions are captured when made, mid-turn. T6 (audit re-anchor) may quote this paragraph as the authoritative trigger definition.
 
+> **Actor Scope (DECISION-2026-07-26-subagent-memory-guard):** Both gates below bind the
+> **primary agent only**. A subagent dispatched to execute a specific task does not run
+> either gate, does not run the session-start load, and **never writes to
+> `.project-memory/`** — including `current-state.md`, `roadmap.md`, and DECISION records
+> under decision-moment awareness. Subagents report findings to their parent; the parent
+> owns every memory write. The read-side skip is an optimization (~20k tokens per
+> subagent); the **write-side prohibition is absolute** — parallel subagents would clobber
+> the same rolling summary, and task-local reasoning must not become a project-wide record.
+> The parent is responsible for injecting task-relevant constraints (e.g. an active
+> INSTRUCTION) directly into the subagent's prompt.
+
 > **Instruction re-injection (DECISION-2026-06-14-instruction-gate-injection):** Active instructions are re-injected at two gate checkpoints: Pre-Implementation Gate GATE 0 (before any significant implementation) and Turn-Boundary Sweep GATE 0 (at turn end). This ensures instructions survive context compaction and long contexts. See each gate's GATE 0 section below.
 
 ---
@@ -121,6 +132,9 @@ Re-inject each instruction's `body` (MCP) or `# Prompt` section (FS) into contex
 ---
 
 ## Step 1 — Did this turn include a commit?
+
+**Primary agent only.** If you are a subagent, this sweep does not apply — skip it entirely
+and report to your parent (see Actor Scope at the top of this file).
 
 Check mechanically via `git log --since=<turn-start>` or equivalent. A commit existing during this turn is the only significance signal — no per-commit significant/trivial classification is needed.
 
