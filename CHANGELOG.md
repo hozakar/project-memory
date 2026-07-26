@@ -6,6 +6,27 @@ All notable changes to the project-memory skill and MCP companion server.
 
 ### Added
 
+- **`standard/main-directives.md` — single source of truth for the per-turn
+  directives, imported into the host instructions file.** The skill's gates were
+  defined only in `standard/gates.md`, read once at session start and evicted by
+  context compaction; `standard/protocol.md` claimed instructions survive
+  compaction "via Pre-Impl Gate GATE 0 and Turn-Boundary Sweep GATE 0
+  re-injection," which is circular — knowing those gates exist depends on the
+  context compaction removes. Measured on this repo: three commits across one
+  ~2-hour session produced **zero** turn-boundary sweeps and left
+  `current-state.md` 11 days stale, while directives mirrored into the host
+  instructions file fired ~20 times in the same window under the same
+  compactions. The three compressed directives (Pre-Implementation Gate,
+  decision-moment capture, post-commit summary update) now live in exactly one
+  file, inlined into the instructions file via `@path` import so they are
+  physically present every turn without a second copy to drift. The
+  `CRITICAL GATES` blocks in `SKILL.md` and `standard/gates.md` — two existing
+  copies of the compressed form — are replaced by pointers, and the circular
+  compaction paragraph in `standard/protocol.md` is corrected. `INSTALLATION.md`
+  Tier 2 gains the import plus a verbatim-copy fallback (`BEGIN`/`END` markers)
+  for hosts without import support. The per-turn token cost is an accepted
+  trade-off. Full procedures stay in `standard/gates.md`.
+
 - **Subagent guard — gates bind the primary agent only.** Nothing previously
   distinguished the primary agent from a dispatched subagent, so a subagent
   inheriting the instructions file would load project memory (~20k tokens) and

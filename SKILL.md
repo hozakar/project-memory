@@ -93,10 +93,10 @@ The optional `mcp-server/` subdirectory provides semantic search and determinist
 
 # CRITICAL GATES
 
-```
-BEFORE IMPLEMENTATION → Pre-Implementation Gate (GATE 0 + Steps 1–3) per standard/gates.md
-TURN END             → turn-boundary sweep (did this turn include a commit? yes → update current-state + roadmap) per standard/gates.md
-```
+The compressed per-turn directives have a single source of truth: `standard/main-directives.md`.
+Read it for the trigger list; it is also the file imported into the host instructions file so
+the directives survive context compaction. They are deliberately not restated here — a second
+copy is a drift surface.
 
 For detailed gate procedures → read standard/gates.md.
 For agent thinking protocol and memory loading → read `<profile>/protocol.md`.

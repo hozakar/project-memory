@@ -85,7 +85,9 @@ The session-start work happens in this order. Each step may be a no-op depending
 8. Recent git commits (as needed)
 ```
 
-**On context compaction:** Memory Loading Strategy is NOT re-run on compaction. Active instructions survive via Pre-Impl Gate GATE 0 and Turn-Boundary Sweep GATE 0 re-injection. The rest is best-effort.
+**On context compaction:** Memory Loading Strategy is NOT re-run on compaction. What survives is whatever the host instructions file re-injects — that is the only layer present on every turn independently of conversation history, which is why the compressed directives are imported there from `standard/main-directives.md`. Those directives are what then re-trigger the gates, and the gates re-inject active instructions via GATE 0.
+
+Do not rely on the gates themselves surviving compaction: knowing that GATE 0 exists depends on `standard/gates.md`, which is read at session start and evicted with the rest. (This paragraph previously claimed instructions survive "via Pre-Impl Gate GATE 0 and Turn-Boundary Sweep GATE 0 re-injection" — circular, and empirically false: see `DECISION-2026-07-26-main-directives-single-source` for the 0-of-3 sweep-miss evidence.) Everything beyond the imported directives is best-effort.
 
 **Standard reductions vs legacy full:**
 - Reads 2 summaries (`current-state.md`, `roadmap.md`) instead of 5 — `project-memory.md`, `active-issues.md`, `architecture.md` are not present in standard scaffolding.

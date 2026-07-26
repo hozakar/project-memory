@@ -143,9 +143,17 @@ If SKILL.md cannot be read or the skill fails to load, tell the user before proc
 If you skip this step, prior decisions and constraints are not loaded and nothing from this session is captured in project memory — the user loses that context irretrievably, without ever knowing.
 
 Subagents are exempt: if you were dispatched as a subagent for a specific task, skip this block, and never write to `.project-memory/` — report to your parent instead. The parent owns all memory writes and briefs you with the constraints your task needs.
+
+## project-memory turn protocol
+
+These directives apply on every turn, including immediately after context compaction.
+
+@<SKILL_DIR>/standard/main-directives.md
 ```
 
-> The full session-start protocol (memory loading, drift audit, gates) lives in `SKILL.md`. The instructions file only needs the bootstrap line. Keeping it lean avoids drift.
+**If your host does not support `@path` imports** (opencode, Cursor, Windsurf, Cline, and most others), replace that import line with the directive block itself: open `<SKILL_DIR>/standard/main-directives.md`, copy the text between the `BEGIN project-memory directives` and `END project-memory directives` markers, and paste it in place of the import, followed by a line noting it is mirrored from that file. Re-copy it whenever the source file changes.
+
+> **Why the turn protocol is in the instructions file and not just `SKILL.md`.** The bootstrap line above is enough to *start* a session, but it is not enough to keep the gates firing through one. Context compaction evicts everything the skill loaded at session start, including the gate definitions — so a session-start-only wiring silently stops capturing partway through. The host instructions file is the only layer re-injected on every turn independently of conversation history, so the per-turn directives must be physically present there. They are defined once in `standard/main-directives.md` and imported, so this does not create a second copy to maintain. Measured on the skill's own repo: with session-start-only wiring, three commits across a two-hour session produced zero summary updates. The full procedures still live in `standard/gates.md` — keep those out of the instructions file.
 
 ### Per-host wiring notes
 
