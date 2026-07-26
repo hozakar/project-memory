@@ -126,6 +126,38 @@ describe("parseFrontmatter", () => {
     const content = "---\nbad: \n  - missing\n  value\n---\n";
     expect(() => parseFrontmatter(content)).toThrow(ParseError);
   });
+
+  it("handles colon-space in unquoted scalar values via fallback", () => {
+    const content = "---\nsummary: Issue resolved: fixed the title\nstatus: done\n---\n# Body\n";
+    const result = parseFrontmatter(content);
+    expect(result.summary).toBe("Issue resolved: fixed the title");
+    expect(result.status).toBe("done");
+  });
+
+  it("handles multiple colons in unquoted scalar values", () => {
+    const content = '---\nsummary: A: B: C: all fixed\nstatus: done\n---\n# Body\n';
+    const result = parseFrontmatter(content);
+    expect(result.summary).toBe("A: B: C: all fixed");
+    expect(result.status).toBe("done");
+  });
+
+  it("does not quote values already quoted", () => {
+    const content = '---\nsummary: "Already: quoted"\nstatus: done\n---\n# Body\n';
+    const result = parseFrontmatter(content);
+    expect(result.summary).toBe("Already: quoted");
+  });
+
+  it("does not break flow sequences containing colons", () => {
+    const content = '---\ntags: [audit:fix, cat:9]\nstatus: active\n---\n# Body\n';
+    const result = parseFrontmatter(content);
+    // FAILSAFE_SCHEMA + js-yaml parses YAML flow sequences into real arrays
+    expect(result.tags).toEqual(["audit:fix", "cat:9"]);
+  });
+
+  it("throws ParseError on truly malformed YAML even after colon fix", () => {
+    const content = "---\ninvalid: [unclosed\n---\n";
+    expect(() => parseFrontmatter(content)).toThrow(ParseError);
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -245,9 +277,16 @@ describe("parseDecisionFile", () => {
     expect(() => parseDecisionFile(content)).toThrow(ParseError);
   });
 
-  it("throws ParseError when title is missing", () => {
-    const content = "---\nid: DECISION-2026-06-14-test\nstatus: active\n---\n# Context\nBody";
-    expect(() => parseDecisionFile(content)).toThrow(ParseError);
+  it("falls back to first heading when title is missing from frontmatter", () => {
+    const content = "---\nid: DECISION-2026-06-14-test\nstatus: active\n---\n# My Decision Title\n# Context\nBody";
+    const result = parseDecisionFile(content);
+    expect(result.title).toBe("My Decision Title");
+  });
+
+  it("falls back to ID when title is missing and no heading exists", () => {
+    const content = "---\nid: DECISION-2026-06-14-test\nstatus: active\n---\nBody text without any heading.";
+    const result = parseDecisionFile(content);
+    expect(result.title).toBe("DECISION-2026-06-14-test");
   });
 
   it("throws ParseError when status is missing", () => {
@@ -390,9 +429,10 @@ describe("parseDiscussionFile", () => {
     expect(() => parseDiscussionFile(content)).toThrow(ParseError);
   });
 
-  it("throws ParseError when title is missing", () => {
+  it("falls back to ID when title and heading are both missing from discussion", () => {
     const content = "---\nid: DISCUSSION-2026-06-14-test\nstatus: open\noutcome:\n  type: none\n---\nBody";
-    expect(() => parseDiscussionFile(content)).toThrow(ParseError);
+    const result = parseDiscussionFile(content);
+    expect(result.title).toBe("DISCUSSION-2026-06-14-test");
   });
 
   it("throws ParseError when status is missing", () => {

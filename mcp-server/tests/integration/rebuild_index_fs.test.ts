@@ -540,4 +540,52 @@ describe("rebuildIndex with mode:fs", () => {
       expect(match!.similarity).toBeGreaterThan(0.3);
     },
   );
+
+  it(
+    "parses discussion with colon-space in unquoted summary field",
+    { timeout: 60000 },
+    async () => {
+      // Real-world YAML pattern: summary value contains ": " which
+      // causes js-yaml FAILSAFE_SCHEMA to choke (interprets as map sep).
+      const discussionsDir = path.join(tmp.pmDir, "discussions");
+      fs.mkdirSync(discussionsDir, { recursive: true });
+
+      const content = [
+        "---",
+        "id: DISCUSSION-test-colon-fix",
+        "title: Test colon fix",
+        "date: 2026-07-26",
+        "status: concluded",
+        "summary: Reviewed issue: colon in value breaks YAML. Fix: quote on retry.",
+        "conclusion: Resolved by colon-tolerant fallback.",
+        "outcome:",
+        "  type: none",
+        "tags: [test, colon, yaml]",
+        "---",
+        "",
+        "# Context",
+        "Testing discussion YAML colon fallback during rebuild.",
+      ].join("\n");
+
+      fs.writeFileSync(
+        path.join(discussionsDir, "DISCUSSION-test-colon-fix.md"),
+        content,
+      );
+
+      const result = await rebuildIndex({
+        mode: "fs",
+        projectMemoryDir: tmp.pmDir,
+      });
+
+      expect(result.failed).toBe(0);
+      expect(result.skipped).toBe(0);
+      expect(result.indexed).toBeGreaterThanOrEqual(1);
+
+      // Verify via search
+      const results = await searchMemory("colon in value breaks YAML", 3);
+      const match = results.find((r) => r.id === "DISCUSSION-test-colon-fix");
+      expect(match).toBeDefined();
+      expect(match!.title).toBe("Test colon fix");
+    },
+  );
 });

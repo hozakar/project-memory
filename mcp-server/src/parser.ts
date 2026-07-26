@@ -25,6 +25,13 @@ export class ParseError extends Error {
   }
 }
 
+// Known markdown section headings — these are NOT document titles
+const SECTION_HEADINGS = new Set([
+  "context", "alternatives considered", "decision", "chosen solution",
+  "reasoning", "consequences", "discussion points", "conclusions",
+  "follow-up actions", "task description", "target", "note", "prompt",
+]);
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -70,23 +77,67 @@ function splitFrontmatter(
 
 /**
  * Parse frontmatter YAML string into a Record.
+ * Falls back to a colon-tolerant strategy when standard YAML parsing fails
+ * (e.g., unquoted values containing ": " which YAML interprets as map separators).
  */
 function parseYamlFrontmatter(fmYaml: string): Record<string, unknown> {
   const trimmed = fmYaml.trim();
   if (!trimmed) return {};
   try {
-    const parsed = yamlParse(trimmed, { schema: FAILSAFE_SCHEMA });
-    if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
-      return parsed as Record<string, unknown>;
+    return doParseYaml(trimmed);
+  } catch (firstErr) {
+    // Try fixing colons in unquoted scalar values and retry
+    try {
+      const fixed = fixYamlColons(trimmed);
+      return doParseYaml(fixed);
+    } catch {
+      throw new ParseError(
+        "Failed to parse frontmatter YAML",
+        "parse",
+        firstErr instanceof Error ? firstErr : undefined,
+      );
     }
-    return {};
-  } catch (err) {
-    throw new ParseError(
-      "Failed to parse frontmatter YAML",
-      "parse",
-      err instanceof Error ? err : undefined,
-    );
   }
+}
+
+/**
+ * Inner YAML parse — returns parsed Record or empty.
+ */
+function doParseYaml(yaml: string): Record<string, unknown> {
+  const parsed = yamlParse(yaml, { schema: FAILSAFE_SCHEMA });
+  if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+    return parsed as Record<string, unknown>;
+  }
+  return {};
+}
+
+/**
+ * Quote unquoted single-line scalar values that contain ": " patterns.
+ * This prevents YAML from interpreting prose colons as map separators.
+ * Preserves nested mappings (indented sub-keys) and flow sequences.
+ *
+ * Example: summary: Resolved issue: title fix → summary: "Resolved issue: title fix"
+ */
+function fixYamlColons(fmYaml: string): string {
+  const lines = fmYaml.split("\n");
+  const result: string[] = [];
+
+  for (const line of lines) {
+    // Only touch top-level lines: "key: value" where value is a single-line scalar
+    const m = line.match(/^(\w[\w-]*):\s+(.+)$/);
+    if (m) {
+      const key = m[1];
+      const value = m[2].trim();
+      // If value contains ": " and is NOT already quoted or a flow sequence
+      if (/:\s/.test(value) && !/^["'[]/.test(value)) {
+        result.push(`${key}: "${value.replace(/"/g, '\\"')}"`);
+        continue;
+      }
+    }
+    result.push(line);
+  }
+
+  return result.join("\n");
 }
 
 /**
@@ -259,17 +310,33 @@ export function parseDecisionFile(fileOrContent: string): DecisionIndexData {
   const fm = parseFrontmatter(content);
 
   const id = getString(fm, "id");
-  const title = getString(fm, "title");
+  let title = getString(fm, "title");
   const status = getString(fm, "status");
 
   if (!id) throw new ParseError("Missing required frontmatter field: id", "parse");
-  if (!title) throw new ParseError("Missing required frontmatter field: title", "parse");
-  if (!status)
-    throw new ParseError("Missing required frontmatter field: status", "parse");
 
   // Get body after frontmatter
   const split = splitFrontmatter(content);
   const body = split ? split.body : content;
+
+  // Fallback: if title is missing from frontmatter, extract from first
+  // # heading that is NOT a known section heading
+  if (!title) {
+    const headingRegex = /^#\s+(.+)$/gm;
+    let match: RegExpExecArray | null;
+    while ((match = headingRegex.exec(body)) !== null) {
+      const candidate = match[1].trim().replace(/^["']|["']$/g, "");
+      if (!SECTION_HEADINGS.has(candidate.toLowerCase())) {
+        title = candidate;
+        break;
+      }
+    }
+  }
+  // Last-resort fallback: use ID as title
+  if (!title) title = id;
+
+  if (!status)
+    throw new ParseError("Missing required frontmatter field: status", "parse");
 
   // Extract sections
   const context = extractSection(body, "Context").slice(0, 1000);
@@ -328,13 +395,32 @@ export function parseDiscussionFile(
   const fm = parseFrontmatter(content);
 
   const id = getString(fm, "id");
-  const title = getString(fm, "title");
+  let title = getString(fm, "title");
   const status = getString(fm, "status");
   const outcomeRaw = fm["outcome"];
 
   if (!id) throw new ParseError("Missing required frontmatter field: id", "parse");
-  if (!title)
-    throw new ParseError("Missing required frontmatter field: title", "parse");
+
+  // Get body after frontmatter
+  const split = splitFrontmatter(content);
+  const body = split ? split.body : content;
+
+  // Fallback: if title is missing from frontmatter, extract from first
+  // # heading that is NOT a known section heading
+  if (!title) {
+    const headingRegex = /^#\s+(.+)$/gm;
+    let match: RegExpExecArray | null;
+    while ((match = headingRegex.exec(body)) !== null) {
+      const candidate = match[1].trim().replace(/^["']|["']$/g, "");
+      if (!SECTION_HEADINGS.has(candidate.toLowerCase())) {
+        title = candidate;
+        break;
+      }
+    }
+  }
+  // Last-resort fallback: use ID as title
+  if (!title) title = id;
+
   if (!status)
     throw new ParseError("Missing required frontmatter field: status", "parse");
   if (!outcomeRaw)
@@ -361,7 +447,6 @@ export function parseDiscussionFile(
   }
 
   // bodyText = everything after frontmatter (first 2000 chars)
-  const split = splitFrontmatter(content);
   // Extract the summary from the frontmatter
   const summary = getString(fm, "summary") || title;
   // bodyText = everything after frontmatter
