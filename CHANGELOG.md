@@ -23,9 +23,21 @@ All notable changes to the project-memory skill and MCP companion server.
   `CRITICAL GATES` blocks in `SKILL.md` and `standard/gates.md` — two existing
   copies of the compressed form — are replaced by pointers, and the circular
   compaction paragraph in `standard/protocol.md` is corrected. `INSTALLATION.md`
-  Tier 2 gains the import plus a verbatim-copy fallback (`BEGIN`/`END` markers)
-  for hosts without import support. The per-turn token cost is an accepted
+  Tier 2 carries the same block. The per-turn token cost is an accepted
   trade-off. Full procedures stay in `standard/gates.md`.
+
+  The block is mirrored **verbatim** into each host instructions file rather than
+  pulled in by a host import: `@path` import inlining is host-specific, and the
+  skill is platform-agnostic, so a copy that works everywhere beats an import
+  that works on one host. `standard/main-directives.md` therefore carries a
+  **Mirror Registry** listing every mirror, the three directives are formatted as
+  single unwrapped lines so mirrors are byte-comparable, and
+  `INSTRUCTION-2026-07-26-main-directives-mirror-sync` binds re-mirroring to any
+  edit of the source. Note the honest limit: that instruction is a reminder, not a
+  guarantee — instructions load at session start and re-inject only when a gate
+  fires, and they are user-scoped, so they do not reach consuming projects. A
+  deterministic audit category diffing each mirror against the source is the real
+  fix and is deferred pending evidence.
 
 - **Subagent guard — gates bind the primary agent only.** Nothing previously
   distinguished the primary agent from a dispatched subagent, so a subagent

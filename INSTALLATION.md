@@ -146,12 +146,16 @@ Subagents are exempt: if you were dispatched as a subagent for a specific task, 
 
 ## project-memory turn protocol
 
-These directives apply on every turn, including immediately after context compaction.
+These directives apply on every turn, including immediately after context compaction. They are mirrored verbatim from `<SKILL_DIR>/standard/main-directives.md` — that file is the source; do not edit them here.
 
-@<SKILL_DIR>/standard/main-directives.md
+- Before any significant implementation: run the Pre-Implementation Gate — load active instructions, then scan `.project-memory/decisions/index.md` (Active section plus every `Global: Yes` row) for conflicting decisions.
+- The moment the user picks a direction among alternatives: write the DECISION record immediately, mid-turn. Do not defer it to turn end and do not ask permission.
+- Before submitting a turn that included a commit: update `.project-memory/summaries/current-state.md` once, covering the turn's commits (and `summaries/roadmap.md` on scope change).
 ```
 
-**If your host does not support `@path` imports** (opencode, Cursor, Windsurf, Cline, and most others), replace that import line with the directive block itself: open `<SKILL_DIR>/standard/main-directives.md`, copy the text between the `BEGIN project-memory directives` and `END project-memory directives` markers, and paste it in place of the import, followed by a line noting it is mirrored from that file. Re-copy it whenever the source file changes.
+**Keeping the block current.** The three directives above are a verbatim copy of the block between the `BEGIN project-memory directives` and `END project-memory directives` markers in `<SKILL_DIR>/standard/main-directives.md`. If you upgrade the skill and that block changed, re-copy it. A verbatim copy is used rather than a host import (`@path`) deliberately: import inlining is host-specific, and an instructions file that only works on one host is worse than a copy that works everywhere.
+
+**Do not replace the block with a pointer** such as "read `standard/main-directives.md` and apply the directives." A pointer puts the pointer in context and leaves the directives in a file the agent has no per-turn trigger to open — which is the exact failure this block exists to prevent.
 
 > **Why the turn protocol is in the instructions file and not just `SKILL.md`.** The bootstrap line above is enough to *start* a session, but it is not enough to keep the gates firing through one. Context compaction evicts everything the skill loaded at session start, including the gate definitions — so a session-start-only wiring silently stops capturing partway through. The host instructions file is the only layer re-injected on every turn independently of conversation history, so the per-turn directives must be physically present there. They are defined once in `standard/main-directives.md` and imported, so this does not create a second copy to maintain. Measured on the skill's own repo: with session-start-only wiring, three commits across a two-hour session produced zero summary updates. The full procedures still live in `standard/gates.md` — keep those out of the instructions file.
 

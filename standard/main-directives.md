@@ -17,16 +17,16 @@ replacement for that spec.
 
 <!-- BEGIN project-memory directives -->
 
-- **Before any significant implementation:** run the Pre-Implementation Gate — load active
-  instructions, then scan `.project-memory/decisions/index.md` (Active section plus every
-  `Global: Yes` row) for conflicting decisions.
-- **The moment the user picks a direction among alternatives:** write the DECISION record
-  immediately, mid-turn. Do not defer it to turn end and do not ask permission.
-- **Before submitting a turn that included a commit:** update
-  `.project-memory/summaries/current-state.md` once, covering the turn's commits (and
-  `summaries/roadmap.md` on scope change).
+- Before any significant implementation: run the Pre-Implementation Gate — load active instructions, then scan `.project-memory/decisions/index.md` (Active section plus every `Global: Yes` row) for conflicting decisions.
+- The moment the user picks a direction among alternatives: write the DECISION record immediately, mid-turn. Do not defer it to turn end and do not ask permission.
+- Before submitting a turn that included a commit: update `.project-memory/summaries/current-state.md` once, covering the turn's commits (and `summaries/roadmap.md` on scope change).
 
 <!-- END project-memory directives -->
+
+> **Formatting is part of the contract.** Each directive is exactly one unwrapped line with no
+> bold markers, so that mirrors are byte-comparable against this block and a future audit
+> category can diff them with an exact string match. Do not reflow, re-wrap, or restyle these
+> three lines — a cosmetic edit here silently invalidates every mirror.
 
 ---
 
@@ -52,15 +52,40 @@ Governing decision: `DECISION-2026-07-26-main-directives-single-source`.
 
 # How to wire it
 
-**Claude Code (and any host supporting `@path` imports):** add an import line to the host
-instructions file. Imports are inlined into context, transitively, so the directives above
-appear verbatim on every turn while remaining defined only here:
+Copy the block between the `BEGIN project-memory directives` and `END project-memory
+directives` markers above into the host instructions file verbatim, and keep a provenance
+line noting it is mirrored from this file. The markers exist to make that copy mechanical.
 
-```
-@standard/main-directives.md
-```
+This is deliberately a verbatim copy rather than a host import. Some hosts support inlining
+an imported file (Claude Code resolves `@path` imports transitively), which would give one
+definition and per-turn presence at the same time — but the skill is platform-agnostic, and
+an instruction file that only works on one host is worse than a copy that works everywhere.
+The copy is the portable choice; the cost is the drift surface handled below.
 
-**Hosts without import support** (opencode, Cursor, Windsurf, Cline, and others): copy the
-block between the `BEGIN`/`END` markers above into the host instructions file verbatim, and
-keep a provenance line noting it is mirrored from this file. Re-copy when this file changes.
-The markers exist to make that copy mechanical.
+**Do not use a prose pointer** ("read `standard/main-directives.md` and apply the
+directives") in place of the block. A pointer leaves the pointer in context and the
+directives in a file, requiring a read the agent has no per-turn trigger to perform — which
+is the failure this file exists to fix, and which measured 0 of 3 on this repo.
+
+# Mirror Registry
+
+Every verbatim mirror of the directive block. **When this file's directive block changes,
+every entry here must be re-mirrored in the same commit.**
+
+| Location | Kind | Notes |
+|---|---|---|
+| `AGENTS.md` → `## Turn Protocol — project-memory` | this repo's own wiring | Claude Code / opencode read this |
+| `INSTALLATION.md` → Tier 2 block | shipped template | consuming projects copy from here |
+
+Consuming projects add their own host instructions file (`CLAUDE.md`, `.clinerules/`,
+Windsurf rules, and so on) as a third kind of mirror; those live outside this repo and are
+the installing user's responsibility, which is why `INSTALLATION.md` states the provenance
+requirement in the template itself.
+
+**Drift protection.** The registry above is the checklist, and
+`INSTRUCTION-2026-07-26-main-directives-mirror-sync` binds it for this repo's maintainer. Be
+aware of that instruction's limits: instructions load at session start and re-inject only
+when a gate fires, so this is a reminder rather than a guarantee — and instructions are
+user-scoped, so it does not protect consuming projects at all. A deterministic audit
+category comparing each mirror against the block above is the mechanism that would close
+both gaps; see `DECISION-2026-07-26-main-directives-single-source` → Future implications.
