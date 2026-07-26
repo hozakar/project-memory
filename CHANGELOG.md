@@ -6,7 +6,19 @@ All notable changes to the project-memory skill and MCP companion server.
 
 ### Fixes
 
-- **`# Prompt` is now mandatory in INSTRUCTION records, with a hard length budget.**
+- **An INSTRUCTION file now contains frontmatter and a prompt, and nothing else.**
+  No title heading, scope section, rationale, procedure, or closing note. Both ways
+  of tolerating extra prose are wrong: leave it in and it is injected every turn;
+  inject only the `# Prompt` section and the agent must still open and interpret the
+  whole file every turn to extract it. Rationale belongs in the motivating DECISION;
+  checklists and procedures belong in a NOTE the prompt names in one line, read only
+  when the trigger fires. Since `# Prompt` is then the only heading, section
+  extraction runs to end of file and the leak described below becomes structurally
+  impossible. The four active instructions were rewritten to 4–5 line prompts —
+  together roughly 250 lines down to about 60, nearly all frontmatter — with their
+  displaced content preserved verbatim in a NOTE.
+
+- **`# Prompt` is mandatory in INSTRUCTION records, with a hard length budget.**
   The parser resolves an instruction's injected payload as `# Prompt` section →
   frontmatter `prompt:` → empty string, with no fallback to the file body and no
   warning. An active instruction lacking `# Prompt` therefore injects nothing and

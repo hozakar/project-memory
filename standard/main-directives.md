@@ -90,6 +90,16 @@ every entry here must be re-mirrored in the same commit.**
 | `AGENTS.md` → `## Turn Protocol — project-memory` | this repo's own wiring | Claude Code / opencode read this |
 | `INSTALLATION.md` → Tier 2 block | shipped template | consuming projects copy from here |
 
+**Verify the mirrors.** Run from the repo root; both diffs must be silent:
+
+```bash
+sed -n '/BEGIN project-memory directives/,/END project-memory directives/p' \
+    standard/main-directives.md | grep '^- ' > /tmp/pm-src.txt
+sed -n '/Turn Protocol — project-memory/,/^If you edit/p' AGENTS.md | grep '^- ' > /tmp/pm-ag.txt
+sed -n '/## project-memory turn protocol/,/^```$/p' INSTALLATION.md | grep '^- ' > /tmp/pm-inst.txt
+diff /tmp/pm-src.txt /tmp/pm-ag.txt && diff /tmp/pm-src.txt /tmp/pm-inst.txt && echo "mirrors OK"
+```
+
 Consuming projects add their own host instructions file (`CLAUDE.md`, `.clinerules/`,
 Windsurf rules, and so on) as a third kind of mirror; those live outside this repo and are
 the installing user's responsibility, which is why `INSTALLATION.md` states the provenance
