@@ -55,7 +55,7 @@ The session-start work happens in this order. Each step may be a no-op depending
 
     **Self-check:** If you have NOT executed a `search_memory` call with `type_filter="instruction"` or scanned the instructions directory, you have NOT completed this step. Do it NOW — before the header emission (step 6).
 
-   **Standard scope:** The primary channel is the fourth directive in `standard/main-directives.md`, mirrored into the host instructions file and therefore present on **every turn** independently of any gate — see `DECISION-2026-07-26-per-turn-instruction-load`. Gate re-injection (Pre-Impl Gate `standard/gates.md` GATE 0, turn-boundary sweep GATE 0, Discussion trigger) remains as redundancy, not as the guarantee: gates are LLM-enforced and were measured at zero firings across three commits in one session. The session-start load gives you the body once; the per-turn directive is what keeps it there.
+   **Standard scope:** The primary channel is the fourth directive in `standard/main-directives.md`, mirrored into the host instructions file and therefore present on **every turn** independently of any gate. Gate re-injection (Pre-Impl Gate `standard/gates.md` GATE 0, turn-boundary sweep GATE 0, Discussion trigger) remains as redundancy, not as the guarantee: gates are LLM-enforced and were measured at zero firings across three commits in one session. The session-start load gives you the body once; the per-turn directive is what keeps it there.
 5. **Assignment load** — load pending/ongoing/rejected assignments for the current user:
    - Pending/ongoing: `search_memory(type_filter="assignment", assigned_to_email="<run: git config user.email>")`
    - Rejected: `search_memory(type_filter="assignment", assigned_by_email="<run: git config user.email>")`
@@ -85,9 +85,9 @@ The session-start work happens in this order. Each step may be a no-op depending
 8. Recent git commits (as needed)
 ```
 
-**On context compaction:** Memory Loading Strategy is NOT re-run on compaction. What survives is whatever the host instructions file re-injects — that is the only layer present on every turn independently of conversation history, which is why the compressed directives are imported there from `standard/main-directives.md`. Those directives are what then re-trigger the gates, and the gates re-inject active instructions via GATE 0.
+**On context compaction:** Memory Loading Strategy is NOT re-run on compaction. What survives is whatever the host instructions file re-injects — that is the only layer present on every turn independently of conversation history, which is why the directives are mirrored there from `standard/main-directives.md`. Those directives are what then re-trigger the gates, and the gates re-inject active instructions via GATE 0.
 
-Do not rely on the gates themselves surviving compaction: knowing that GATE 0 exists depends on `standard/gates.md`, which is read at session start and evicted with the rest. (This paragraph previously claimed instructions survive "via Pre-Impl Gate GATE 0 and Turn-Boundary Sweep GATE 0 re-injection" — circular, and empirically false: see `DECISION-2026-07-26-main-directives-single-source` for the 0-of-3 sweep-miss evidence.) Everything beyond the imported directives is best-effort.
+Do not rely on the gates themselves surviving compaction: knowing that GATE 0 exists depends on `standard/gates.md`, which is read at session start and evicted with the rest. Everything beyond the mirrored directives is best-effort.
 
 **Standard reductions vs legacy full:**
 - Reads 2 summaries (`current-state.md`, `roadmap.md`) instead of 5 — `project-memory.md`, `active-issues.md`, `architecture.md` are not present in standard scaffolding.

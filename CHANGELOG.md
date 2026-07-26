@@ -6,6 +6,22 @@ All notable changes to the project-memory skill and MCP companion server.
 
 ### Fixes
 
+- **Skill files no longer point into `.project-memory/`.** That directory is
+  gitignored, so every record ID printed in a shipped skill file was a pointer a
+  cloner could not follow — true since the repository went public and unnoticed
+  for eleven days. `standard/main-directives.md` and `templates/instructions.md`
+  are now clean, as are the references added to `standard/gates.md` and
+  `standard/protocol.md` in the same session. Roughly 34 pre-existing references
+  remain in other files (plus 26 in this changelog, whose status is an open
+  question) and are tracked for a dedicated sweep. Rule going forward: state the
+  rule, drop the ID — a skill file must be obeyable without access to the
+  reasoning behind it.
+
+- **`standard/main-directives.md` cut from 114 lines to 53.** The file exists to
+  hold four directives and had accumulated an essay around them: empirical
+  narrative, per-directive justification, and a drift-protection discussion, all of
+  which belong in the decision record rather than the specification.
+
 - **An INSTRUCTION file now contains frontmatter and a prompt, and nothing else.**
   No title heading, scope section, rationale, procedure, or closing note. Both ways
   of tolerating extra prose are wrong: leave it in and it is injected every turn;

@@ -7,7 +7,7 @@ description: Template for INSTRUCTION records. User workflow preferences re-inje
 
 ## INSTRUCTION-YYYY-MM-DD-slug.md
 
-Instruction records capture user workflow preferences as short prompts that must be in context on **every turn** — per the fourth directive in `standard/main-directives.md` and `DECISION-2026-07-26-per-turn-instruction-load`. They are loaded at session start, kept present by that per-turn directive, and re-injected at gate checkpoints (Pre-Implementation Gate, turn-boundary sweep, Discussion trigger) as redundancy. User-scoped via `created_by`, stored in `.project-memory/instructions/`.
+Instruction records capture user workflow preferences as short prompts that must be in context on **every turn** — see the fourth directive in `standard/main-directives.md`. They are loaded at session start, kept present by that per-turn directive, and re-injected at gate checkpoints (Pre-Implementation Gate, turn-boundary sweep, Discussion trigger) as redundancy. User-scoped via `created_by`, stored in `.project-memory/instructions/`.
 
 **An INSTRUCTION file contains frontmatter and a prompt. Nothing else. Ever.**
 
@@ -48,7 +48,7 @@ origin_updated: false      # true when origin instruction has been modified sinc
 
 **Rules — hard, not stylistic:**
 
-1. **`# Prompt` is mandatory and is the only heading.** The parser resolves the payload as `# Prompt` section → frontmatter `prompt:` → **empty string**. There is no fallback to the file body, and nothing warns you. An instruction without `# Prompt` is `state: active` and injects nothing — silently dead. This has already happened: `INSTRUCTION-2026-06-14-deep-review-every-5-phases` sat active from 2026-06-14 injecting an empty payload.
+1. **`# Prompt` is mandatory and is the only heading.** The parser resolves the payload as `# Prompt` section → frontmatter `prompt:` → **empty string**. There is no fallback to the file body, and nothing warns you. An instruction without `# Prompt` is `state: active` and injects nothing — silently dead. This is not hypothetical: it has happened in practice, with an instruction sitting active for six weeks while injecting an empty payload.
 2. **Budget: 5 lines or fewer, roughly 60 words.** It is in context every turn, forever.
 3. **Trigger plus required action, and nothing else.** If it cannot be obeyed from the prompt alone, either the prompt is wrong or the detail belongs in a record it can name in one line.
 4. **Everything else goes elsewhere.** Rationale → the motivating DECISION. Checklists and procedures → a NOTE the prompt references by ID. Both are read only when the trigger fires.
@@ -68,7 +68,7 @@ run the 8-item checklist in NOTE-YYYY-MM-DD-slug, then report findings or
 - Date first — chronological sort order
 - Slug describes the instruction topic
 - Use kebab-case
-- Example: `INSTRUCTION-2026-06-13-branch-per-phase.md`
+- Example: `INSTRUCTION-2026-06-13-squash-before-merge.md`
 
 **Lifecycle:**
 - `active` → loaded at session start for the matching user, and kept in context every turn

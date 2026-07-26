@@ -11,7 +11,7 @@ restated here; this file holds the full procedures those triggers invoke.
 
 > **Turn-boundary-driven writes (T6 contract):** The turn-boundary sweep below is the sole trigger for summary file updates. At turn end, the sweep asks "did this turn include a commit?" — if yes, it updates `current-state.md` (always) and `roadmap.md` (on scope change). One judgment per turn, not N per commit. No per-commit gate fires. Decision-moment awareness (DECISION-2026-06-25-decision-moment-awareness) is independent — decisions are captured when made, mid-turn. T6 (audit re-anchor) may quote this paragraph as the authoritative trigger definition.
 
-> **Actor Scope (DECISION-2026-07-26-subagent-memory-guard):** Both gates below bind the
+> **Actor Scope.** Both gates below bind the
 > **primary agent only**. A subagent dispatched to execute a specific task does not run
 > either gate, does not run the session-start load, and **never writes to
 > `.project-memory/`** — including `current-state.md`, `roadmap.md`, and DECISION records
@@ -114,7 +114,7 @@ One judgment per turn — not N per commit.
 
 Re-load active instructions to ensure they survive context compaction and long contexts. This is the same procedure as Pre-Implementation Gate GATE 0.
 
-> **GATE 0 is unconditional.** It runs on every turn, including turns with no commit. Step 1's commit check gates the *summary writes* below it, never this gate. `DECISION-2026-07-11-instruction-re-injection-turn-boundary` was internally inconsistent on this point — its Reasoning said the re-injection "fires every turn," while its Consequences claimed "turns without commits skip the re-injection." The Reasoning is correct and is what this file implements; the Consequences note was wrong and is corrected by `DECISION-2026-07-26-per-turn-instruction-load`.
+> **GATE 0 is unconditional.** It runs on every turn, including turns with no commit. Step 1's commit check gates the *summary writes* below it, never this gate.
 >
 > **Do not rely on this gate as the primary instruction channel.** It only fires when the sweep fires, and the sweep is LLM-enforced — measured at zero firings across three commits in one session. The primary channel is the fourth directive in `standard/main-directives.md`, which rides the host instructions file and is therefore present every turn independently of any gate. This gate is redundancy, not the guarantee.
 
