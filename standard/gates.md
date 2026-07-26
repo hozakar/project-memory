@@ -110,9 +110,13 @@ One judgment per turn — not N per commit.
 
 ## ⚠️ GATE 0 — INSTRUCTION RE-INJECTION
 
-**THIS GATE EXECUTES BEFORE STEP 1. IT IS NOT OPTIONAL.**
+**THIS GATE EXECUTES BEFORE STEP 1. IT IS NOT OPTIONAL, AND IT IS NOT CONDITIONAL ON A COMMIT.**
 
 Re-load active instructions to ensure they survive context compaction and long contexts. This is the same procedure as Pre-Implementation Gate GATE 0.
+
+> **GATE 0 is unconditional.** It runs on every turn, including turns with no commit. Step 1's commit check gates the *summary writes* below it, never this gate. `DECISION-2026-07-11-instruction-re-injection-turn-boundary` was internally inconsistent on this point — its Reasoning said the re-injection "fires every turn," while its Consequences claimed "turns without commits skip the re-injection." The Reasoning is correct and is what this file implements; the Consequences note was wrong and is corrected by `DECISION-2026-07-26-per-turn-instruction-load`.
+>
+> **Do not rely on this gate as the primary instruction channel.** It only fires when the sweep fires, and the sweep is LLM-enforced — measured at zero firings across three commits in one session. The primary channel is the fourth directive in `standard/main-directives.md`, which rides the host instructions file and is therefore present every turn independently of any gate. This gate is redundancy, not the guarantee.
 
 **If MCP available:**
 ```

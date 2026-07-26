@@ -55,7 +55,7 @@ The session-start work happens in this order. Each step may be a no-op depending
 
     **Self-check:** If you have NOT executed a `search_memory` call with `type_filter="instruction"` or scanned the instructions directory, you have NOT completed this step. Do it NOW — before the header emission (step 6).
 
-   **Standard scope:** Re-injects at Pre-Impl Gate (`standard/gates.md` GATE 0), turn-boundary sweep, and Discussion trigger. The session-start load gives you the body once; gates re-assert before significant operations.
+   **Standard scope:** The primary channel is the fourth directive in `standard/main-directives.md`, mirrored into the host instructions file and therefore present on **every turn** independently of any gate — see `DECISION-2026-07-26-per-turn-instruction-load`. Gate re-injection (Pre-Impl Gate `standard/gates.md` GATE 0, turn-boundary sweep GATE 0, Discussion trigger) remains as redundancy, not as the guarantee: gates are LLM-enforced and were measured at zero firings across three commits in one session. The session-start load gives you the body once; the per-turn directive is what keeps it there.
 5. **Assignment load** — load pending/ongoing/rejected assignments for the current user:
    - Pending/ongoing: `search_memory(type_filter="assignment", assigned_to_email="<run: git config user.email>")`
    - Rejected: `search_memory(type_filter="assignment", assigned_by_email="<run: git config user.email>")`

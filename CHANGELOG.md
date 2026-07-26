@@ -4,6 +4,25 @@ All notable changes to the project-memory skill and MCP companion server.
 
 ## Unreleased
 
+### Fixes
+
+- **Instructions are now loaded per turn, not only when a gate fires.** Instruction
+  re-injection lived entirely inside the gates' GATE 0 steps, so its reliability
+  was the gates' reliability — measured at zero turn-boundary-sweep firings across
+  three commits in one session. It had also silently regressed once before, from
+  three checkpoints to one, during the phase-removal rewrite, while the conventions
+  and template docs still described three. A fourth directive is added to
+  `standard/main-directives.md`: every turn, before acting, the active instructions
+  must be in context, and if they are not visible they are loaded first. It is
+  phrased as check-then-load, so a turn that already has them in context pays no
+  tool call. The gates' GATE 0 steps remain as redundancy and are now documented as
+  such, and the turn-boundary sweep's GATE 0 is stated to be **unconditional** —
+  Step 1's commit check gates only the summary writes below it.
+  `DECISION-2026-07-11-instruction-re-injection-turn-boundary` was internally
+  contradictory on that last point (its Reasoning said "fires every turn," its
+  Consequences said non-commit turns skip); the Reasoning was correct and the
+  Consequences note is corrected on the record.
+
 ### Added
 
 - **`standard/main-directives.md` — single source of truth for the per-turn

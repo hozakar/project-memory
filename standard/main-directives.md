@@ -15,11 +15,24 @@ Full gate procedures (GATE 0 instruction loading, Pre-Implementation Steps 1–3
 Steps 1–2) live in `standard/gates.md`. These are the compressed triggers, not a
 replacement for that spec.
 
+**On the fourth directive (instruction load).** The gates' GATE 0 steps also re-inject active
+instructions, but that path only fires when a gate fires — and gate firing is exactly what
+proved unreliable (`DECISION-2026-07-26-main-directives-single-source`: zero sweeps across
+three commits). Instruction survival must not depend on it. The fourth directive puts the load
+on the per-turn channel instead, and is written as a check-then-load so it costs nothing when
+the instructions are already in context: if you can see them, the directive is satisfied
+without a call. A forgotten instruction is worthless, so this is the one directive whose cost
+is paid unconditionally. History justifies the redundancy — re-injection silently regressed
+from three checkpoints to one during the phase-removal rewrite
+(`DECISION-2026-07-11-instruction-re-injection-turn-boundary`), and nothing outside the gates
+would have caught it.
+
 <!-- BEGIN project-memory directives -->
 
 - Before any significant implementation: run the Pre-Implementation Gate — load active instructions, then scan `.project-memory/decisions/index.md` (Active section plus every `Global: Yes` row) for conflicting decisions.
 - The moment the user picks a direction among alternatives: write the DECISION record immediately, mid-turn. Do not defer it to turn end and do not ask permission.
 - Before submitting a turn that included a commit: update `.project-memory/summaries/current-state.md` once, covering the turn's commits (and `summaries/roadmap.md` on scope change).
+- Every turn, before acting: the active instructions must be in this turn's context. If you cannot see them, load them first — `search_memory(type_filter: "instruction", created_by_email: <your git email>)`, or scan `.project-memory/instructions/` for `state: active` — and treat every one as binding.
 
 <!-- END project-memory directives -->
 
