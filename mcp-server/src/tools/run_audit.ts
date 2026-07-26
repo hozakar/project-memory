@@ -5,6 +5,11 @@ import { checkConsistency } from "./check_consistency";
 import { indexNote } from "./index_note";
 import { deleteNote } from "./delete_note";
 import { deleteRecord } from "../db";
+import { parseFrontmatter } from "../parser";
+
+// Re-export parseFrontmatter for backward compatibility with existing imports.
+// The new implementation uses js-yaml and returns Record<string, unknown>.
+export { parseFrontmatter };
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -22,19 +27,6 @@ function daysDiff(dateStr: string): number {
 
 function readFile(filePath: string): string {
   try { return fs.readFileSync(filePath, "utf-8"); } catch { return ""; }
-}
-
-export function parseFrontmatter(content: string): Record<string, string> {
-  const result: Record<string, string> = {};
-  // Normalize CRLF → LF and strip BOM before parsing
-  const normalized = content.replace(/\r\n/g, "\n").replace(/\r/g, "\n").replace(/^\uFEFF/, "");
-  const match = normalized.match(/^---\n([\s\S]*?)\n---/);
-  if (!match) return result;
-  for (const line of match[1].split("\n")) {
-    const kv = line.match(/^(\w+):\s*(.+)$/);
-    if (kv) result[kv[1]] = kv[2].trim().replace(/^['"]|['"]$/g, "");
-  }
-  return result;
 }
 
 /**
@@ -79,7 +71,7 @@ export function parseSupersedesList(content: string): string[] {
  */
 export function parseSupersededBy(content: string): string | null {
   const fm = parseFrontmatter(content);
-  const val = (fm["superseded_by"] || "null").trim();
+  const val = String(fm["superseded_by"] ?? "null").trim();
   return val === "null" ? null : val;
 }
 
@@ -310,11 +302,15 @@ function cat6DecisionDrift(projectMemoryDir: string, ignored: AuditIgnoreSet): {
     const id = filename.slice(0, -3);
     fileIds.add(id);
     const fm = parseFrontmatter(readFile(path.join(decisionsDir, filename)));
-    const fileStatus = fm["status"] || "unknown";
+    const fileStatus = typeof fm["status"] === "string" ? fm["status"] : "unknown";
     // Skip files with unparseable status — never emit "unknown" into the index.
     if (fileStatus === "unknown") continue;
-    const touchesRaw = fm["touches"] || "";
-    const touches = touchesRaw ? touchesRaw.split(/[,;\s]+/).filter(Boolean) : [];
+    const touchesVal = fm["touches"];
+    const touches: string[] = Array.isArray(touchesVal)
+      ? touchesVal.map(String)
+      : typeof touchesVal === "string" && touchesVal.length > 0
+        ? touchesVal.split(/[,;\s]+/).filter(Boolean)
+        : [];
 
     if (!indexRows.has(id)) {
       if (!ignored.has(`decision-drift:${id}:missing-row`)) {
@@ -401,7 +397,7 @@ function cat8AdrDrift(projectMemoryDir: string, ignored: AuditIgnoreSet): { auto
       continue;
     }
 
-    const paddedId = adrId.padStart(4, "0");
+    const paddedId = String(adrId).padStart(4, "0");
     if (!fs.existsSync(adrDir)) {
       if (!ignored.has(`adr-drift:${id}:missing-file`)) {
         pendingFixes.push({
@@ -450,7 +446,7 @@ function cat9DiscussionDrift(projectMemoryDir: string, ignored: AuditIgnoreSet):
     const id = filename.slice(0, -3);
     fileIds.add(id);
     const fm = parseFrontmatter(readFile(path.join(discussionsDir, filename)));
-    const fileStatus = fm["status"] || "unknown";
+    const fileStatus = typeof fm["status"] === "string" ? fm["status"] : "unknown";
 
     if (!indexRows.has(id)) {
       if (!ignored.has(`discussion-drift:${id}:missing-row`)) {
@@ -556,6 +552,8 @@ function cat15DecisionSupersession(
     const filePath = path.join(decisionsDir, filename);
     const content = readFile(filePath);
     if (!content) continue;
+    const fmStatus = parseFrontmatter(content)["status"];
+    const entryStatus = typeof fmStatus === "string" ? fmStatus.trim() : "";
     entries.set(id, {
       id,
       filePath,
@@ -563,7 +561,7 @@ function cat15DecisionSupersession(
       working: content,
       supersedesList: parseSupersedesList(content),
       supersededBy: parseSupersededBy(content),
-      status: parseFrontmatter(content)["status"]?.trim() ?? "",
+      status: entryStatus,
     });
   }
 
@@ -800,7 +798,7 @@ function cat14AssignmentIntegrity(
         const targetPaths = [
           path.join(projectMemoryDir, "issues", "open", `${targetId}.md`),
           path.join(projectMemoryDir, "issues", "closed", `${targetId}.md`),
-          path.join(projectMemoryDir, "phases", targetId.replace(/^phase-/, ""), "phase.yml"),
+          path.join(projectMemoryDir, "phases", String(targetId).replace(/^phase-/, ""), "phase.yml"),
           path.join(projectMemoryDir, "decisions", `${targetId}.md`),
           path.join(projectMemoryDir, "discussions", `${targetId}.md`),
         ];
@@ -818,7 +816,7 @@ function cat14AssignmentIntegrity(
     // 14b: Stale pending assignment (>30 days) — one-shot reminded flag
     // Uses updated `content` (14a may have written to the same file above)
     if (status === "pending" && assignedAt) {
-      const ageDays = (now.getTime() - new Date(assignedAt).getTime()) / 86400000;
+      const ageDays = (now.getTime() - new Date(String(assignedAt)).getTime()) / 86400000;
       if (ageDays > 30) {
         if (!ignored.has(`assignment-stale:${assignmentId}`) && reminded !== "true") {
           content = setFrontmatterField(content, "reminded", "true");

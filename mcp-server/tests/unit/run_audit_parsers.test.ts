@@ -43,11 +43,11 @@ describe("parseFrontmatter", () => {
     expect(parseFrontmatter("")).toEqual({});
   });
 
-  it("ignores list values (only captures scalar key: value lines)", () => {
+  it("parses list values with js-yaml (nested YAML)", () => {
     const content = "---\nid: test-id\ntouches:\n  - file_a\n  - file_b\n---\n";
     const result = parseFrontmatter(content);
     expect(result.id).toBe("test-id");
-    expect(result.touches).toBeUndefined();
+    expect(result.touches).toEqual(["file_a", "file_b"]);
   });
 });
 

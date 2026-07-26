@@ -9,6 +9,7 @@ import { findSimilarCommit } from "./tools/find_similar_commit";
 import { indexInstruction } from "./tools/index_instruction";
 import { indexAssignment } from "./tools/index_assignment";
 import { indexNote } from "./tools/index_note";
+import { reindexFile } from "./tools/reindex_file";
 import { startBackgroundAudit, runAuditLocked, applyAuditFixesLocked } from "./tools/background_audit";
 import { listContributors } from "./tools/list_contributors";
 import { deleteNote } from "./tools/delete_note";
@@ -197,6 +198,21 @@ srv.tool(
 );
 
 srv.tool(
+  "reindex_file",
+  "Re-index a single .project-memory/ file by reading it from disk. Reads the file, parses frontmatter and sections, embeds, and upserts into the vector DB. Returns { success: true } on success, or { success: false, error, details } on failure (file not found, parse error, unsupported type). Use for single-file recovery without full rebuild.",
+  {
+    project_memory_dir: z.string().describe("Absolute path to the .project-memory/ directory"),
+    type: z.enum(["decision", "discussion", "instruction", "assignment", "note"]).describe("Record type"),
+    file_path: z.string().describe("Absolute or relative (to project_memory_dir) path to the markdown file"),
+  },
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  async (args: any) => {
+    const result = await reindexFile(args.project_memory_dir, args.type, args.file_path);
+    return { content: [{ type: "text" as const, text: JSON.stringify(result) }] };
+  }
+);
+
+srv.tool(
   "delete_note",
   "Delete a note from the vector DB and filesystem. Accepts a note ID. Deletes the LanceDB record and the corresponding .project-memory/notes/NOTE-*.md file. Returns success/failure with per-store details. Notes are user-scoped (private) — deletion is owner-triggered only.",
   {
@@ -225,16 +241,23 @@ srv.tool(
 
 srv.tool(
   "rebuild_index",
-  "Atomically replace the entire vector DB index. The skill assembles all IndexEntry objects and passes them here. Drops existing index, embeds all entries (including per-commit records for phases), creates fresh index.",
+  "Atomically replace the entire vector DB index. In 'entries' mode (default): the skill assembles all IndexEntry objects and passes them. In 'fs' mode: the server reads .project-memory/ files directly from disk (no LLM involvement). Drops existing index, embeds all entries, creates fresh index.",
   {
+    mode: z.enum(["fs", "entries"]).optional().describe("Indexing mode. 'fs': server reads files from disk (requires project_memory_dir). 'entries': pre-parsed data from LLM (default when entries provided)."),
+    project_memory_dir: z.string().optional().describe("Absolute path to the .project-memory/ directory. Required when mode='fs'."),
     entries: z.array(z.object({
       type: z.enum(["phase", "decision", "discussion", "era", "instruction", "note"]),
       data: z.record(z.unknown()),
-    })).describe("All entries to index"),
+    })).optional().describe("All entries to index. Required when mode='entries' (or when called with just an array for backward compat)."),
   },
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async (args: any) => {
-    const entries = args.entries as unknown as IndexEntry[];
+    if (args.mode === "fs" && args.project_memory_dir) {
+      const result = await rebuildIndex({ mode: "fs", projectMemoryDir: args.project_memory_dir });
+      return { content: [{ type: "text" as const, text: JSON.stringify(result) }] };
+    }
+    // Backward compat: if entries provided (with or without mode='entries')
+    const entries = (args.entries || []) as unknown as IndexEntry[];
     const result = await rebuildIndex(entries);
     return { content: [{ type: "text" as const, text: JSON.stringify(result) }] };
   }

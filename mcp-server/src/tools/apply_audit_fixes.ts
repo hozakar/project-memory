@@ -76,9 +76,10 @@ function applyAddDecisionIndexRow(
   // Read scope + applies_globally from the DECISION file
   const decisionPath = path.join(projectMemoryDir, "decisions", `${decisionId}.md`);
   const fm = parseFrontmatter(readFile(decisionPath));
-  const scope = fm["primary_scope"] || "unknown";
+  const scope = String(fm["primary_scope"] ?? "unknown");
   const agRaw = fm["applies_globally"];
   const appliesToAll =
+    agRaw === true ||
     agRaw === "true" ||
     agRaw === "True" ||
     agRaw === "yes" ||
@@ -268,8 +269,9 @@ function applyAddDiscussionIndexRow(
   // Derive outcome from frontmatter — avoids body-text regex pollution
   const outcomeRaw = fm["outcome"];
   const outcome = (!outcomeRaw || outcomeRaw === "none" || outcomeRaw === "") ? "none" : outcomeRaw;
-  const tagsRaw = fm["tags"] || "";
-  const tags = tagsRaw ? tagsRaw.replace(/[\[\]"]/g, "").split(/[,;\s]+/).filter(Boolean).join(", ") : "-";
+  const tagsVal = fm["tags"];
+  const tagsStr = Array.isArray(tagsVal) ? tagsVal.join(", ") : String(tagsVal ?? "");
+  const tags = tagsStr ? tagsStr.replace(/[\[\]"]/g, "").split(/[,;\s]+/).filter(Boolean).join(", ") : "-";
 
   const newRow = `| ${date} | ${discussionId} | ${status} | ${outcome} | ${tags} | ${SUMMARY_PLACEHOLDER} |`;
 
@@ -392,7 +394,7 @@ function applyCreateAdrFile(
   const title = titleMatch ? titleMatch[1].trim() : decisionId;
   const dateMatch = decisionId.match(/^DECISION-(\d{4}-\d{2}-\d{2})/);
   const date = dateMatch ? dateMatch[1] : new Date().toISOString().slice(0, 10);
-  const statusRaw = fm["status"] || "active";
+  const statusRaw = String(fm["status"] ?? "active");
   const status = ADR_STATUS_MAP[statusRaw.toLowerCase()] ?? (statusRaw.charAt(0).toUpperCase() + statusRaw.slice(1).toLowerCase());
 
   if (fileExists(adrPath)) {
