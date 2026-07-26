@@ -1,4 +1,4 @@
-﻿import { describe, it, expect, vi, beforeAll, afterAll } from "vitest";
+﻿import { describe, it, expect, vi, beforeAll, afterAll, beforeEach } from "vitest";
 import { mkdtempSync, writeFileSync, rmSync, existsSync } from "fs";
 import { tmpdir } from "os";
 import { join } from "path";
@@ -12,6 +12,7 @@ vi.mock("../../src/db", () => ({
 }));
 
 import { reindexFile } from "../../src/tools/reindex_file";
+import { embed } from "../../src/embedder";
 
 let tmpDir: string;
 
@@ -21,6 +22,11 @@ beforeAll(() => {
 
 afterAll(() => {
   rmSync(tmpDir, { recursive: true, force: true });
+});
+
+beforeEach(() => {
+  vi.clearAllMocks();
+  vi.mocked(embed).mockResolvedValue(new Array(384).fill(0.1));
 });
 
 describe("reindexFile unit tests", () => {
@@ -136,6 +142,28 @@ describe("reindexFile unit tests", () => {
     expect(result.success).toBe(false);
     expect(result.error).toBe("parse_error");
     expect(result.details).toContain("Missing required frontmatter");
+  });
+
+  it("returns unknown_error when embed rejects", async () => {
+    vi.mocked(embed).mockRejectedValue(new Error("Model load failed"));
+    const fp = join(tmpDir, "DECISION-embed-fail.md");
+    writeFileSync(fp, [
+      "---",
+      "id: DECISION-2026-07-26-embed-fail",
+      "title: Embed Fail Decision",
+      "status: active",
+      "touches:",
+      "  - test",
+      "---",
+      "# Context",
+      "Decision context",
+      "# Decision",
+      "Decision body",
+    ].join("\n"));
+    const result = await reindexFile(tmpDir, "decision", fp);
+    expect(result.success).toBe(false);
+    expect(result.error).toBe("unknown_error");
+    expect(result.details).toBeTruthy();
   });
 
   it("returns unsupported_type for unknown type", async () => {

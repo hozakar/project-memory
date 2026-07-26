@@ -171,7 +171,14 @@ export async function reindexFile(
 
     return { success: true };
   } catch (err) {
+    // Race: file deleted between existsSync and readFileSync
+    if ((err as NodeJS.ErrnoException).code === "ENOENT") {
+      return { success: false, error: "file_not_found", details: `File not found: ${absolutePath}` };
+    }
     if (err instanceof ParseError) {
+      if (err.kind === "io") {
+        return { success: false, error: "io_error", details: err.message };
+      }
       return { success: false, error: "parse_error", details: err.message };
     }
     return { success: false, error: "unknown_error", details: (err as Error).message };

@@ -252,7 +252,10 @@ srv.tool(
   },
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async (args: any) => {
-    if (args.mode === "fs" && args.project_memory_dir) {
+    if (args.mode === "fs") {
+      if (!args.project_memory_dir) {
+        return { content: [{ type: "text" as const, text: JSON.stringify({ error: "project_memory_dir is required when mode='fs'" }) }] };
+      }
       const result = await rebuildIndex({ mode: "fs", projectMemoryDir: args.project_memory_dir });
       return { content: [{ type: "text" as const, text: JSON.stringify(result) }] };
     }

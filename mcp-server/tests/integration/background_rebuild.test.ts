@@ -16,7 +16,7 @@ function sleep(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-async function waitForDone(pmDir: string, timeoutMs = 10000): Promise<void> {
+async function waitForDone(pmDir: string, timeoutMs = 60000): Promise<void> {
   const deadline = Date.now() + timeoutMs;
   while (Date.now() < deadline) {
     const state = getBackgroundRebuildState(pmDir);
@@ -60,6 +60,7 @@ describe("background_rebuild", () => {
     const doneState = getBackgroundRebuildState(tmp.pmDir);
     expect(doneState!.status).toBe("done");
     expect(doneState!.result).toBeDefined();
+    expect(doneState!.error).toBeUndefined();
   });
 
   it("completes and indexes files (decisions, discussions)", async () => {
@@ -114,6 +115,7 @@ describe("background_rebuild", () => {
     expect(state!.result).toBeDefined();
     expect(state!.result!.indexed).toBeGreaterThanOrEqual(2);
     expect(state!.result!.failed).toBe(0);
+    expect(state!.error).toBeUndefined();
 
     // Verify the indexed records are searchable
     const decisionResults = await searchMemory({

@@ -1,6 +1,6 @@
 import * as path from "path";
 import * as fs from "fs";
-import { embed } from "../embedder";
+import { embedBatch } from "../embedder";
 import { atomicRebuild } from "../db";
 import { buildDecisionText, buildDiscussionText, buildCommitText, buildInstructionText, buildAssignmentText, buildNoteText, deriveOutcomeType } from "../utils";
 import { parseDecisionFile, parseDiscussionFile, parseInstructionFile, parseAssignmentFile, parseNoteFile, ParseError } from "../parser";
@@ -17,14 +17,14 @@ const UNKNOWN_IDENTITY: Identity = { name: "unknown", email: "unknown" };
  */
 export async function rebuildIndex(
   arg: IndexEntry[] | RebuildOptions,
-): Promise<{ indexed: number; failed: number; skipped?: number }> {
+): Promise<{ indexed: number; failed: number; skipped: number }> {
   if (Array.isArray(arg)) {
-    return rebuildFromEntries(arg);
+    return rebuildFromEntries(arg).then(r => ({ ...r, skipped: 0 }));
   }
   if (arg.mode === "fs") {
     return rebuildFromFs(arg.projectMemoryDir);
   }
-  return rebuildFromEntries(arg.entries);
+  return rebuildFromEntries(arg.entries).then(r => ({ ...r, skipped: 0 }));
 }
 
 // ---------------------------------------------------------------------------
@@ -45,6 +45,39 @@ interface RebuildFsOptions {
 type RebuildOptions = RebuildEntriesOptions | RebuildFsOptions;
 
 // ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+interface TextTuple {
+  text: string;
+  createdBy: Identity | undefined;
+  contributors: Identity[];
+}
+
+interface EntryTextTuple extends TextTuple {
+  type: IndexEntry["type"];
+  data: IndexEntry["data"];
+}
+
+interface FsTextTuple extends TextTuple {
+  type: string;
+  id: string;
+  title: string;
+  touches?: string[];
+  tags?: string[];
+  decisionStatus?: string;
+  outcome?: string;
+  assignedToEmail?: string;
+  assignedByEmail?: string;
+}
+
+interface CommitTextTuple {
+  text: string;
+  id: string;
+  title: string;
+}
+
+// ---------------------------------------------------------------------------
 // Entries mode (existing behaviour, extracted as private function)
 // ---------------------------------------------------------------------------
 
@@ -54,7 +87,8 @@ async function rebuildFromEntries(
   const records: LanceRecord[] = [];
   let failCount = 0;
 
-  // Phase 1: Build main content records from all entry types
+  // Phase 1: Build text tuples from all entry types (no embedding yet)
+  const tuples: EntryTextTuple[] = [];
   for (const entry of entries) {
     try {
       let text: string;
@@ -108,70 +142,90 @@ async function rebuildFromEntries(
         text += `\nAuthor: ${createdBy.name} <${createdBy.email}>`;
       }
 
-      const vector = await embed(text);
-      const title = entry.type === "instruction" ? entry.data.id : (entry.data as PhaseIndexData | DecisionIndexData | DiscussionIndexData | NoteIndexData).title;
-      const record: LanceRecord = {
-        id: entry.data.id,
-        type: entry.type,
-        title,
-        text,
-        vector,
-        status: "",
-      };
-      if (entry.type === "phase") {
-        const pData = entry.data as PhaseIndexData;
-        record.tagsJson = JSON.stringify(pData.tags ?? []);
-      } else if (entry.type === "note") {
-        const nData = entry.data as NoteIndexData;
-        record.tagsJson = JSON.stringify(nData.tags ?? []);
-      } else if (entry.type === "decision") {
-        const dData = entry.data as DecisionIndexData;
-        record.touchesJson = JSON.stringify(dData.touches ?? []);
-        record.status = dData.status;
-      } else if (entry.type === "discussion") {
-        const discData = entry.data as DiscussionIndexData;
-        record.tagsJson = JSON.stringify(discData.tags ?? []);
-        record.outcomeType = deriveOutcomeType(discData.outcome);
-      }
-      if (createdBy) {
-        record.createdByName = createdBy.name;
-        record.createdByEmail = createdBy.email;
-        record.contributorsJson = JSON.stringify(contributors ?? []);
-      }
-      if (entry.type === "assignment") {
-        const aData = entry.data as AssignmentIndexData;
-        record.assignedToEmail = aData.assignedTo.email;
-        record.assignedByEmail = aData.assignedBy.email;
-      }
-      records.push(record);
+      tuples.push({ text, createdBy, contributors, type: entry.type, data: entry.data });
     } catch (err) {
       console.error("rebuild_index entry failed:", err);
       failCount++;
     }
   }
 
-  // Phase 2: Build per-commit records from any entry that carries commitDiffs
-  // (decoupled from phase guard so commit records survive rebuilds with zero phase entries)
+  // Phase 2: Embed all in parallel (batched for embedder safety)
+  const vectors = await embedBatch(tuples.map(t => t.text), 4);
+
+  // Phase 3: Build records from tuples + vectors
+  for (let i = 0; i < tuples.length; i++) {
+    const { text, createdBy, contributors, type, data } = tuples[i];
+    const vector = vectors[i];
+    const title = type === "instruction" ? (data as InstructionIndexData).id : (data as PhaseIndexData | DecisionIndexData | DiscussionIndexData | NoteIndexData).title;
+    const record: LanceRecord = {
+      id: (data as { id: string }).id,
+      type,
+      title,
+      text,
+      vector,
+      status: "",
+    };
+    if (type === "phase") {
+      const pData = data as PhaseIndexData;
+      record.tagsJson = JSON.stringify(pData.tags ?? []);
+    } else if (type === "note") {
+      const nData = data as NoteIndexData;
+      record.tagsJson = JSON.stringify(nData.tags ?? []);
+    } else if (type === "decision") {
+      const dData = data as DecisionIndexData;
+      record.touchesJson = JSON.stringify(dData.touches ?? []);
+      record.status = dData.status;
+    } else if (type === "discussion") {
+      const discData = data as DiscussionIndexData;
+      record.tagsJson = JSON.stringify(discData.tags ?? []);
+      record.outcomeType = deriveOutcomeType(discData.outcome);
+    }
+    if (createdBy) {
+      record.createdByName = createdBy.name;
+      record.createdByEmail = createdBy.email;
+      record.contributorsJson = JSON.stringify(contributors ?? []);
+    }
+    if (type === "assignment") {
+      const aData = data as AssignmentIndexData;
+      record.assignedToEmail = aData.assignedTo.email;
+      record.assignedByEmail = aData.assignedBy.email;
+    }
+    records.push(record);
+  }
+
+  // Phase 4: Build per-commit text tuples
+  const commitTuples: CommitTextTuple[] = [];
   for (const entry of entries) {
     try {
       const maybeDiffs: CommitDiff[] | undefined = (entry.data as { commitDiffs?: CommitDiff[] }).commitDiffs;
       if (!maybeDiffs || maybeDiffs.length === 0) continue;
       for (const diff of maybeDiffs) {
         const commitText = buildCommitText(diff);
-        const commitVector = await embed(commitText);
-        records.push({
-          id: `${entry.data.id}__commit__${diff.hash}`,
-          type: "commit",
-          title: diff.message,
+        commitTuples.push({
           text: commitText,
-          vector: commitVector,
-          status: "",
+          id: `${entry.data.id}__commit__${diff.hash}`,
+          title: diff.message,
         });
       }
     } catch (err) {
       console.error("rebuild_index commit entry failed:", err);
       failCount++;
     }
+  }
+
+  // Phase 5: Embed commit texts in parallel (batched for embedder safety)
+  const commitVectors = await embedBatch(commitTuples.map(t => t.text), 4);
+
+  // Phase 6: Build commit records
+  for (let i = 0; i < commitTuples.length; i++) {
+    records.push({
+      id: commitTuples[i].id,
+      type: "commit",
+      title: commitTuples[i].title,
+      text: commitTuples[i].text,
+      vector: commitVectors[i],
+      status: "",
+    });
   }
 
   try {
@@ -190,6 +244,10 @@ async function rebuildFromEntries(
 async function rebuildFromFs(
   projectMemoryDir: string,
 ): Promise<{ indexed: number; failed: number; skipped: number }> {
+  if (!fs.existsSync(projectMemoryDir)) {
+    return { indexed: 0, failed: 0, skipped: 0 };
+  }
+
   const records: LanceRecord[] = [];
   let failCount = 0;
   let skipCount = 0;
@@ -205,6 +263,9 @@ async function rebuildFromFs(
     { subdir: "assignments", parse: parseAssignmentFile, type: "assignment" },
     { subdir: "notes", parse: parseNoteFile, type: "note" },
   ];
+
+  // Phase 1: Read + parse all files into tuples (no embedding yet)
+  const tuples: FsTextTuple[] = [];
 
   for (const { subdir, parse, type } of dirConfig) {
     const dirPath = path.join(projectMemoryDir, subdir);
@@ -232,6 +293,7 @@ async function rebuildFromFs(
             text = buildDecisionText(d);
             createdBy = d.createdBy ?? UNKNOWN_IDENTITY;
             contributors = d.contributors ?? [];
+            tuples.push({ text, createdBy, contributors, type, id: d.id, title: d.title, touches: d.touches ?? [], decisionStatus: d.status });
             break;
           }
           case "discussion": {
@@ -239,6 +301,7 @@ async function rebuildFromFs(
             text = buildDiscussionText(d);
             createdBy = d.createdBy ?? UNKNOWN_IDENTITY;
             contributors = d.contributors ?? [];
+            tuples.push({ text, createdBy, contributors, type, id: d.id, title: d.title, tags: d.tags ?? [], outcome: d.outcome });
             break;
           }
           case "instruction": {
@@ -246,6 +309,7 @@ async function rebuildFromFs(
             text = buildInstructionText(d);
             createdBy = d.createdBy ?? UNKNOWN_IDENTITY;
             contributors = [];
+            tuples.push({ text, createdBy, contributors, type, id: d.id, title: d.id });
             break;
           }
           case "assignment": {
@@ -253,6 +317,7 @@ async function rebuildFromFs(
             text = buildAssignmentText(d);
             createdBy = d.createdBy ?? UNKNOWN_IDENTITY;
             contributors = d.contributors ?? [];
+            tuples.push({ text, createdBy, contributors, type, id: d.id, title: d.id, assignedToEmail: d.assignedTo.email, assignedByEmail: d.assignedBy.email });
             break;
           }
           case "note": {
@@ -260,61 +325,68 @@ async function rebuildFromFs(
             text = buildNoteText(d);
             createdBy = d.createdBy;
             contributors = [];
+            tuples.push({ text, createdBy, contributors, type, id: d.id, title: d.title || d.id, tags: d.tags ?? [] });
             break;
           }
         }
-
-        if (createdBy) {
-          text += `\nAuthor: ${createdBy.name} <${createdBy.email}>`;
-        }
-
-        const vector = await embed(text);
-
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const title = type === "instruction" ? (parsed as any).id : (parsed as any).title || (parsed as any).id;
-        const record: LanceRecord = {
-          id: (parsed as { id: string }).id,
-          type,
-          title,
-          text,
-          vector,
-          status: "",
-        };
-
-        // Type-specific extra fields
-        if (type === "decision") {
-          const d = parsed as DecisionIndexData;
-          record.touchesJson = JSON.stringify(d.touches ?? []);
-          record.status = d.status;
-        } else if (type === "discussion") {
-          const d = parsed as DiscussionIndexData;
-          record.tagsJson = JSON.stringify(d.tags ?? []);
-          record.outcomeType = deriveOutcomeType(d.outcome);
-        } else if (type === "note") {
-          const d = parsed as NoteIndexData;
-          record.tagsJson = JSON.stringify(d.tags ?? []);
-        } else if (type === "assignment") {
-          const d = parsed as AssignmentIndexData;
-          record.assignedToEmail = d.assignedTo.email;
-          record.assignedByEmail = d.assignedBy.email;
-        }
-
-        if (createdBy) {
-          record.createdByName = createdBy.name;
-          record.createdByEmail = createdBy.email;
-          record.contributorsJson = JSON.stringify(contributors ?? []);
-        }
-
-        records.push(record);
       } catch (err) {
         if (err instanceof ParseError) {
-          skipCount++;
+          if (err.kind === "io") {
+            console.warn(`[rebuild_index] I/O error on ${filePath}: ${err.message}`);
+            failCount++;
+          } else {
+            console.warn(`[rebuild_index] Skipped unparseable file ${filePath}: ${err.message}`);
+            skipCount++;
+          }
         } else {
-          console.error(`rebuild_index fs-mode entry failed (${filePath}):`, err);
+          console.error(`[rebuild_index] Unexpected error on ${filePath}:`, err);
           failCount++;
         }
       }
     }
+  }
+
+  // Phase 2: Embed all in parallel (batched for embedder safety)
+  const vectors = await embedBatch(tuples.map(t => t.text), 4);
+
+  // Phase 3: Build LanceRecord objects from tuples + vectors
+  for (let i = 0; i < tuples.length; i++) {
+    const t = tuples[i];
+    const vector = vectors[i];
+
+    if (t.createdBy) {
+      t.text += `\nAuthor: ${t.createdBy.name} <${t.createdBy.email}>`;
+    }
+
+    const record: LanceRecord = {
+      id: t.id,
+      type: t.type as LanceRecord["type"],
+      title: t.title,
+      text: t.text,
+      vector,
+      status: "",
+    };
+
+    if (t.type === "decision") {
+      record.touchesJson = JSON.stringify(t.touches ?? []);
+      record.status = t.decisionStatus ?? "";
+    } else if (t.type === "discussion") {
+      record.tagsJson = JSON.stringify(t.tags ?? []);
+      record.outcomeType = deriveOutcomeType(t.outcome ?? "");
+    } else if (t.type === "note") {
+      record.tagsJson = JSON.stringify(t.tags ?? []);
+    } else if (t.type === "assignment") {
+      record.assignedToEmail = t.assignedToEmail;
+      record.assignedByEmail = t.assignedByEmail;
+    }
+
+    if (t.createdBy) {
+      record.createdByName = t.createdBy.name;
+      record.createdByEmail = t.createdBy.email;
+      record.contributorsJson = JSON.stringify(t.contributors ?? []);
+    }
+
+    records.push(record);
   }
 
   try {

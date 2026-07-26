@@ -318,6 +318,171 @@ describe("rebuildIndex with mode:fs", () => {
   );
 
   it(
+    "indexes note files and makes them searchable with typeFilter",
+    { timeout: 60000 },
+    async () => {
+      const notesDir = path.join(tmp.pmDir, "notes");
+      fs.mkdirSync(notesDir, { recursive: true });
+
+      fs.writeFileSync(
+        path.join(notesDir, "NOTE-fs-test-note-1.md"),
+        [
+          "---",
+          "id: NOTE-fs-test-note-1",
+          "title: FS Note One",
+          "tags:",
+          "  - test",
+          "  - fs-rebuild",
+          "created_by:",
+          '  name: "Note Tester"',
+          '  email: "note-tester@test.com"',
+          "created_at: 2026-07-26",
+          "updated_at: 2026-07-26",
+          "---",
+          "# Note",
+          "This is the first note created during the FS rebuild test.",
+        ].join("\n"),
+      );
+
+      fs.writeFileSync(
+        path.join(notesDir, "NOTE-fs-test-note-2.md"),
+        [
+          "---",
+          "id: NOTE-fs-test-note-2",
+          "title: FS Note Two",
+          "tags:",
+          "  - test",
+          "  - fs-rebuild",
+          "created_by:",
+          '  name: "Note Tester"',
+          '  email: "note-tester@test.com"',
+          "created_at: 2026-07-26",
+          "updated_at: 2026-07-26",
+          "---",
+          "# Note",
+          "This is the second note created during the FS rebuild test.",
+        ].join("\n"),
+      );
+
+      const result = await rebuildIndex({
+        mode: "fs",
+        projectMemoryDir: tmp.pmDir,
+      });
+
+      expect(result.indexed).toBe(2);
+      expect(result.failed).toBe(0);
+
+      // Notes should be searchable with typeFilter="note" and matching email
+      const noteResults = await searchMemory(
+        "FS rebuild note test",
+        10,
+        false,
+        "note-tester@test.com",
+        undefined,
+        "note",
+      );
+      expect(noteResults.length).toBeGreaterThanOrEqual(1);
+      expect(
+        noteResults.find((r) => r.id === "NOTE-fs-test-note-1"),
+      ).toBeDefined();
+      expect(
+        noteResults.find((r) => r.id === "NOTE-fs-test-note-2"),
+      ).toBeDefined();
+
+      // Notes should NOT be returned in broad searches (no type filter)
+      const broadResults = await searchMemory("FS rebuild note test", 10);
+      expect(
+        broadResults.find((r) => r.type === "note"),
+      ).toBeUndefined();
+    },
+  );
+
+  it(
+    "indexes assignment files and makes them searchable with assignedToEmail",
+    { timeout: 60000 },
+    async () => {
+      const assignmentsDir = path.join(tmp.pmDir, "assignments");
+      fs.mkdirSync(assignmentsDir, { recursive: true });
+
+      fs.writeFileSync(
+        path.join(assignmentsDir, "ASSIGNMENT-fs-test-assign-1.md"),
+        [
+          "---",
+          "id: ASSIGNMENT-fs-test-assign-1",
+          "title: FS Assignment One",
+          "status: pending",
+          "type: direct",
+          "assigned_to:",
+          '  name: "Assignee One"',
+          '  email: "assignee-one@test.com"',
+          "assigned_by:",
+          '  name: "Admin"',
+          '  email: "admin@test.com"',
+          "assigned_at: 2026-07-26",
+          "target_type: issue",
+          "target_id: ISSUE-2026-07-26-foo",
+          "description: Complete the FS rebuild assignment test.",
+          "---",
+          "",
+          "# Assignment",
+          "Complete the FS rebuild assignment task.",
+        ].join("\n"),
+      );
+
+      fs.writeFileSync(
+        path.join(assignmentsDir, "ASSIGNMENT-fs-test-assign-2.md"),
+        [
+          "---",
+          "id: ASSIGNMENT-fs-test-assign-2",
+          "title: FS Assignment Two",
+          "status: pending",
+          "type: freeform",
+          "assigned_to:",
+          '  name: "Assignee One"',
+          '  email: "assignee-one@test.com"',
+          "assigned_by:",
+          '  name: "Admin"',
+          '  email: "admin@test.com"',
+          "assigned_at: 2026-07-26",
+          "description: Second assignment for the FS rebuild test.",
+          "---",
+          "",
+          "# Assignment",
+          "Second assignment task description.",
+        ].join("\n"),
+      );
+
+      const result = await rebuildIndex({
+        mode: "fs",
+        projectMemoryDir: tmp.pmDir,
+      });
+
+      expect(result.indexed).toBe(2);
+      expect(result.failed).toBe(0);
+
+      // Assignments should be searchable with assignedToEmail filter
+      const assignResults = await searchMemory(
+        "FS rebuild assignment",
+        10,
+        false,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        "assignee-one@test.com",
+      );
+      expect(assignResults.length).toBeGreaterThanOrEqual(1);
+      expect(
+        assignResults.find((r) => r.id === "ASSIGNMENT-fs-test-assign-1"),
+      ).toBeDefined();
+      expect(
+        assignResults.find((r) => r.id === "ASSIGNMENT-fs-test-assign-2"),
+      ).toBeDefined();
+    },
+  );
+
+  it(
     "handles empty directories without crashing",
     { timeout: 60000 },
     async () => {

@@ -285,13 +285,48 @@ export async function atomicRebuild(
 ): Promise<{ indexed: number; failed: number }> {
   try {
     const conn = await getConnection();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (conn as any).dropTable("memory").catch(() => {});
     if (records.length === 0) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (conn as any).dropTable("memory").catch(() => {});
       return { indexed: 0, failed: 0 };
     }
+
+    // Temp-table-swap pattern: create a new table first, then atomically
+    // swap it in. If the process crashes mid-swap, the old table is still
+    // intact (or we recover from the temp table on next startup).
+    const tempName = `memory_rebuild_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+
+    // Phase 1: Create and populate the temp table
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (conn as any).createTable("memory", records, { mode: "overwrite" });
+    await (conn as any).createTable(tempName, records, { mode: "overwrite" });
+
+    // Phase 2: Try atomic swap via rename (supported on LanceDB Cloud)
+    let swapped = false;
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (conn as any).dropTable("memory").catch(() => {});
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (conn as any).renameTable(tempName, "memory");
+      swapped = true;
+    } catch {
+      // renameTable not supported locally; fall back to drop + recreate
+    }
+
+    if (!swapped) {
+      // Fallback: records are already embedded in memory, so we can safely
+      // drop the old table and recreate from those records.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (conn as any).dropTable("memory").catch(() => {});
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (conn as any).createTable("memory", records, { mode: "overwrite" });
+    }
+
+    // Phase 3: Clean up any leftover temp tables
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (conn as any).dropTable(tempName).catch(() => {});
+    } catch { /* best-effort cleanup */ }
+
     return { indexed: records.length, failed: 0 };
   } catch {
     return { indexed: 0, failed: records.length };

@@ -1,6 +1,6 @@
 import * as fs from "fs";
 import * as path from "path";
-import { load as yamlParse } from "js-yaml";
+import { load as yamlParse, FAILSAFE_SCHEMA } from "js-yaml";
 import type {
   DecisionIndexData,
   DiscussionIndexData,
@@ -15,7 +15,11 @@ import type {
 // ---------------------------------------------------------------------------
 
 export class ParseError extends Error {
-  constructor(message: string, public readonly cause?: Error) {
+  constructor(
+    message: string,
+    public readonly kind: "io" | "parse",
+    public readonly cause?: Error,
+  ) {
     super(message);
     this.name = "ParseError";
   }
@@ -43,6 +47,7 @@ function readFileContent(filePath: string): string {
   } catch (err) {
     throw new ParseError(
       `Failed to read file: ${filePath}`,
+      "io",
       err instanceof Error ? err : undefined,
     );
   }
@@ -55,7 +60,7 @@ function readFileContent(filePath: string): string {
 function splitFrontmatter(
   content: string,
 ): { fmBody: string; body: string } | null {
-  const match = content.match(/^---\n([\s\S]*?)\n---\n?/);
+  const match = content.match(/^---\n([\s\S]*?)\n?---\n?/);
   if (!match) return null;
   return {
     fmBody: match[1],
@@ -67,8 +72,10 @@ function splitFrontmatter(
  * Parse frontmatter YAML string into a Record.
  */
 function parseYamlFrontmatter(fmYaml: string): Record<string, unknown> {
+  const trimmed = fmYaml.trim();
+  if (!trimmed) return {};
   try {
-    const parsed = yamlParse(fmYaml);
+    const parsed = yamlParse(trimmed, { schema: FAILSAFE_SCHEMA });
     if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
       return parsed as Record<string, unknown>;
     }
@@ -76,6 +83,7 @@ function parseYamlFrontmatter(fmYaml: string): Record<string, unknown> {
   } catch (err) {
     throw new ParseError(
       "Failed to parse frontmatter YAML",
+      "parse",
       err instanceof Error ? err : undefined,
     );
   }
@@ -89,7 +97,12 @@ function getString(
   key: string,
 ): string | undefined {
   const val = fm[key];
-  if (typeof val === "string") return val;
+  if (typeof val === "string") {
+    // FAILSAFE_SCHEMA preserves YAML null as the literal string "null".
+    // Treat it as undefined so that `?? null` fallbacks at call sites work.
+    if (val === "null" || val === "~") return undefined;
+    return val;
+  }
   if (typeof val === "number" || typeof val === "boolean") return String(val);
   return undefined;
 }
@@ -121,7 +134,7 @@ function getRequiredIdentity(
 ): Identity {
   const id = getIdentity(fm, key);
   if (!id) {
-    throw new ParseError(`Missing required frontmatter field: ${label}`);
+    throw new ParseError(`Missing required frontmatter field: ${label}`, "parse");
   }
   return id;
 }
@@ -249,10 +262,10 @@ export function parseDecisionFile(fileOrContent: string): DecisionIndexData {
   const title = getString(fm, "title");
   const status = getString(fm, "status");
 
-  if (!id) throw new ParseError("Missing required frontmatter field: id");
-  if (!title) throw new ParseError("Missing required frontmatter field: title");
+  if (!id) throw new ParseError("Missing required frontmatter field: id", "parse");
+  if (!title) throw new ParseError("Missing required frontmatter field: title", "parse");
   if (!status)
-    throw new ParseError("Missing required frontmatter field: status");
+    throw new ParseError("Missing required frontmatter field: status", "parse");
 
   // Get body after frontmatter
   const split = splitFrontmatter(content);
@@ -271,16 +284,14 @@ export function parseDecisionFile(fileOrContent: string): DecisionIndexData {
     id,
     title,
     status,
-    provenance: getString(fm, "provenance") || getString(fm, "provenance"),
+    provenance: getString(fm, "provenance"),
     primaryScope:
       getString(fm, "primary_scope") || getString(fm, "primaryScope"),
     context,
     decisionBody: decisionBody || "",
     touches: getStringArray(fm, "touches") || [],
     createdBy: getIdentity(fm, "created_by") || getIdentity(fm, "createdBy"),
-    contributors:
-      getIdentityArray(fm, "contributors") ||
-      getIdentityArray(fm, "contributors"),
+    contributors: getIdentityArray(fm, "contributors"),
   };
 }
 
@@ -321,13 +332,13 @@ export function parseDiscussionFile(
   const status = getString(fm, "status");
   const outcomeRaw = fm["outcome"];
 
-  if (!id) throw new ParseError("Missing required frontmatter field: id");
+  if (!id) throw new ParseError("Missing required frontmatter field: id", "parse");
   if (!title)
-    throw new ParseError("Missing required frontmatter field: title");
+    throw new ParseError("Missing required frontmatter field: title", "parse");
   if (!status)
-    throw new ParseError("Missing required frontmatter field: status");
+    throw new ParseError("Missing required frontmatter field: status", "parse");
   if (!outcomeRaw)
-    throw new ParseError("Missing required frontmatter field: outcome");
+    throw new ParseError("Missing required frontmatter field: outcome", "parse");
 
   // Derive outcome string from outcome object
   let outcome: string;
@@ -365,15 +376,13 @@ export function parseDiscussionFile(
     id,
     title,
     status,
-    provenance: getString(fm, "provenance") || getString(fm, "provenance"),
+    provenance: getString(fm, "provenance"),
     outcome,
     tags: getStringArray(fm, "tags") || [],
     summary,
     bodyText,
     createdBy: getIdentity(fm, "created_by") || getIdentity(fm, "createdBy"),
-    contributors:
-      getIdentityArray(fm, "contributors") ||
-      getIdentityArray(fm, "contributors"),
+    contributors: getIdentityArray(fm, "contributors"),
   };
 }
 
@@ -412,9 +421,9 @@ export function parseInstructionFile(
   const id = getString(fm, "id");
   const state = getString(fm, "state");
 
-  if (!id) throw new ParseError("Missing required frontmatter field: id");
+  if (!id) throw new ParseError("Missing required frontmatter field: id", "parse");
   if (!state)
-    throw new ParseError("Missing required frontmatter field: state");
+    throw new ParseError("Missing required frontmatter field: state", "parse");
 
   // Extract prompt — first try # Prompt section, then fall back to frontmatter prompt
   const split = splitFrontmatter(content);
@@ -429,6 +438,7 @@ export function parseInstructionFile(
     createdBy: getIdentity(fm, "created_by") || getIdentity(fm, "createdBy"),
     origin: getString(fm, "origin"),
     originUpdated:
+      fm["origin_updated"] === "true" || fm["originUpdated"] === "true" ||
       fm["origin_updated"] === true || fm["originUpdated"] === true
         ? true
         : undefined,
@@ -518,9 +528,7 @@ export function parseAssignmentFile(
       null,
     remindCount,
     createdBy: getIdentity(fm, "created_by") || getIdentity(fm, "createdBy"),
-    contributors:
-      getIdentityArray(fm, "contributors") ||
-      getIdentityArray(fm, "contributors"),
+    contributors: getIdentityArray(fm, "contributors"),
   };
 }
 
@@ -564,9 +572,9 @@ export function parseNoteFile(fileOrContent: string): NoteIndexData {
   const updatedAt = getString(fm, "updated_at") || getString(fm, "updatedAt");
 
   if (!createdAt)
-    throw new ParseError("Missing required frontmatter field: created_at");
+    throw new ParseError("Missing required frontmatter field: created_at", "parse");
   if (!updatedAt)
-    throw new ParseError("Missing required frontmatter field: updated_at");
+    throw new ParseError("Missing required frontmatter field: updated_at", "parse");
 
   // Extract body: content under # Note heading
   const split = splitFrontmatter(content);

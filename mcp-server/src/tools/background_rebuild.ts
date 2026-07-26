@@ -5,6 +5,7 @@ import { rebuildIndex } from "./rebuild_index";
 export interface BackgroundRebuildState {
   status: "running" | "done";
   result?: { indexed: number; failed: number; skipped?: number };
+  error?: string;  // set when the pipeline throws
   startedAt: number;
   /** Set when the pipeline finishes (success or catch). Used for recently-done skip. */
   completedAt?: number;
@@ -123,6 +124,7 @@ export async function startBackgroundRebuild(
       inflight.set(key, {
         status: "done",
         result,
+        error: undefined,
         startedAt,
         completedAt: Date.now(),
       });
@@ -131,6 +133,7 @@ export async function startBackgroundRebuild(
       console.error("[background_rebuild] pipeline failed:", err);
       inflight.set(key, {
         status: "done",
+        error: (err as Error).message,
         startedAt,
         completedAt: Date.now(),
       });

@@ -14,6 +14,12 @@ import {
 // ---------------------------------------------------------------------------
 
 describe("parseFrontmatter", () => {
+  it("returns empty object for empty frontmatter block (---\\n---)", () => {
+    const content = "---\n---\n# Context\nSome text";
+    const result = parseFrontmatter(content);
+    expect(result).toEqual({});
+  });
+
   it("parses flat key-value YAML frontmatter", () => {
     const content = "---\nid: DECISION-2026-06-14-test\nstatus: active\n---\n# Title";
     const result = parseFrontmatter(content);
@@ -247,6 +253,47 @@ describe("parseDecisionFile", () => {
   it("throws ParseError when status is missing", () => {
     const content = "---\nid: DECISION-2026-06-14-test\ntitle: Test\n---\n# Context\nBody";
     expect(() => parseDecisionFile(content)).toThrow(ParseError);
+  });
+
+  it("handles empty frontmatter gracefully by throwing ParseError", () => {
+    const content = "---\n---\n# Context\nSome text";
+    expect(() => parseDecisionFile(content)).toThrow(ParseError);
+  });
+
+  it("extracts context from #  Context (two spaces)", () => {
+    const content = [
+      "---",
+      "id: DECISION-2026-06-14-test",
+      "title: Test",
+      "status: active",
+      "---",
+      "#  Context",
+      "Extra space heading context.",
+      "",
+      "# Decision",
+      "Body",
+    ].join("\n");
+
+    const result = parseDecisionFile(content);
+    expect(result.context).toContain("Extra space heading context.");
+  });
+
+  it("extracts context from #   Context (three spaces)", () => {
+    const content = [
+      "---",
+      "id: DECISION-2026-06-14-test",
+      "title: Test",
+      "status: active",
+      "---",
+      "#   Context",
+      "Triple space heading context.",
+      "",
+      "# Decision",
+      "Body",
+    ].join("\n");
+
+    const result = parseDecisionFile(content);
+    expect(result.context).toContain("Triple space heading context.");
   });
 });
 
