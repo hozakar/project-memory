@@ -22,6 +22,7 @@ At session start, check if `search_memory`, `index_decision`, and `index_instruc
 | `index_assignment(data)` | Upsert an assignment; called on creation and status change. |
 | `index_note(data)` | Upsert a note; called on creation and update. |
 | `delete_note(id)` | Delete a note from vector DB and filesystem; called on user-initiated note deletion. |
+| `reindex_file(project_memory_dir, type, file_path)` | Re-index a single .project-memory/ file by reading it from disk. Reads the file, parses frontmatter and sections, embeds, and upserts into the vector DB. Returns `{ success: true }` on success, or `{ success: false, error, details }` on failure. |
 | `check_consistency(project_memory_dir)` | Returns `{missing, orphaned}` for DB/filesystem sync; used in drift audit Cat 13 and proactive sync at session start. |
 | `rebuild_index(entries[])` | Full atomic rebuild of the index; called when DB is empty or on user request. |
 | `run_audit(project_memory_dir)` | Executes all 8 audit categories (including Cat 15 decision supersession integrity) in a single MCP call. Returns `{auto_fixed, pending_fixes}` (no escalations — all findings auto-fix directly or as deterministic pending_fixes). See `standard/audit-mcp.md`. |

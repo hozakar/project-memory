@@ -249,7 +249,8 @@ overlap is low.
 - `search_memory` — semantic search across all record types with filters
 - `run_audit` — all 8 audit categories in a single deterministic call
 - `index_decision`, `index_discussion`,
-  `index_instruction`, `index_assignment`, `index_note`, `delete_note` — upsert and
+  `index_instruction`, `index_assignment`, `index_note`, `delete_note`,
+  `reindex_file` — upsert and
   delete records in the vector index
 - `apply_audit_fixes` — deterministic execution of all `PendingFix` variants from `run_audit`; source-of-truth-safe, idempotent, prose cells left as `<!-- TODO -->` markers
 - `find_similar_commit` — squash/rebase recovery via diff-based similarity search

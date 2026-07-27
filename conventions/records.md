@@ -69,7 +69,7 @@ origin_updated: false     # true when origin modified since fork
 
 **Session loading and gate re-injection:**
 - At session start, current user's active instructions are loaded:
-  - MCP available: `search_memory(query="<topic or relevant keywords>", type="instruction")` with `created_by_email` filter.
+  - MCP available: `search_memory(query="<topic or relevant keywords>", type_filter="instruction")` with `created_by_email` filter.
   - MCP unavailable: scan `.project-memory/instructions/` for INSTRUCTION-*.md files, filter by `created_by.email`.
 - At every gate checkpoint (Pre-Implementation Gate, turn-boundary sweep, Discussion trigger), active instructions are re-loaded and prepended to gate context. This ensures instructions survive compaction and long contexts. See `standard/gates.md` GATE 0 (Pre-Implementation Gate).
 - ≥5 active instructions triggers a warning
@@ -108,18 +108,18 @@ See `templates/index.md` for the full schema. Key fields:
 - `type`: `direct` (linked to existing record) or `freeform` (standalone task)
 - `assigned_to` / `assigned_by`: `{ name, email }` objects
 - `target_type` / `target_id`: link to existing record — `issue`, `discussion`, `roadmap_item`, or `null` (null for freeform). Legacy `phase` target_type is still parsed but never written.
-- `remind_count`: incremented on each `remind me later` action
+- `reminded`: set to true on each `remind me later` action
 
 **State machine:**
 ```
 pending → accepted → ongoing → completed
 pending → rejected → (assigner loop)
-pending → remind me later → pending (remind_count++)
+pending → remind me later → pending (reminded: true)
 
 After rejection — assigner options:
 - Assign to Another → creates new ASSIGNMENT (new ID, new assigned_to)
 - Do It Yourself → marks original as completed (by assigner)
-- Remind Me Later → resets to pending (remind_count++)
+- Remind Me Later → resets to pending (reminded: true)
 ```
 
 **Session-start UX (assignee — pending assignments):**

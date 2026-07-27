@@ -11,6 +11,7 @@ Optional MCP companion server for the [project-memory](../) skill. Provides sema
 - `index_assignment(data)` — upsert an assignment record; supports `assigned_to_email` and `assigned_by_email` search filters
 - `index_note(data)` — upsert a personal note (user-scoped, private, deletable)
 - `delete_note(id)` — delete a note from LanceDB and filesystem; returns per-store deletion details
+- `reindex_file(project_memory_dir, type, file_path)` — re-index a single .project-memory/ file by reading it from disk; parses frontmatter and sections, embeds, and upserts into the vector DB; returns `{ success: true }` on success, or `{ success: false, error, details }` on failure (file not found, parse error, unsupported type)
 - `find_similar_commit(diff_snippet, top_k?)` — search per-commit records for squash/rebase recovery
 - `check_consistency(project_memory_dir)` — compare DB index against filesystem; returns {missing, orphaned}
 - `rebuild_index(entries[])` — full atomic rebuild of the vector index
@@ -19,7 +20,7 @@ Optional MCP companion server for the [project-memory](../) skill. Provides sema
 - `find_decision_conflicts(project_memory_dir, threshold?, top_k?)` — find candidate semantically-conflicting decision pairs for manual review; accepts optional `threshold` (cosine similarity, default 0.75) and `top_k` (max pairs, default 10); excludes pairs listed in `audit_ignore`
 - `list_contributors()` — walk all project-memory records, deduplicate contributors by email, return sorted list
 
-**Version:** 0.1.2
+**Version:** 0.1.3
 
 **Record types indexed:** decisions, discussions, instructions, assignments, notes, and legacy phase rows. Notes are user-scoped and private — broad searches exclude them; `search_memory` auto-applies `created_by_email` when `type_filter="note"`.
 
@@ -29,7 +30,7 @@ Records may carry `createdByName`, `createdByEmail`, and `contributorsJson` colu
 
 ## Prerequisites
 
-- Node.js ≥ 18
+- Node.js ≥ 20
 - npm
 
 ## Installation

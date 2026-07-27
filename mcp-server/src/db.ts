@@ -181,7 +181,7 @@ export async function search(
       whereClauses.push(`outcomeType = '${escapeLike(outcomeTypeFilter)}'`);
     }
     if (!includeSuperseded) {
-      whereClauses.push(`(status IS NULL OR status != 'superseded')`);
+      whereClauses.push(`(status IS NULL OR (status != 'superseded' AND status != 'dropped'))`);
     }
 
     if (whereClauses.length > 0) {
@@ -228,7 +228,7 @@ export async function search(
         if (createdByName && createdByEmail) {
           result.createdBy = { name: createdByName, email: createdByEmail };
         }
-        if (row.type === "instruction" && row.text) {
+        if (row.type === "instruction" && row.text && row.status === "active") {
           result.body = `THIS IS A NON-NEGOTIABLE BINDING USER INSTRUCTION:\n${row.text as string}`;
         }
         return result;

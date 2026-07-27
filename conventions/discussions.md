@@ -26,7 +26,7 @@ Trigger (explicit or implicit)
   -> Discussion Mode engages
       -> Load active instructions (same as GATE 0 in standard/gates.md)
       -> Find prior discussions:
-           - MCP available: `search_memory(query="<topic keywords>", type="discussion", top_k=5)` — semantically relevant discussions returned in `body` field.
+           - MCP available: `search_memory(query="<topic keywords>", type_filter="discussion", top_k=5)` — semantically relevant discussions returned in `body` field.
            - MCP unavailable: load `discussions/index.md`; read entries matching topic by title/tags; open the 2–3 most relevant DISCUSSION-*.md files.
       -> Conversation proceeds
   -> Close discussion

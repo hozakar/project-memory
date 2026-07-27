@@ -77,7 +77,7 @@ The session-start work happens in this order. Each step may be a no-op depending
 6. .project-memory/assignments/index.yml (if present)
 7. User-scoped session items (current user — derived from git identity):
    - **Instructions (global):**
-     - MCP available: `search_memory(query="instructions applies globally", type="instruction", top_k=10)` — filter `applies_globally: true`.
+     - MCP available: `search_memory(query="instructions applies globally", type_filter="instruction", top_k=10)` — filter `applies_globally: true`.
      - MCP unavailable: scan `.project-memory/instructions/` for `INSTRUCTION-*.md`; filter `applies_globally: true`.
    - Active instructions (EXECUTE — see Step 4 above)
    - Pending/ongoing assignments (EXECUTE — see Step 5 above)

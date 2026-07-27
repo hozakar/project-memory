@@ -1,7 +1,7 @@
 {
   "name": "project-memory-mcp-server",
   "version": "0.1.3",
-  "description": "MCP companion server for project-memory skill — semantic search over phases and decisions",
+  "description": "MCP companion server for the project-memory skill",
   "main": "dist/index.js",
   "scripts": {
     "build": "node --max-old-space-size=8192 node_modules/typescript/bin/tsc",
