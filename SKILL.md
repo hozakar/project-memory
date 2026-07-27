@@ -94,7 +94,7 @@ The optional `mcp-server/` subdirectory provides semantic search and determinist
 # CRITICAL GATES
 
 The compressed per-turn directives have a single source of truth: `standard/main-directives.md`.
-Read it for the trigger list; it is also the file imported into the host instructions file so
+Read it for the trigger list; its directive block is mirrored verbatim into the host instructions file so
 the directives survive context compaction. They are deliberately not restated here — a second
 copy is a drift surface.
 

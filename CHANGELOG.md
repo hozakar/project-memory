@@ -17,10 +17,18 @@ All notable changes to the project-memory skill and MCP companion server.
   rule, drop the ID — a skill file must be obeyable without access to the
   reasoning behind it.
 
-- **`standard/main-directives.md` cut from 114 lines to 53.** The file exists to
-  hold four directives and had accumulated an essay around them: empirical
-  narrative, per-directive justification, and a drift-protection discussion, all of
-  which belong in the decision record rather than the specification.
+- **`standard/main-directives.md` cut from 114 lines to 13 — frontmatter and the
+  directive block, nothing else.** The file exists to hold four directives and had
+  accumulated an essay around them: empirical narrative, per-directive
+  justification, and a drift-protection discussion, all of which belong in the
+  decision record rather than the specification. The Mirror Registry, the
+  byte-comparison verify script, and the formatting contract that supported it were
+  then removed as well: they existed only to protect the mirrors from drift, which
+  is not the skill's job. They were deleted rather than relocated, and the mirrors
+  were verified byte-identical to the source first. If mirror drift becomes a real
+  problem, the fix is a deterministic audit category comparing each mirror against
+  the source — mechanical and false-positive-free — not a checklist a maintainer
+  has to remember.
 
 - **An INSTRUCTION file now contains frontmatter and a prompt, and nothing else.**
   No title heading, scope section, rationale, procedure, or closing note. Both ways
@@ -34,17 +42,21 @@ All notable changes to the project-memory skill and MCP companion server.
   together roughly 250 lines down to about 60, nearly all frontmatter — with their
   displaced content preserved verbatim in a NOTE.
 
-- **`# Prompt` is mandatory in INSTRUCTION records, with a hard length budget.**
+- **`# Prompt` is mandatory in INSTRUCTION records.**
   The parser resolves an instruction's injected payload as `# Prompt` section →
   frontmatter `prompt:` → empty string, with no fallback to the file body and no
   warning. An active instruction lacking `# Prompt` therefore injects nothing and
   is silently inert — which had already happened:
   `INSTRUCTION-2026-06-14-deep-review-every-5-phases` was `state: active` and
   injecting an empty payload for six weeks. `templates/instructions.md` now states
-  the resolution order, requires `# Prompt`, sets a budget of 5 lines / ~60 words
-  (the payload is re-read every turn), restricts the Prompt to trigger plus
-  required action, and sends rationale below `##` headings or into the motivating
-  DECISION. It also documents a trap: `extractSection` reads to the next `##`, so
+  the resolution order and requires `# Prompt`. There is no line or word count: a
+  prompt must be as short as it can be while still obeyable, since the payload is
+  re-read every turn. It carries the trigger, the required action, and what the
+  action operates on — a short list of files to touch or states to check is part of
+  the action and stays in the prompt. Rationale goes to the motivating DECISION;
+  long checklists and multi-step procedures go to a NOTE the prompt names by ID,
+  which must not be used to push the action's own object out. It also documents a
+  trap: `extractSection` reads to the next `##`, so
   anything between `# Prompt` and the following `##` heading leaks into the
   payload. The template's stale "injected at session start" wording is corrected
   to the per-turn contract.
@@ -80,8 +92,8 @@ All notable changes to the project-memory skill and MCP companion server.
   instructions file fired ~20 times in the same window under the same
   compactions. The three compressed directives (Pre-Implementation Gate,
   decision-moment capture, post-commit summary update) now live in exactly one
-  file, inlined into the instructions file via `@path` import so they are
-  physically present every turn without a second copy to drift. The
+  file and are copied into the instructions file so they are physically present
+  every turn. The
   `CRITICAL GATES` blocks in `SKILL.md` and `standard/gates.md` — two existing
   copies of the compressed form — are replaced by pointers, and the circular
   compaction paragraph in `standard/protocol.md` is corrected. `INSTALLATION.md`
@@ -91,15 +103,14 @@ All notable changes to the project-memory skill and MCP companion server.
   The block is mirrored **verbatim** into each host instructions file rather than
   pulled in by a host import: `@path` import inlining is host-specific, and the
   skill is platform-agnostic, so a copy that works everywhere beats an import
-  that works on one host. `standard/main-directives.md` therefore carries a
-  **Mirror Registry** listing every mirror, the three directives are formatted as
-  single unwrapped lines so mirrors are byte-comparable, and
-  `INSTRUCTION-2026-07-26-main-directives-mirror-sync` binds re-mirroring to any
-  edit of the source. Note the honest limit: that instruction is a reminder, not a
-  guarantee — instructions load at session start and re-inject only when a gate
-  fires, and they are user-scoped, so they do not reach consuming projects. A
-  deterministic audit category diffing each mirror against the source is the real
-  fix and is deferred pending evidence.
+  that works on one host. Keeping a mirror in step with the source is therefore
+  the responsibility of whoever edits the source — `INSTALLATION.md` states this
+  inline for consuming projects. A registry of mirror locations and a
+  byte-comparison script were tried and removed in the same cycle: protecting the
+  mirrors from drift is not the skill's job, and a checklist a maintainer has to
+  remember is not protection. The real fix, if drift becomes a real problem, is a
+  deterministic audit category diffing each mirror against the source; it is
+  deferred pending evidence.
 
 - **Subagent guard — gates bind the primary agent only.** Nothing previously
   distinguished the primary agent from a dispatched subagent, so a subagent

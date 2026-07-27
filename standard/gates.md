@@ -6,8 +6,8 @@ description: Pre-Implementation Gate and turn-boundary sweep for the standard pr
 # CRITICAL GATES (standard profile)
 
 The compressed trigger list lives in `standard/main-directives.md` — the single source of
-truth, imported into the host instructions file so it survives context compaction. It is not
-restated here; this file holds the full procedures those triggers invoke.
+truth, mirrored verbatim into the host instructions file so it survives context compaction. It
+is not restated here; this file holds the full procedures those triggers invoke.
 
 > **Turn-boundary-driven writes (T6 contract):** The turn-boundary sweep below is the sole trigger for summary file updates. At turn end, the sweep asks "did this turn include a commit?" — if yes, it updates `current-state.md` (always) and `roadmap.md` (on scope change). One judgment per turn, not N per commit. No per-commit gate fires. Decision-moment awareness (DECISION-2026-06-25-decision-moment-awareness) is independent — decisions are captured when made, mid-turn. T6 (audit re-anchor) may quote this paragraph as the authoritative trigger definition.
 

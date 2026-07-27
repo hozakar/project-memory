@@ -43,15 +43,15 @@ origin_updated: false      # true when origin instruction has been modified sinc
 ```md
 # Prompt
 
-<the directive: trigger + required action, 5 lines or fewer>
+<the directive: trigger, required action, and what the action operates on>
 ```
 
 **Rules — hard, not stylistic:**
 
 1. **`# Prompt` is mandatory and is the only heading.** The parser resolves the payload as `# Prompt` section → frontmatter `prompt:` → **empty string**. There is no fallback to the file body, and nothing warns you. An instruction without `# Prompt` is `state: active` and injects nothing — silently dead. This is not hypothetical: it has happened in practice, with an instruction sitting active for six weeks while injecting an empty payload.
-2. **Budget: 5 lines or fewer, roughly 60 words.** It is in context every turn, forever.
-3. **Trigger plus required action, and nothing else.** If it cannot be obeyed from the prompt alone, either the prompt is wrong or the detail belongs in a record it can name in one line.
-4. **Everything else goes elsewhere.** Rationale → the motivating DECISION. Checklists and procedures → a NOTE the prompt references by ID. Both are read only when the trigger fires.
+2. **As short as it can be while still obeyable.** It is in context every turn, forever, so every word is paid repeatedly. There is no line or word count: shortness is bounded by rule 3, and cutting something the reader needs to act is not shortening.
+3. **Trigger, required action, and what the action operates on.** If it cannot be obeyed from the prompt alone, the prompt is wrong. A short list the action needs — the files to touch, the states to check — is part of the action and belongs in the prompt, not in a record the prompt points at.
+4. **Everything else goes elsewhere.** Rationale → the motivating DECISION. Long checklists and multi-step procedures → a NOTE the prompt names by ID. Both are read only when the trigger fires. Do not use this route to push the action's own object out of the prompt.
 5. **Never add a title heading, scope section, or closing note.** The filename and `id` are the title.
 
 **Well-formed example:**
