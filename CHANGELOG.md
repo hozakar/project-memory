@@ -2,6 +2,8 @@
 
 All notable changes to the project-memory skill and MCP companion server.
 
+> **Exemption:** This changelog may reference .project-memory/ record IDs (DECISION-*, DISCUSSION-*, etc.) as provenance metadata. Historical entries are not navigable specs; an ID here reads as context, not a pointer. This exemption is declared in CONTRIBUTING.md and need not be re-litigated.
+
 ## Unreleased
 
 ### Fixes
@@ -10,8 +12,8 @@ All notable changes to the project-memory skill and MCP companion server.
   gitignored, so every record ID printed in a shipped skill file was a pointer a
   cloner could not follow — true since the repository went public and unnoticed
   for eleven days. `standard/main-directives.md` and `templates/instructions.md`
-  are now clean, as are the references added to `standard/gates.md` and
-  `standard/protocol.md` in the same session. Roughly 34 pre-existing references
+  are now clean, as are `standard/gates.md` and `standard/protocol.md` (being
+    cleaned in this round). Roughly 34 pre-existing references
   remain in other files (plus 26 in this changelog, whose status is an open
   question) and are tracked for a dedicated sweep. Rule going forward: state the
   rule, drop the ID — a skill file must be obeyable without access to the
@@ -78,6 +80,29 @@ All notable changes to the project-memory skill and MCP companion server.
   Consequences said non-commit turns skip); the Reasoning was correct and the
   Consequences note is corrected on the record.
 
+- **CI matrix Node 18/20 → 20/22; Node floor raised to >= 20.** The first real CI
+  run (post billing unlock) failed on Node 18: vitest 4 imports `styleText` from
+  `node:util`, which requires Node >= 20.12 — the test suite cannot run on 18 at
+  all. Node 18 and 20 are both past end-of-life; the matrix now tests 20.x (floor)
+  and 22.x (active LTS). `engines.node` bumped to `>=20.0.0`; prerequisites
+  updated in `INSTALLATION.md` and `mcp-server/INSTALL.md`.
+
+- **`fix(mcp): review fixes — atomicRebuild temp-table swap, FAILSAFE_SCHEMA, parallel embed, error handling`**
+  The MCP server's rebuild pipeline is hardened: `atomicRebuild` now builds into a
+  temp table before swapping, so a partial failure never corrupts the live index;
+  `FAILSAFE_SCHEMA` is applied at connection time for consistent table creation;
+  file embedding runs in parallel for performance; error handling is exhaustive
+  (file-not-found, parse failures, DB errors all produce typed diagnostics).
+
+- **`fix(mcp): YAML colon tolerance and title fallback — rebuild_index 40→88 indexed`**
+  The YAML frontmatter parser now tolerates colons in values and falls back to
+  filename-derived title when frontmatter `title:` is missing. Indexed files
+  jumped from 40 to 88 on the existing corpus.
+
+- **`fix(mcp-server): npm audit fix — resolve 5 dependency vulnerabilities`**
+  Five transitive dependency vulnerabilities resolved via `npm audit fix`.
+  Dev-only, no behavioral change.
+
 ### Added
 
 - **`standard/main-directives.md` — single source of truth for the per-turn
@@ -130,14 +155,11 @@ All notable changes to the project-memory skill and MCP companion server.
 - **`CODE_OF_CONDUCT.md`** — Contributor Covenant v2.1, linked from
   `CONTRIBUTING.md`. Completes the GitHub community-profile checklist.
 
-### Fixes
-
-- **CI matrix Node 18/20 → 20/22; Node floor raised to >= 20.** The first real CI
-  run (post billing unlock) failed on Node 18: vitest 4 imports `styleText` from
-  `node:util`, which requires Node >= 20.12 — the test suite cannot run on 18 at
-  all. Node 18 and 20 are both past end-of-life; the matrix now tests 20.x (floor)
-  and 22.x (active LTS). `engines.node` bumped to `>=20.0.0`; prerequisites
-  updated in `INSTALLATION.md` and `mcp-server/INSTALL.md`.
+- **`feat(mcp): server-side file parsing and indexing — zero-LLM-token rebuild and single-file reindex`**
+  Adds `reindex_file` public MCP tool for single-file reindexing and `mode: 'fs'`
+  for server-side file parsing. The rebuild pipeline now operates with zero LLM
+  tokens — the server reads and parses markdown files directly via the filesystem,
+  eliminating the previous round-trip through the agent's tool calls.
 
 ## [0.1.3] — 2026-07-15 — Audit category consolidation + go-public
 
