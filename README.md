@@ -71,6 +71,12 @@ Copy the skill files into a directory in your project. A path like
 Then tell your agent:
 
 > *"Run Project Memory Skill first thing every session."*
+>
+> Also, the skill relies on a **turn-boundary protocol**: after each of your
+> turns, it checks whether a commit was made and updates its rolling summaries
+> accordingly. This is handled by the skill itself — you do not need to
+> configure anything extra. Just the session-start instruction above is
+> sufficient.
 
 Do not forget to tell it where the skill lives — without a path, it will not
 know where to look.

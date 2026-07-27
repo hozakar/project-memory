@@ -155,12 +155,34 @@ Replace `N` with the count of auto-fixed items. Omit any bullet that has no find
 When the skill is invoked as `Skill project-memory audit` (standard only), the audit runs synchronously and returns structured results — no interactive triage flow exists:
 
 1. Call `run_audit(project_memory_dir, { profile: "standard" })` (background omitted/false). The MCP server scans all 8 active categories and returns `{ auto_fixed, pending_fixes }`.
-2. If `apply_audit_fixes` is available, forward the entire `pending_fixes` array to `apply_audit_fixes(project_memory_dir, pending_fixes)`. The tool returns `{ applied, partial, failed, rerun_audit_recommended }`.
+2. If `apply_audit_fixes` is available, forward the entire `pending_fixes` array to `apply_audit_fixes(project_memory_dir, pending_fixes)`. The tool returns `{ applied, partial, failed, rerun_audit_recommended }`. If `partial` entries are returned, each carries an `llm_must_do` instruction — action each one by editing the target file per the instruction (e.g. replace `<!-- TODO: claim -->` with a one-sentence claim from the DECISION body).
 3. If `apply_audit_fixes` is NOT available, apply each `pending_fix` manually (edit frontmatter, index rows, etc.).
 4. Re-run the full detection. If new findings appear, repeat from step 1. Loop until clean.
 5. Do NOT re-run the on-load summary loading sequence.
 
-All findings are either auto-fixed directly (Cat 5, 11, 13, 14a/14c, 15 dangling/asymmetric/circular/orphan-superseded) or queued as deterministic `pending_fixes` (Cat 6, 8, 9, 15 zombie-active) — there are no findings requiring user triage. Suppressions via `audit_ignore` (see Permanent Skip) are configured manually in `config.yml` outside the audit flow.
+All structural findings are either auto-fixed directly (Cat 5, 11, 13, 14a/14c, 15 dangling/asymmetric/circular/orphan-superseded) or queued as deterministic `pending_fixes` (Cat 6, 8, 9, 15 zombie-active) — there are no structural findings requiring user triage. User triage applies only in Interactive Mode (see below). Suppressions via `audit_ignore` (see Permanent Skip) are configured manually in `config.yml` outside the audit flow.
+
+---
+
+# Interactive Mode
+
+An optional user-triggered stage that escalates potential decision conflicts to the user for resolution. It is never entered automatically — only when the user explicitly invokes `Skill project-memory audit` and accepts the semantic conflict scan prompt.
+
+**Scope:** Interactive Mode addresses semantic contradictions between active decisions — situations where two decisions point in different directions and the LLM cannot deterministically choose one. Structural drift (missing index rows, orphan files, stale statuses) is handled entirely by Silent Auto-Fix mode above and never reaches the user.
+
+**Four gating conditions** (all must hold):
+1. **User-triggered audit only** — never runs in the background auto-run (Context A2).
+2. **MCP available** — requires the `find_decision_conflicts` MCP tool.
+3. **Profile = `standard`** — `minimal` has no audit at all.
+4. **At least one non-superseded active decision** in `decisions/index.md` Active section.
+
+**Escalation budget:** up to 2 user-facing questions per audit, with one additional slot if the user explicitly asks ("what else?"). See § Semantic Conflict Scan → Escalation Budget.
+
+**User responses:**
+- **Answer** — explains how to resolve the conflict. The LLM writes a superseding DECISION (`provenance: directive`) and updates the affected records.
+- **"Ignore"** — the pair is added to `audit_ignore` in `config.yml` as `decision-contradiction:<ID1>:<ID2>` (permanent until manual removal).
+
+The implementation is the Semantic Conflict Scan stage below, documented in full in `DECISION-2026-06-17-semantic-conflict-scan`.
 
 ---
 

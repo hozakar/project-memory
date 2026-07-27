@@ -64,9 +64,9 @@ contributors:
 # Target
 **Target:** `<For direct: link and key details from the target file>`
 `<For freeform: "Freeform assignment — no linked record.">`
+```
 
 > **Backward compatibility:** Legacy ASSIGNMENT files with `target_type: phase` or `completed_phase_id` are still parsed — the loader tolerates them. New assignments must NOT use these fields.
-```
 
 **Naming:** `ASSIGNMENT-YYYY-MM-DD-<short-slug>.md`
 - Date first — chronological sort order

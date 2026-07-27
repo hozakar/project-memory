@@ -70,8 +70,8 @@ One-row-per-discussion summary table. Loaded at session start by SKILL.md Memory
 # Discussions Index
 
 | Date | ID | Status | Outcome | Tags | Summary |
-|---|---|---|---|---|---|
-|| 2026-06-11 | DISCUSSION-2026-06-11-slug | concluded | DECISION-2026-... | feature, discussion | Brief one-line summary |
+|---|---|---|---|---|---|---|
+| 2026-06-11 | DISCUSSION-2026-06-11-slug | concluded | DECISION-2026-... | feature, discussion | Brief one-line summary |
 ```
 
 Maintenance rules:

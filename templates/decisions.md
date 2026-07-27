@@ -11,12 +11,12 @@ One-row-per-decision summary table. Loaded by Claude at session start and consul
 
 The index has two sections: **Active** (scanned during Pre-Implementation Gate) and **Superseded** (historical context only, loaded on demand).
 
-```md
-# Decisions Index
-
-One row per decision. Loaded at session start by Memory Loading Strategy step 8. Primary input to the Pre-Implementation Gate's decision check.
+One row per decision. Loaded at session start by Memory Loading Strategy step 3. Primary input to the Pre-Implementation Gate's decision check.
 
 Rows sorted newest first. `Status: superseded` rows remain in the Superseded section for historical context but are not active constraints. `Touches` column lists concrete entities — match against an implementation's affected entities to find candidates. `Global` column is `Yes` when the decision's frontmatter has `applies_globally: true` (cross-cutting policy surfaced at every Pre-Implementation Gate); `-` otherwise.
+
+```md
+# Decisions Index
 
 | Date | ID | Scope | Status | Global | Touches | Claim |
 |---|---|---|---|---|---|---|

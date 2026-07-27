@@ -26,13 +26,24 @@ Run all 8 active categories on every audit pass. Collect findings before acting.
 | 11 | **Discussion expiry** | DISCUSSION with outcome: none and age > 30 days → archive. | Glob: discussions/DISCUSSION-*.md; Read frontmatter | **Auto-fix** | — |
 | 13 | **MCP consistency (conditional)** | Runs only if MCP `check_consistency` tool is available. Indexes any IDs found on disk but not in DB. | MCP: `check_consistency`; `Read` files for missing IDs; MCP: `index_*` tools | **Auto-fix** | — |
 | 14 | **Assignment integrity** | 14a (target_id orphan: auto-fix writes `target_orphaned_at` to frontmatter, any age), 14b (stale pending >30d: one-shot `reminded: true` flag), 14c (completed without evidence: auto-fix writes `completed_without_evidence_at` to frontmatter). **No-op when assignments feature unused.** | `Glob: assignments/*.md`; `Read` frontmatter | **Auto-fix** | — |
-| 15 | **Decision supersession integrity** | Dangling supersedes/superseded_by pointers (target missing) + zombie-active (superseded_by set & target exists but status not superseded) | `Glob: decisions/DECISION-*.md`; `Read: decisions/index.md` | **Auto-fix** (dangling: direct clear; zombie: pending_fix flips status + moves index row) | — |
+| 15 | **Decision supersession integrity** | 5 sub-checks: (a) dangling — supersedes/superseded_by points to missing file; (b) zombie-active — superseded_by set & target exists but status not superseded; (c) asymmetric — only one side of a supersedes pair set; (d) circular — A supersedes B supersedes C supersedes A; (e) orphan-superseded — status=superseded but no superseded_by & no target claims it | `Glob: decisions/DECISION-*.md`; `Read: decisions/index.md` | **Auto-fix** (dangling: direct clear; zombie: pending_fix flips status + moves index row; asymmetric: restore missing link; circular: break cycle; orphan-superseded: restore status to active) | — |
 
 ---
 
 # Auto-Fix Rules
 
-The auto-fix rules are identical to the legacy full profile for every active category. Phase-related categories (open-phase gaps, phase file completeness) are retired — no auto-fix rules apply.
+Each active category's auto-fix behavior is specified inline in the table above. Summary:
+
+- **Cat 5 (misplaced issues):** File moved from `issues/open/` to `issues/closed/`.
+- **Cat 6 (decision index drift):** Missing rows queued as `pending_fixes`; orphan rows auto-removed from index; status mismatches resolved from source file.
+- **Cat 8 (ADR sync drift, conditional on `adr_enabled`):** Missing ADR IDs queued as `pending_fixes`; missing ADR files created; mismatches resolved.
+- **Cat 9 (discussion index drift):** Missing rows queued; orphan rows auto-removed; status mismatches resolved.
+- **Cat 11 (discussion expiry):** Auto-archived to `discussions/archive/`; index row removed.
+- **Cat 13 (MCP consistency, conditional):** Missing notes re-indexed; orphaned records deleted from DB.
+- **Cat 14 (assignment integrity):** 14a — `target_orphaned_at` written to frontmatter; 14b — `reminded: true` flag set (one-shot); 14c — `completed_without_evidence_at` written to frontmatter.
+- **Cat 15 (decision supersession integrity):** Dangling — clear pointer; zombie-active — pending_fix flips status + moves index row; asymmetric — restore missing link; circular — break cycle; orphan-superseded — restore status to active.
+
+Phase-related categories (open-phase gaps, phase file completeness) are retired — no auto-fix rules apply.
 
 ---
 
@@ -42,9 +53,10 @@ Phase-related open-phase gap auto-assignment heuristic is retired — no longer 
 
 # Edge Cases
 
-Edge cases from the legacy full `audit-fs.md` apply unchanged for all active categories, with these standard-specific notes:
+Standard-specific edge case notes per active category:
 
 - **Phase-related categories retired:** these categories are removed. Their historical findings are not detected. Existing `audit_ignore` entries keyed on retired category numbers in `.project-memory/config.yml` are harmless — they only ever match frozen phase artifacts and act as a historical record.
 - **Cat 9, 11 — active:** Cat 9 detects discussion index drift (missing rows, status mismatches, orphan rows) as low-severity non-interactive reports. Cat 11 auto-archives discussions with outcome: none older than 30 days to discussions/archive/ and removes their index rows.
 - **Cat 13 — MCP consistency on historical records:** Legacy phase records are re-indexed automatically by `rebuild_index` when the historical phases/ directory is walked — there is no public tool to re-index a single phase. The records still have searchable content via plan.md (if present) and the per-commit records.
 - **`adr_enabled` default:** `init.md` does NOT scaffold `adr_enabled: true`. The flag defaults to `false`.
+- **Cat 15 edge cases:** Dangling pointer detection covers both `supersedes` and `superseded_by` directions. Circular chains are detected by following `supersedes` links up to depth 10 before declaring a cycle. Orphan-superseded decisions (status=superseded with no `superseded_by` field and no decision that lists them in its `supersedes`) are restored to active, as they were likely superseded by mistake or left in a broken state during a previous partial fix.

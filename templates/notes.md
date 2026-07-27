@@ -21,7 +21,11 @@ created_by:
 created_at: YYYY-MM-DD
 updated_at: YYYY-MM-DD
 ---
+```
 
+**Body:**
+
+```markdown
 # Note
 
 Free-form markdown body. Any content — design sketch,

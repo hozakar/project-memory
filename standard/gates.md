@@ -157,7 +157,7 @@ Also update `summaries/roadmap.md` if the turn:
 - Retired an area of work (module removed, feature completed and decommissioned)
 - Introduced a new external constraint (new dependency, new platform requirement, new compliance boundary)
 
-Update the relevant section (`### Short-term` / `### Medium-term` / `### Later`) to reflect the change. Add new entries for new work areas; strike through or remove retired entries.
+Update the relevant section (`## Next` / `## Later` / `## Considered but not now`) to reflect the change. Add new entries for new work areas; strike through or remove retired entries.
 
 **Significance definition reference** (what counts as scope-change for roadmap):
 - New area of work: module, capability, or feature not previously represented in the roadmap.
