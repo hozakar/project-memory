@@ -34,7 +34,7 @@ When a conversation involves comparing architectural alternatives and the user s
 
 Never plan in isolation from project history.
 
-Previous full-profile rules ("3+ repeated failure → Anti-Patterns" and "alternative path not taken" prompts) are collapsed into standard's leaner approach. If you need those features, the information can still be captured as DECISION records when significant.
+Previous (now-retired) profile-level rules ("3+ repeated failure → Anti-Patterns" and "alternative path not taken" prompts) are collapsed into standard's leaner approach. If you need those features, the information can still be captured as DECISION records when significant.
 
 ---
 
@@ -89,7 +89,7 @@ The session-start work happens in this order. Each step may be a no-op depending
 
 Do not rely on the gates themselves surviving compaction: knowing that GATE 0 exists depends on `standard/gates.md`, which is read at session start and evicted with the rest. Everything beyond the mirrored directives is best-effort.
 
-**Standard reductions vs legacy full:**
+**Standard reductions vs legacy profiles:**
 - Reads 2 summaries (`current-state.md`, `roadmap.md`) instead of 5 — `project-memory.md`, `active-issues.md`, `architecture.md` are not present in standard scaffolding.
 - No individual DECISION/DISCUSSION file pre-load — gates handle those lazily.
 - No "rejected assignments" or "completed assignment notifications" loading — assignments are still loadable on demand, but the noisy session-start surface is trimmed.
@@ -118,7 +118,7 @@ Every DECISION and significant change must leave enough context to answer:
 - Which commits implemented it? (referenced in the DECISION record or commit message)
 - What should happen next? (a row in `summaries/roadmap.md`)
 
-Legacy full's "what alternatives were rejected, what constraints existed, what tensions does this create or resolve" can still be captured via DECISION files when significant, but standard does not require them for every change. If you find yourself frequently writing DECISIONs, that's normal — standard optimizes for lean ceremony while keeping the value carriers intact.
+Legacy profiles' "what alternatives were rejected, what constraints existed, what tensions does this create or resolve" can still be captured via DECISION files when significant, but standard does not require them for every change. If you find yourself frequently writing DECISIONs, that's normal — standard optimizes for lean ceremony while keeping the value carriers intact.
 
 ---
 
@@ -131,7 +131,7 @@ See `mcp-integration.md` for the full tool catalog. MCP behavior in standard is 
 - **Memory Loading Strategy overlay:**
   - **Hook A — between step 6 and step 7:** if the session has a stated task, call `search_memory(task_description, top_k=8)` for similarity ≥ 0.6 files. Does NOT set `include_superseded` — superseded decisions are excluded from awareness load. For each result with similarity ≥ 0.6, load the corresponding file from `.project-memory/` (DECISION or DISCUSSION file). These files are *in addition to* steps 7–8, not a substitute.
   - **Hook B — at Pre-Impl Gate Step 3:** same as full. Does NOT set `include_superseded` — superseded decisions excluded from gate awareness load.
-  - **No Hook C** — the broad awareness load (Step 5 of legacy full's gate) does not exist in standard.
+  - **No Hook C** — the broad awareness load (Step 5 of the legacy profile's gate) does not exist in standard.
 - **Ad-hoc search rule:** same — call `search_memory` when the user asks about past decisions/phases/discussions. When the question is explicitly historical (researching superseded/past decisions), pass `include_superseded: true` to surface those records. Ordinary lookup queries do NOT set this flag. See DECISION-2026-06-19-search-memory-superseded-exclusion.
 - **Constraint search rule** (Discussion Mode trigger): same — call `search_memory("engineering constraints and principles", scope_filter=["constraint"], type_filter="decision")` when discussion mode engages. Does NOT set `include_superseded` — only active constraints shape design direction.
 - **Assignment search:** same (orthogonal feature).

@@ -66,7 +66,7 @@ Classify the work using the binary table below. Standard collapses the previousl
 | **Trivial** | rename, format, comment, import cleanup, single-line bugfix, dependency patch bump, single-line comment edit | Skip the decision check entirely (Step 2) |
 | **Everything else** | features, bugfixes, refactors, schema/type changes, dependency upgrades, test additions, config tweaks, doc updates with runtime effect | Run the decision check (Step 2) |
 
-The `Ambiguous` category from the legacy full profile collapses into "everything else" — standard optimizes for simplicity over fine-grained gating.
+The `Ambiguous` category from legacy profiles collapses into "everything else" — standard optimizes for simplicity over fine-grained gating.
 
 ## Step 2 — Decision check (when required by Step 1)
 
@@ -94,7 +94,7 @@ The `Ambiguous` category from the legacy full profile collapses into "everything
 
 If the proposed work is a significant architectural move (deployment, auth, persistence, schema, public API) and Step 2 returned no candidates, ask once: "No prior decision covers this. Want to record one now?" — then proceed.
 
-**Step 4 — SKIPPED in standard.** The broader awareness load (`search_memory` without filters at top_k=8) does not run in standard. Conflict gating is fully handled by Step 2. This was previously a legacy full-only feature.
+**Step 4 — SKIPPED in standard.** The broader awareness load (`search_memory` without filters at top_k=8) does not run in standard. Conflict gating is fully handled by Step 2. This was previously available in legacy profiles now retired.
 
 ### Session override
 
