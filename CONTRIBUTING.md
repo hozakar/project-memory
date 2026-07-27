@@ -113,6 +113,8 @@ format (see `## Unreleased` at the top of the file). If the change is a fix or
 improvement to an unreleased feature, update or consolidate rather than adding a
 duplicate entry.
 
+**Record references:** CHANGELOG.md may reference .project-memory/ record IDs (DECISION-*, etc.) as provenance metadata. This is an explicit exemption from the no-record-references rule that applies to skill files. Historical changelog entries are not navigable specs.
+
 ---
 
 ## Branching and commits
