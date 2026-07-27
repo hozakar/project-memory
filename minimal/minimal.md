@@ -15,7 +15,60 @@ Use this profile when project longevity, revisit frequency, and reasoning densit
 └── MEMORY.md        ← four sections: ## Roadmap, ## Decisions, ## Notes, ## Log
 ```
 
-Detection: `.project-memory/config.yml` exists → installed; absent → first-run (see SKILL.md step 3). User-triggered features (discussions, issues, instructions, assignments, notes) create their own subdirectories inside `.project-memory/` on first use, exactly as in other profiles.
+Detection: `.project-memory/config.yml` exists → installed; absent → first-run (see below). User-triggered features (discussions, issues, instructions, assignments, notes) create their own subdirectories inside `.project-memory/` on first use, exactly as in other profiles.
+
+## First-run initialization (minimal)
+
+When `.project-memory/config.yml` does not exist, scaffold the minimal structure:
+
+```
+.project-memory/
+├── config.yml
+└── MEMORY.md
+```
+
+**`config.yml`** — write the profile block:
+
+```yaml
+profile: minimal
+
+profile_history:
+  - profile: minimal
+    effective_date: <today YYYY-MM-DD>
+    reason: initial
+```
+
+**`MEMORY.md`** — create with the four-section template (see below).
+
+**`.gitignore`** — Add `.project-memory/vector-index` to the project's `.gitignore`. Check if `.gitignore` already contains this entry before appending. If `.gitignore` does not exist, create it. The vector index is a binary LanceDB artifact — always regenerable, must not be tracked in git.
+
+**Git identity advisory (non-blocking).** Run `git config user.name` and `git config user.email`. If either is empty or the command fails, print:
+
+```
+[ℹ] Git identity not configured — project-memory records will be attributed to "unknown".
+    To enable attribution, run:
+      git config --global user.name "Your Name"
+      git config --global user.email "you@example.com"
+```
+
+Never block, never prompt, never escalate.
+
+**Check MCP companion offer:** If `mcp-server/` directory exists, read `mcp-server/INSTALL.md` and follow its "For the LLM" section to detect platform and offer installation. Set `mcp_install_offered_for_version` in `config.yml` after offer is made (regardless of user response). Minimal does NOT auto-index `MEMORY.md` into the vector DB, but the MCP server still provides search over decisions, discussions, and notes if the user later creates them.
+
+**Auto-load reminder** — Do NOT write to CLAUDE.md, AGENTS.md, or any other config file. Print this message to the user:
+
+```
+[ℹ] To make sure I load at the start of every session, add this line to your
+    global instructions file (CLAUDE.md, GEMINI.md, User Rules, etc.):
+
+      "At the start of every session, load the project-memory skill from
+       <path-to-skill>/SKILL.md and follow its on-load instructions."
+
+    Not sure where your global instructions file is?
+    → See INSTALLATION.md for platform-specific instructions.
+```
+
+Only show this on first run.
 
 ## MEMORY.md template
 
