@@ -29,42 +29,23 @@ The right axis for choosing a profile is **longevity × revisit frequency × rea
 
 Cat 12 (tag inconsistency) and other retired category checks consult `profile_history` for any check whose correctness depends on the profile in force when an artifact was created. Phase-related audit categories (open-phase gaps, phase file completeness) are retired — historical `profile_history` entries referencing phase shapes are preserved for read-only backward compatibility.
 
-## Minimal `MEMORY.md` schema
+## Minimal MEMORY.md schema
 
-`.project-memory/MEMORY.md` — single file inside the shared `.project-memory/` directory, with four fixed sections:
-
-```markdown
-# Memory
-
-## Roadmap
-- [ ] next step
-...
-
-## Decisions
-- 2026-06-20: chose X over Y because Z
-
-## Notes
-- 2026-06-21: note title — freeform content
-
-## Log
-- 2026-06-20: topic-name — what happened (1 line)
-```
-
-No automatic updates. User edits manually. The only automated behavior in `minimal` is Pre-Impl Gate Step 0 (instruction re-injection if any active instruction exists).
+MEMORY.md has 4 sections: `## Roadmap`, `## Decisions`, `## Notes`, `## Log`. See templates or minimal/minimal.md for the schema. No automatic updates; user edits manually.
 
 ---
 
 # Orthogonal features (NOT tier-bound)
 
-These remain user-triggered or config-flagged regardless of profile. They cost nothing when unused:
+These remain user-triggered or config-flagged regardless of profile:
 
-- **MCP companion** — auto-detect; `config.yml` flag if user wants to disable.
-- **ADR mirror** — `adr_enabled` flag in `config.yml`.
-- **Discussions** — implicit/explicit trigger.
-- **Issues** — user creates; `issues/` directory created on first use.
-- **Assignments** — user delegates; `assignments/` created on first use.
-- **Notes** — user takes note; `notes/` created on first use.
-- **Instructions creation** — user gives instruction; file created on demand.
+- **MCP companion** — auto-detect, optional `config.yml` disable flag
+- **ADR mirror** — `adr_enabled` flag in `config.yml`
+- **Discussions** — implicit/explicit trigger
+- **Issues** — user creates; `issues/` dir on first use
+- **Assignments** — user delegates; `assignments/` dir on first use
+- **Notes** — user takes note; `notes/` dir on first use
+- **Instructions creation** — user gives instruction; file created on demand
 
 Note: instruction **re-injection** IS tier-bound (Row 6). The feature itself is orthogonal; the per-gate injection ceremony is not.
 
@@ -80,21 +61,10 @@ How do you want to run project-memory in this project?
   1) standard — lean ceremony, 2 summaries, 8-category audit, for most projects
   2) minimal  — single MEMORY.md file, for short or throwaway work
 
-Things to consider:
-  • Will the project last 3+ months?
-  • Will more than one person contribute?
-  • Are "why did we do X?" architectural questions likely to come up?
-
 You can change this choice later — just say so.
 ```
 
-Default cursor: `standard`. No automatic recommendation logic — user reads guidance and chooses.
-
-After the user picks:
-- `standard` → read `standard/init.md` and follow it.
-- `minimal` → read `minimal/minimal.md` and follow it.
-
-Each init writes `config.yml` (or `MEMORY.md` for minimal) with `profile` and seeds `profile_history` with `{profile, effective_date: today, reason: initial}`.
+Default cursor: `standard`. No automatic recommendation logic. After the user picks, read the corresponding init.md. Each choice writes `config.yml` (or `MEMORY.md` for minimal) with `profile` and seeds `profile_history`.
 
 ---
 
@@ -116,14 +86,14 @@ profile_history:
 
 **Migration rules:**
 
-- Audit and gates consult `profile_history` for any check whose correctness depends on the profile in force when an artifact was created. Retired phase-related categories (Cat 4, Cat 10) used to differentiate by profile window — historical `profile_history` entries with `full` or `lite` remain valid for backward compatibility checks.
-- **Downgrade** (e.g. `standard → minimal`): past artifacts stay as-is. No retroactive file deletion or schema simplification. Only future behavior changes.
-- **Upgrade** (e.g. `minimal → standard`): no backfill required. Past entries keep their minimal shape; future work gets standard scaffolding. `profile_history` entries with legacy profile values are preserved for migration-aware checks.
-- **Cross-shape transitions:** existing artifacts are preserved. Going *to* `minimal` creates `.project-memory/MEMORY.md` seeded from `summaries/roadmap.md` (if any) and updates `config.yml` with `profile: minimal`; going *from* `minimal` expands the existing `.project-memory/` skeleton with the standard profile's structure, seeding `roadmap.md` and `decisions/index.md` from `MEMORY.md` content.
+- **History consulted by audit/gates** for any check whose correctness depends on the profile in force at artifact creation time.
+- **Downgrade** (standard → minimal): past artifacts stay as-is. Only future behavior changes.
+- **Upgrade** (minimal → standard): no backfill required. Past entries keep their minimal shape.
+- **Cross-shape transitions:** existing artifacts preserved. To minimal: creates MEMORY.md seeded from summaries/roadmap.md. From minimal: expands .project-memory/ skeleton, seeding roadmap.md and decisions/index.md from MEMORY.md.
 
-User changes profile via natural language ("switch project-memory to minimal"). SKILL.md recognizes the intent, appends a new `profile_history` entry with `effective_date: <today>` and a `reason` field captured from the user's stated motivation (or `"user request"` if not stated).
+User changes profile via natural language. SKILL.md recognizes the intent, appends a new `profile_history` entry with `effective_date: <today>` and `reason`.
 
-**Backward compatibility:** Legacy config.yml files with `profile: full` or `profile: lite` continue to work. Both are treated as `profile: standard` at read time. `profile_history` entries retain their original values for audit-aware checks.
+**Backward compatibility:** Legacy `profile: full` or `profile: lite` treated as `profile: standard` at read time. `profile_history` retains original values.
 
 ---
 

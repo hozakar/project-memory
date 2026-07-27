@@ -58,17 +58,13 @@ Discussions are a user-triggered feature — available in all profiles. In `mini
 
 ## change profile
 
-When the user says "switch project-memory to <standard|minimal>" or similar phrasing ("change profile to X", "switch to standard", etc.):
+When the user says "switch project-memory to <standard|minimal>" or similar phrasing:
 
 1. Read current `config.yml` (or detect `MEMORY.md` for minimal).
 2. Append a new entry to `profile_history`: `{profile: <new>, effective_date: today, reason: <user's stated motivation or "user request">}`.
 3. Update top-level `profile` field.
-4. For `standard → minimal`:
-   - **Validation (non-blocking):** Read `summaries/roadmap.md` — if no `## Next` or `## Later` or `## Considered but not now` sections exist, warn: `"summaries/roadmap.md appears empty — ## Roadmap section in MEMORY.md will be seeded empty."` Read `decisions/index.md` — if no Active section entries exist, warn: `"decisions/index.md has no active entries — ## Decisions section in MEMORY.md will be seeded empty."` Emit warnings as a single batched block. User may Ctrl-C to clean up first, or proceed.
-   - Existing `.project-memory/` stays in place; new behavior follows minimal rules going forward. Roadmap content from `summaries/roadmap.md` is appended to a freshly created `MEMORY.md`.
-5. For `minimal → standard`:
-   - **Validation (non-blocking):** Read `MEMORY.md` — if `## Roadmap` section is missing or empty, warn: `"MEMORY.md → ## Roadmap is empty; summaries/roadmap.md will be seeded empty."` If `## Decisions` section is missing or empty, warn: `"MEMORY.md → ## Decisions is empty; decisions/index.md will be seeded empty."` Emit warnings as a single batched block. User may Ctrl-C to clean up first, or proceed.
-   - Create `.project-memory/` skeleton; migrate `MEMORY.md` sections into seed `roadmap.md` and `decisions/index.md`.
+4. For `standard → minimal`: Validate `summaries/roadmap.md` and `decisions/index.md` for non-empty content; emit warnings as a single batched block if empty. Existing `.project-memory/` stays in place; new behavior follows minimal rules going forward. Roadmap content appended to freshly created `MEMORY.md`.
+5. For `minimal → standard`: Validate `MEMORY.md`'s `## Roadmap` and `## Decisions` for non-empty content; emit warnings as a single batched block if empty. Create `.project-memory/` skeleton; migrate `MEMORY.md` sections into seed `roadmap.md` and `decisions/index.md`.
 6. Inform the user what becomes active / inactive from this point. No existing artifacts are deleted.
 
 ---
@@ -106,15 +102,11 @@ For quick reference cheatsheet → read `<profile>/cheatsheet.md`.
 
 ---
 
-# Core Principles
+# Philosophy
 
-Git answers: what changed, where, when, what is the diff.
+Git answers what/where/when/diff. Project Memory answers why/alternatives/constraints/tensions/what-next. Git is the source of truth for code; .project-memory/ is the source of truth for engineering reasoning.
 
-Project Memory answers: why it was changed, what alternatives were considered and rejected, what constraints existed, what tensions are unresolved, what approaches have proven harmful, what should happen next.
-
-Git is the source of truth for code changes. `.project-memory/` (or `MEMORY.md` under minimal) is the source of truth for engineering reasoning.
-
-Records carry author attribution via `created_by` and `contributors` frontmatter fields. Full rules: `conventions/maintainer.md` → Author Attribution. (Note: `contributors` is omitted in `standard`; both `created_by` and `contributors` are omitted in `minimal`.)
+Records carry author attribution via `created_by` (and `contributors` in legacy projects). Full rules: `conventions/maintainer.md` → Author Attribution.
 
 ---
 
@@ -124,19 +116,21 @@ Records carry author attribution via `created_by` and `contributors` frontmatter
 
 ```
 .project-memory/
-├── phases/           # frozen archive (legacy, pre-2026-07) — do not modify; see standard/init.md
-├── decisions/        DECISION-YYYY-MM-DD-slug.md + index.md
-├── discussions/      DISCUSSION-YYYY-MM-DD-slug.md + index.md
-├── issues/           open/ + closed/
-├── instructions/     INSTRUCTION-YYYY-MM-DD-slug.md
-├── notes/            NOTE-YYYY-MM-DD-slug.md
-├── assignments/      ASSIGNMENT-YYYY-MM-DD-slug.md + index.yml
-└── summaries/        2 files: roadmap.md + current-state.md
+├── phases/
+├── decisions/
+├── discussions/
+├── issues/
+├── instructions/
+├── notes/
+├── assignments/
+└── summaries/
 ```
+
+See standard/init.md for the full scaffold.
 
 ## `MEMORY.md` (minimal)
 
-`.project-memory/MEMORY.md` — single file inside the shared `.project-memory/` directory, with four fixed sections (`## Roadmap`, `## Decisions`, `## Notes`, `## Log`). User-triggered features (discussions, instructions, issues, notes) create their own subdirectories inside `.project-memory/` on first use.
+`.project-memory/MEMORY.md` — single file inside the shared `.project-memory/` directory, with four fixed sections (`## Roadmap`, `## Decisions`, `## Notes`, `## Log`). User-triggered features create their own subdirectories inside `.project-memory/` on first use.
 
 ## Skill Files
 
@@ -187,13 +181,6 @@ For language policy and author attribution → `conventions/maintainer.md`.
 
 # Quick Reference
 
-```
 Turn ending with commits?  → turn-boundary sweep: update current-state.md (once, covering the turn's commits) + roadmap.md on scope-change per standard/gates.md
-About to close discussion?→ Determine outcome, write file, update index (all profiles)
-About to assign work?     → Create ASSIGNMENT-YYYY-MM-DD-slug.md + index entry (all profiles)
-About to implement?       → Pre-Implementation Gate (standard/gates.md)
-About to receive assignment?→ Accept / Reject / Remind at session start
-About to change profile?  → "change profile to X" intent — appends profile_history entry
-```
 
-For the full quick reference → read `<profile>/cheatsheet.md`.
+For the full quick reference, read standard/cheatsheet.md.
