@@ -126,8 +126,12 @@ export async function startBackgroundAudit(
       // Re-detect after applying fixes
       report = await runAudit(projectMemoryDir, profile);
 
-      // Break early if there are failures or partials that indicate unfixable state
-      if (fixResult.failed.length > 0 || fixResult.partial.length > 0) break;
+      // Break only on failures (genuine errors that cannot auto-recover).
+      // Partials are stubs written to disk (e.g. rows with <!-- TODO: claim -->)
+      // that require LLM prose completion via their `llm_must_do` instruction —
+      // they represent automated progress and the pipeline should continue
+      // applying any remaining deterministic fixes.
+      if (fixResult.failed.length > 0) break;
     }
     return report;
   };

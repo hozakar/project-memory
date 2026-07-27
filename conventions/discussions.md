@@ -14,7 +14,7 @@ Discussions capture exploratory conversations between the user and the LLM that 
 - Example: `DISCUSSION-2026-06-11-discussion-feature-design.md`
 
 **Frontmatter (required):**
-See `templates/index.md` for the full schema. Key fields:
+See `templates/discussions.md` for the full schema. Key fields:
 - `id`: unique identifier
 - `status`: `open` (still active / can be resumed) or `concluded` (finished)
 - `outcome.type`: `decision`, `issue`, `roadmap`, or `none` — plus the legacy type `phase` (existing files only; see `templates/discussions.md` → Backward compatibility)
@@ -26,7 +26,7 @@ Trigger (explicit or implicit)
   -> Discussion Mode engages
       -> Load active instructions (same as GATE 0 in standard/gates.md)
       -> Find prior discussions:
-           - MCP available: `search_memory(query="<topic keywords>", type="discussion", top_k=5)` — semantically relevant discussions returned in `body` field.
+           - MCP available: `search_memory(query="<topic keywords>", type_filter="discussion", top_k=5)` — semantically relevant discussions returned in `body` field.
            - MCP unavailable: load `discussions/index.md`; read entries matching topic by title/tags; open the 2–3 most relevant DISCUSSION-*.md files.
       -> Conversation proceeds
   -> Close discussion
@@ -88,7 +88,7 @@ Traceability rules:
 - `DECISION.spawned_from_discussion` → points back to the discussion that created it; null if decision was opened standalone.
 
 **Resume:**
-User says "continue discussion X" -> load the full DISCUSSION file -> continue conversation -> UPDATE the same file at close. Status remains `open` until conclusively finished. If the outcome changes on resume, update the frontmatter accordingly. On every resume update AND on close, append the current git identity to `contributors` (dedup by email).
+User says "continue discussion X" -> load the full DISCUSSION file -> continue conversation -> UPDATE the same file at close. Status remains `open` until conclusively finished. If the outcome changes on resume, update the frontmatter accordingly. Standard profile does not track `contributors`. Attribution is `created_by` only.
 
 **Expiry:**
 Discussions with `outcome.type: none` AND `date` older than 30 days are expired:
@@ -96,7 +96,7 @@ Discussions with `outcome.type: none` AND `date` older than 30 days are expired:
 2. Remove its row from `discussions/index.md`.
 3. Archived discussions are excluded from session-start loading and Pre-Implementation Gate scanning — accessible on explicit request only.
 
-Discussions with any other outcome type (`decision`, `issue`, `roadmap`) are never expired automatically regardless of age. The 30-day threshold is intentionally lenient; tighten in conventions.md if noise accumulates faster than expected.
+Discussions with any other outcome type (`decision`, `issue`, `roadmap`) are never expired automatically regardless of age. The 30-day threshold is intentionally lenient; tighten it if noise accumulates faster than expected.
 
 **Pre-Implementation Gate integration:**
 When the gate scans `decisions/index.md` for `touches` overlap, also scan `discussions/index.md` for discussions with outcome types that relate to the proposed implementation. If a past discussion explicitly concluded against the current direction, surface it as a directional conflict alongside decision conflicts.

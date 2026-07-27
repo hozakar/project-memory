@@ -31,7 +31,7 @@ audit_ignore: []      # permanent skip entries (see audit.md → Permanent Skip)
 
 **`adr_enabled` default:** `false`. Standard's default decision storage is DECISION files + `decisions/index.md` without ADR mirror. If you want ADR support, set `adr_enabled: true` — Cat 8 audit will create stubs for existing decisions on the next audit pass.
 
-**`audit_ignore`** behaves identically to the legacy full profile. See `audit.md` → Permanent Skip for the matching rules and fingerprint formats.
+**`audit_ignore`** behaves identically to the legacy profile. See `audit.md` → Permanent Skip for the matching rules and fingerprint formats.
 
 **Backward compatibility:** `profile: full` and `profile: lite` in legacy config.yml files are treated as `profile: standard` at read time. No migration action is needed.
 
@@ -83,13 +83,13 @@ Last Updated: YYYY-MM-DD
 - *(none)*
 ```
 
-The `## Considered but not now` section captures rejected or deferred ideas. In the legacy full profile, this kind of content lived in `project-memory.md → Rejected Decisions`; standard collapses it into one shared file.
+The `## Considered but not now` section captures rejected or deferred ideas. In legacy profiles, this kind of content lived in `project-memory.md → Rejected Decisions`; standard collapses it into one shared file.
 
 ---
 
 # Summary files NOT in standard
 
-These existed in legacy full but are not scaffolded under standard:
+These existed in legacy profiles but are not scaffolded under standard:
 - `project-memory.md` — meta-summary of project purpose, anti-patterns, navigation map. Standard doesn't carry meta-summary infrastructure.
 - `architecture.md` — system architecture overview. Keep this in your codebase README or write a DECISION when architectural decisions accumulate.
 - `active-issues.md` — issue rollup. Use GitHub Issues or similar external systems; `.project-memory/issues/` is still available as a user-triggered feature, but no rollup summary is maintained.

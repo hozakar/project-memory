@@ -22,7 +22,7 @@ overhead the skill introduces automatically. Choose at first run; switch at any 
 | | `standard` | `minimal` |
 |---|---|---|
 | Pre-Impl Gate | Steps 0–3 (GATE 0 + Steps 1–3) | Step 0 only |
-| Drift audit | 8 categories | none |
+| Drift audit | see standard/audit-fs.md | none |
 | Summaries | `roadmap.md` + `current-state.md` | inline in `MEMORY.md` |
 | Author attribution | `created_by` only | none |
 | Topic-shift detection | off | n/a |
@@ -108,14 +108,7 @@ your team, capture it as a DECISION or DISCUSSION — that's what they're for.
 
 ## Summaries
 
-`summaries/` contains living documents updated automatically at every commit.
-The set of files depends on the active profile:
-
-|**Standard profile** (2 files): `current-state.md` and `roadmap.md`. Roadmap
-entries are added incrementally during work.
-
-**Minimal profile**: no `summaries/` directory. The `## Roadmap` section of
-`MEMORY.md` serves the same purpose, edited directly.
+`summaries/` contains living documents updated at every commit. **Standard** uses `current-state.md` and `roadmap.md`. **Minimal** uses the `## Roadmap` section of `MEMORY.md` instead.
 
 ---
 
@@ -156,15 +149,7 @@ are never loaded into your session.
 
 ## Assignments
 
-A lightweight safety net for open work — not a task tracker. The typical use case:
-a team member leaves the project with open decisions or discussions in flight. Assignments
-let you hand off those loose ends so nothing gets orphaned. Two variants: direct
-(linked to an existing record) and freeform (standalone). State machine:
-`pending → accepted → ongoing → completed / rejected`. Session-start notifications
-are passive — one line per direction, details on demand. This is a once-in-a-blue-moon
-feature; for day-to-day task management, use your existing tools.
-
----
+A lightweight safety net: hand off open decisions or discussions so nothing gets orphaned. Two variants — direct (linked to a record) and freeform (standalone). State machine: `pending → accepted → ongoing → completed / rejected`. Session-start notifications are passive (one line per direction). A rare feature; use your existing tool for daily task management.
 
 ---
 
@@ -181,14 +166,9 @@ workflow.
 
 ---
 
----
-
 ## ADR support
 
-When enabled, every decision automatically gets a corresponding `adr/NNNN-slug.md`
-file in MADR format, compatible with standard ADR tooling. The drift audit
-(Category 8) keeps the two in sync. ADR support is opt-in and can be toggled
-at any time via `.project-memory/config.yml`.
+Each decision can optionally auto-generate a MADR-format ADR file (`adr/NNNN-slug.md`). The drift audit (Category 8) keeps them in sync. Opt-in via `.project-memory/config.yml`.
 
 ---
 
@@ -198,39 +178,15 @@ The skill runs an 8-category drift audit each session, deferred to after the
 first user response so it doesn't add latency to session start. One exception
 runs synchronously: explicit `Skill project-memory audit` invocation.
 
-**How the two paths differ materially — not just in speed:**
+**How the two paths differ materially:**
 
-- **With the MCP companion server (standard profile only used nontrivially):**
-  the audit is *deterministic, instant, and costs zero tokens / zero LLM
-  judgment.* At session open the skill calls
-  `run_audit(…, background: true)`, gets back `{ status: 'running' }` (or
-  `'done'`) immediately, and emits a single ack line. The server runs the full
-  pipeline silently in a background worker — `run_audit → apply_audit_fixes →
-  re-run until clean` (max 5 iterations) — applying all fixes with no further
-  involvement from the LLM. No Glob/Read churn, no per-finding reasoning, no
-  report block. The skill just moves on.
-- **Without MCP (standard profile):** the same 8 categories fire, but every one
-  of them is driven by the LLM issuing `Glob` / `Read` calls, interpreting
-  frontmatter and index rows, and writing fixes token-by-token. The *detection
-  rules* are deterministic, but the *operation* is not free: each pass costs
-  tokens, wall-clock time, and LLM judgment. On a project with many decisions
-  and discussions, the per-session audit becomes a noticeable overhead item —
-  the most concrete reason to install MCP in standard.
+- **With MCP (standard profile):** deterministic, instant, zero tokens. `run_audit` returns immediately; the server runs the full pipeline silently in a background worker — `run_audit → apply_audit_fixes → re-run until clean` — with no Glob/Read churn, no per-finding reasoning, no LLM involvement.
+- **Without MCP (standard profile):** same deterministic rules, but every fix is LLM-driven — Glob/Read calls, token-by-token reasoning and writing. Each pass costs tokens and wall-clock time. The concrete reason to install MCP.
 - **Minimal profile:** no audit at all, with or without MCP.
-
-In short: MCP isn't "faster audits" — it's *audits that don't draw on the LLM
-at all*. The LLM-facing path exists as a fallback, but it is the expensive one.
 
 | Category | Description | Resolution |
 |---|---|---|
-| 5 | Issue files in wrong directory | Auto-fix (file move) |
-| 6 | Decision index drift | Auto-fix (orphan rows) + pending fixes (missing rows, status mismatches) |
-| 8 | ADR sync drift (when ADR enabled) | Pending fixes (missing adr_id, missing ADR files) |
-| 9 | Discussion index drift (low, non-interactive report) | Low/non-interactive report |
-| 11 | Discussion expiry auto-archive | Auto-archive |
-| 13 | MCP consistency (conditional, auto-fix) | Auto-index missing entries |
-| 14 | Assignment orphans / stale pending | Auto-fix |
-| 15 | Decision supersession integrity: dangling pointers + zombie-active + asymmetric + circular + orphan-superseded | Auto-fix (pending fixes) |
+| See standard/audit-fs.md for the full category table. |
 
 ---
 
@@ -246,16 +202,14 @@ decisions, discussions, and past work with high accuracy, even when keyword
 overlap is low.
 
 **Tools provided:**
-- `search_memory` — semantic search across all record types with filters
-- `run_audit` — all 8 audit categories in a single deterministic call
-- `index_decision`, `index_discussion`,
-  `index_instruction`, `index_assignment`, `index_note`, `delete_note` — upsert and
-  delete records in the vector index
-- `apply_audit_fixes` — deterministic execution of all `PendingFix` variants from `run_audit`; source-of-truth-safe, idempotent, prose cells left as `<!-- TODO -->` markers
-- `find_similar_commit` — squash/rebase recovery via diff-based similarity search
-- `check_consistency` and `rebuild_index` — DB/filesystem sync and full index rebuild
-- `list_contributors` — deduplicated contributor list across all record types
-- `find_decision_conflicts` — find candidate semantically-conflicting decision pairs for manual review
+- `search_memory` — semantic search with filters
+- `run_audit` — all 8 categories, deterministic
+- `index_*`, `delete_note`, `reindex_file` — upsert/delete records
+- `apply_audit_fixes` — deterministic, idempotent fix execution
+- `find_similar_commit` — squash/rebase recovery via diff similarity
+- `check_consistency` / `rebuild_index` — DB/filesystem sync and rebuild
+- `list_contributors` — deduplicated contributor list
+- `find_decision_conflicts` — semantic conflict detection
 
 **Stack:** LanceDB + `all-MiniLM-L6-v2` local embeddings. No API key, no external
 service. Runs locally alongside the skill.
@@ -271,6 +225,8 @@ file-based operation without data loss.
 Skill files are organized into a shared root plus per-profile directories. Profile-
 specific behavior lives under `standard/` or `minimal/`; shared lifecycles
 that don't diverge across profiles stay at the root.
+
+> See SKILL.md → Skill Files for the canonical file tree.
 
 **Entry point and profile routing:**
 
@@ -298,8 +254,6 @@ that don't diverge across profiles stay at the root.
 | File | Purpose |
 |---|---|
 | `audit.md` | Dispatcher — routes to `<profile>/audit-mcp.md` or `<profile>/audit-fs.md` |
-| `templates/index.md` | Dispatcher — routes to profile-specific template files |
-| `conventions/index.md` | Dispatcher — routes to shared convention sub-files |
 | `conventions/decisions.md` | Decision lifecycle, ADR steps, touches guidance |
 | `conventions/discussions.md` | Discussion lifecycle, relevancy scoring, expiry |
 | `conventions/records.md` | Issue, instruction, assignment lifecycles |
@@ -308,5 +262,4 @@ that don't diverge across profiles stay at the root.
 | `templates/discussions.md` | DISCUSSION + discussions/index.md templates |
 | `templates/instructions.md` | INSTRUCTION template |
 | `templates/assignments.md` | ASSIGNMENT + assignments/index.yml templates |
-| `templates/attribution.md` | Shared `created_by` / `contributors` schema |
 | `mcp-integration.md` | MCP tool catalog, proactive sync, degradation rules |

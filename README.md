@@ -61,22 +61,16 @@ The skill will save it privately — only you can search your own notes. No stat
 
 ## Installation
 
-Copy the skill files into a directory in your project. A path like
-`.claude/skills/project-memory/` works well.
+Copy the skill files into a directory in your project (`.claude/skills/project-memory/` works well).
 
-> The skill will create a `.project-memory/` directory in your own project the
-> first time you work together. Do not copy it from another project — yours
-> will get its own fresh one automatically.
+> The skill creates a `.project-memory/` directory in your project on first use. Do not copy it from another project.
 
-Then tell your agent:
+**Tier 1 (quick-start):** Tell your agent: *"Run Project Memory Skill first thing every session."*  
+**⚠ Warning:** The Tier-1 approach does not survive context compaction — the bootstrap line is evicted mid-session, and no summary updates occur ([see INSTALLATION.md:165](INSTALLATION.md#L165)).
 
-> *"Run Project Memory Skill first thing every session."*
+**Tier 2 (reinforced, recommended):** Place the per-turn directives block in your host instructions file instead ([INSTALLATION.md:132](INSTALLATION.md#L132)). The directives file is re-injected on every turn and survives compaction.
 
-Do not forget to tell it where the skill lives — without a path, it will not
-know where to look.
-
-Want the skill available across all your projects instead of just one? Here is a
-guide for setting that up on every major platform: → [INSTALLATION.md](INSTALLATION.md)
+For cross-project setup: → [INSTALLATION.md](INSTALLATION.md)
 
 ---
 
@@ -117,7 +111,7 @@ No commands to learn. Just ask naturally:
 Not every project needs the same level of ceremony. When you first work with the skill
 on a new project, it will ask you to choose one:
 
-- **standard** — lean ceremony: 8-category drift audit, 2 summary files
+- **standard** — lean ceremony: drift audit (see standard/audit-fs.md for categories), 2 summary files
   (`roadmap.md` and `current-state.md`), Pre-Impl Gate with decision cross-reference.
   For projects where architectural reasoning matters.
 
@@ -131,32 +125,15 @@ Past artifacts are preserved; only future behavior changes.
 
 **MCP companion server and profiles**
 
-The MCP companion server is optional in all profiles, but how much you will miss
-it varies quite a bit:
-
-- **minimal** — MCP gives you some uplift, but honestly you will be fine without it.
-  A single markdown file does not need a vector index.
-
-- **standard** — strongly recommended. Without MCP, the per-session drift audit
-  runs LLM-side — Glob/Read, reasoning, and fixes token-by-token. With MCP
-  installed, audits become deterministic and instant: a background worker runs the
-  full pipeline and applies all fixes with zero tokens and zero LLM judgment.
-  Semantic search is also server-side. This is where the MCP Server earns its keep
-  in `standard`. In short: everything still works without MCP — you just pay for it
-  in tokens, wall-clock time, and LLM judgment where deterministic code would do the job.
+MCP companion server and profiles — see the [Installation](#installation) section above for the MCP companion server details.
 
 ---
 
 ## ADR support (optional)
 
-Want a structured, human-readable record of architectural decisions — in standard
-MADR format, compatible with ADR tooling? The skill can set that up.
+Want ADR records in standard MADR format? The skill can set that up. Each time you make an architectural decision, it creates an ADR file that is yours to edit and share — the skill will not touch it again.
 
-Each time you make an architectural decision, the skill will create an ADR file for you.
-After that, it is yours — edit it, annotate it, share it with your team. The skill
-will not touch it again.
-
-No rush, you do not have to decide upfront. Just ask whenever you are ready:
+Just ask whenever you are ready:
 
 > *"Enable ADR support for this project."*
 
@@ -164,13 +141,9 @@ No rush, you do not have to decide upfront. Just ask whenever you are ready:
 
 ## Cost model
 
-Being honest: sessions with the skill running will feel a bit token-heavy at
-first, especially at the start of each one. That is the skill loading context —
-doing its job. There is no point pretending otherwise.
+Sessions with the skill will feel token-heavy at first — context loading at session start. That is the skill doing its job.
 
-But here is the claim worth making: over time, you will roll back less, chase
-fewer bugs, and spend more of your sessions moving forward instead of backtracking.
-The early overhead is the price of not re-learning the same lesson twice.
+Over time, you will roll back less, chase fewer bugs. The early overhead is the price of not re-learning the same lesson twice.
 
 The skill cannot promise every session will be cheaper. It can promise the work will be.
 
@@ -178,16 +151,31 @@ The skill cannot promise every session will be cheaper. It can promise the work 
 
 ## Manual audit
 
-Not often. Once a month, maybe less.
+Not often — once a month, maybe less.
 
-The skill does its best to keep up automatically, but sometimes it gets confused too.
-A small inconsistency unresolved. A tension not surfaced yet. A question it has been sitting with. A manual audit every
-now and then gives the skill a chance to ask.
+The skill does its best automatically, but sometimes it gets confused. A manual audit every now and then gives it a chance to ask about unresolved tensions.
 
-Just say: *"Let's run an audit."* The skill will walk you through what it found
-and you will sort it out together.
+Just say: *"Let's run an audit."* The skill will walk you through what it found and you will sort it out together.
 
-No obligation but nice to have in order to keep everything in check.
+No obligation, but nice to have in order to keep everything in check.
+
+## Interactive audit mode
+
+An optional, user-triggered stage of the audit that escalates potential decision conflicts to you for resolution. Unlike the automatic audit categories, this stage is never entered automatically — you must explicitly ask for it.
+
+All four conditions must hold for it to run:
+
+- **User-triggered only** — never entered automatically.
+- **MCP available** — requires the `find_decision_conflicts` tool from the MCP server.
+- **Profile = standard** — only available in the standard profile.
+- **Active decisions** — at least one non-superseded active decision exists.
+
+When triggered, up to **2 findings** are escalated per audit (+1 extra if you ask "what else?"). For each conflicting pair, you have two options:
+
+- **Answer** — explain how to resolve it. The LLM writes a superseding DECISION (provenance: directive) and updates all records.
+- **Ignore** — the pair is added to `audit_ignore` in `.project-memory/config.yml` as `decision-contradiction:<ID1>:<ID2>`. Permanent until you manually remove the entry.
+
+For full technical details, see [audit.md](audit.md).
 
 ---
 

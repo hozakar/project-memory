@@ -3,6 +3,25 @@ name: project-memory-audit-fs
 description: File-system drift audit detection procedure for the standard profile. 8 active categories (phase-related categories retired, Cat 7, 12 dropped).
 ---
 
+# Audit Category Set
+
+The project-memory audit system defines 8 active categories:
+
+| # | Name | Description |
+|---|---|---|
+| 5 | Misplaced issue files | Move closed issue files from `issues/open/` to `issues/closed/`. No-op when issues feature unused. |
+| 6 | Decision index drift | Synchronize DECISION files with `decisions/index.md` rows (missing, orphan, status mismatch). |
+| 8 | ADR sync drift (conditional) | Sync ADR records with decision index when `adr_enabled: true` (default: false). |
+| 9 | Discussion index drift | Synchronize DISCUSSION files with `discussions/index.md` rows (missing, orphan, status mismatch). |
+| 11 | Discussion expiry | Archive discussions with `outcome: none` older than 30 days. |
+| 13 | MCP consistency (conditional) | Index on-disk IDs missing from MCP database when MCP `check_consistency` tool is available. |
+| 14 | Assignment integrity | Check orphan targets, stale pending (>30d), and completions without evidence. |
+| 15 | Decision supersession integrity | 5 sub-checks: dangling pointers, zombie-active, asymmetric, circular chains, orphan-superseded. |
+
+**Retired:** Cat 1, 2, 3, 4, 7, 10, 12. Phase-related categories (4, 10) retired when phase concept dropped. Cat 7, 12 dropped.
+
+---
+
 # Detection Procedure (standard)
 
 **Invocation:** at post-first-response hook (default), or on explicit `Skill project-memory audit` (sync), or when first user message is an audit-implicit-trigger (sync).
@@ -26,13 +45,24 @@ Run all 8 active categories on every audit pass. Collect findings before acting.
 | 11 | **Discussion expiry** | DISCUSSION with outcome: none and age > 30 days → archive. | Glob: discussions/DISCUSSION-*.md; Read frontmatter | **Auto-fix** | — |
 | 13 | **MCP consistency (conditional)** | Runs only if MCP `check_consistency` tool is available. Indexes any IDs found on disk but not in DB. | MCP: `check_consistency`; `Read` files for missing IDs; MCP: `index_*` tools | **Auto-fix** | — |
 | 14 | **Assignment integrity** | 14a (target_id orphan: auto-fix writes `target_orphaned_at` to frontmatter, any age), 14b (stale pending >30d: one-shot `reminded: true` flag), 14c (completed without evidence: auto-fix writes `completed_without_evidence_at` to frontmatter). **No-op when assignments feature unused.** | `Glob: assignments/*.md`; `Read` frontmatter | **Auto-fix** | — |
-| 15 | **Decision supersession integrity** | Dangling supersedes/superseded_by pointers (target missing) + zombie-active (superseded_by set & target exists but status not superseded) | `Glob: decisions/DECISION-*.md`; `Read: decisions/index.md` | **Auto-fix** (dangling: direct clear; zombie: pending_fix flips status + moves index row) | — |
+| 15 | **Decision supersession integrity** | 5 sub-checks: (a) dangling — supersedes/superseded_by points to missing file; (b) zombie-active — superseded_by set & target exists but status not superseded; (c) asymmetric — only one side of a supersedes pair set; (d) circular — A supersedes B supersedes C supersedes A; (e) orphan-superseded — status=superseded but no superseded_by & no target claims it | `Glob: decisions/DECISION-*.md`; `Read: decisions/index.md` | **Auto-fix** (dangling: direct clear; zombie: pending_fix flips status + moves index row; asymmetric: restore missing link; circular: break cycle; orphan-superseded: restore status to active) | — |
 
 ---
 
 # Auto-Fix Rules
 
-The auto-fix rules are identical to the legacy full profile for every active category. Phase-related categories (open-phase gaps, phase file completeness) are retired — no auto-fix rules apply.
+Each active category's auto-fix behavior is specified inline in the table above. Summary:
+
+- **Cat 5 (misplaced issues):** File moved from `issues/open/` to `issues/closed/`.
+- **Cat 6 (decision index drift):** Missing rows queued as `pending_fixes`; orphan rows auto-removed from index; status mismatches resolved from source file.
+- **Cat 8 (ADR sync drift, conditional on `adr_enabled`):** Missing ADR IDs queued as `pending_fixes`; missing ADR files created; mismatches resolved.
+- **Cat 9 (discussion index drift):** Missing rows queued; orphan rows auto-removed; status mismatches resolved.
+- **Cat 11 (discussion expiry):** Auto-archived to `discussions/archive/`; index row removed.
+- **Cat 13 (MCP consistency, conditional):** Missing notes re-indexed; orphaned records deleted from DB.
+- **Cat 14 (assignment integrity):** 14a — `target_orphaned_at` written to frontmatter; 14b — `reminded: true` flag set (one-shot); 14c — `completed_without_evidence_at` written to frontmatter.
+- **Cat 15 (decision supersession integrity):** Dangling — clear pointer; zombie-active — pending_fix flips status + moves index row; asymmetric — restore missing link; circular — break cycle; orphan-superseded — restore status to active.
+
+Phase-related categories (open-phase gaps, phase file completeness) are retired — no auto-fix rules apply.
 
 ---
 
@@ -42,9 +72,22 @@ Phase-related open-phase gap auto-assignment heuristic is retired — no longer 
 
 # Edge Cases
 
-Edge cases from the legacy full `audit-fs.md` apply unchanged for all active categories, with these standard-specific notes:
+Standard-specific edge case notes per active category:
 
 - **Phase-related categories retired:** these categories are removed. Their historical findings are not detected. Existing `audit_ignore` entries keyed on retired category numbers in `.project-memory/config.yml` are harmless — they only ever match frozen phase artifacts and act as a historical record.
 - **Cat 9, 11 — active:** Cat 9 detects discussion index drift (missing rows, status mismatches, orphan rows) as low-severity non-interactive reports. Cat 11 auto-archives discussions with outcome: none older than 30 days to discussions/archive/ and removes their index rows.
 - **Cat 13 — MCP consistency on historical records:** Legacy phase records are re-indexed automatically by `rebuild_index` when the historical phases/ directory is walked — there is no public tool to re-index a single phase. The records still have searchable content via plan.md (if present) and the per-commit records.
 - **`adr_enabled` default:** `init.md` does NOT scaffold `adr_enabled: true`. The flag defaults to `false`.
+- **Cat 15 edge cases:** Dangling pointer detection covers both `supersedes` and `superseded_by` directions. Circular chains are detected by following `supersedes` links up to depth 10 before declaring a cycle. Orphan-superseded decisions (status=superseded with no `superseded_by` field and no decision that lists them in its `supersedes`) are restored to active, as they were likely superseded by mistake or left in a broken state during a previous partial fix.
+
+---
+
+## Declined categories
+
+The following audit categories were proposed but declined. Justifications are recorded here to prevent re-litigation.
+
+**Empty-# Prompt detection.** Detects INSTRUCTION files that lack a `# Prompt` section (the parser resolves these to empty string, producing a silent no-op). Declined: Round 1 already fixed the template (`templates/instructions.md`) to require `# Prompt`, and the parser was fixed to resolve `# Prompt -> frontmatter prompt:` with no fallback. New instructions without `# Prompt` are prevented at the template level. The four active instruction files were already rewritten in Round 1, so no existing files need catching.
+
+**Mirror-drift detection (~40 lines TS).** Detects byte-level drift between the three mirror copies of the directives block. Declined: The mirror registry and byte-comparison script were already tried and removed (see CHANGELOG.md). The prerequisite (BEGIN/END markers) is being added in T4 this round, so the category *could* be implemented if drift is observed in practice, but the cost is ~40 lines of TS code and the problem has not been observed. Revisit if drift becomes a real issue.
+
+**Record-ID-in-skill-files regex.** Detects `.project-memory/` record IDs (DECISION-* , DISCUSSION-* , etc.) in tracked skill files. Declined: This round (T6) fixes the 19 known dangling pointers, and the rule "state the rule, drop the ID" is already documented going forward. A regex for `DECISION-YYYY-MM-DD` in `.md` files outside `.project-memory/` and CHANGELOG.md would also flag legitimate references — examples in rules text, IDs used as documentation — producing a high false-positive rate without a way to distinguish "example ID" from "dangling pointer."

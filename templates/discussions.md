@@ -1,6 +1,6 @@
 ---
 name: project-memory-templates-discussions
-description: Templates for DISCUSSION records and discussions/index.md. Author Attribution schema in templates/attribution.md.
+description: Templates for DISCUSSION records and discussions/index.md. See conventions/maintainer.md → Author Attribution.
 ---
 
 # Discussion Templates
@@ -22,12 +22,10 @@ outcome:
   id: DECISION-YYYY-... | ISSUE-YYYY-... | null
   summary: ""               # free-text for roadmap entries; null otherwise
 tags: []
-created_by:                 # required — see templates/attribution.md
+created_by:                 # required — see conventions/maintainer.md → Author Attribution
   name: "Hakan Ozakar"
   email: "hozakar@gmail.com"
-contributors:               # required — appended on resume / close
-  - name: "Hakan Ozakar"
-    email: "hozakar@gmail.com"
+# contributors — omitted in standard profile
 ---
 ```
 
@@ -70,8 +68,8 @@ One-row-per-discussion summary table. Loaded at session start by SKILL.md Memory
 # Discussions Index
 
 | Date | ID | Status | Outcome | Tags | Summary |
-|---|---|---|---|---|---|
-|| 2026-06-11 | DISCUSSION-2026-06-11-slug | concluded | DECISION-2026-... | feature, discussion | Brief one-line summary |
+|---|---|---|---|---|---|---|
+| 2026-06-11 | DISCUSSION-2026-06-11-slug | concluded | DECISION-2026-... | feature, discussion | Brief one-line summary |
 ```
 
 Maintenance rules:
@@ -79,4 +77,4 @@ Maintenance rules:
 - When a discussion is concluded, update its Status to `concluded`.
 - Outcome column shows the linked artifact ID or `none`.
 - Rows sorted newest first.
-- Expired discussions (`outcome: none` AND older than 30 days) are removed from this index and moved to `discussions/archive/`. See `conventions.md` Expiry rule.
+- Expired discussions (`outcome: none` AND older than 30 days) are removed from this index and moved to `discussions/archive/`. See `conventions/discussions.md` → Expiry.

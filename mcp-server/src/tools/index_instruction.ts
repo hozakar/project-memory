@@ -27,6 +27,7 @@ export async function indexInstruction(
       createdByName: createdBy.name,
       createdByEmail: createdBy.email,
       contributorsJson: JSON.stringify([]),
+      status: data.state,  // "active" | "dropped" — enables WHERE filtering
     };
 
     await upsert(record);

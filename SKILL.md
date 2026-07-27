@@ -5,10 +5,7 @@ description: Project memory system. Loads at every session start to provide engi
 
 # On Load
 
-**Subagent exemption — check this before step 1.** If you were dispatched as a subagent to
-execute a specific task, do NOT run this on-load flow and do NOT write to `.project-memory/`.
-Proceed with the task as briefed and report results to your parent, which owns all memory
-writes. See `standard/gates.md` → Actor Scope.
+**Subagents are exempt:** if you were dispatched as a subagent for a specific task, skip the session-start load and both gates, and never write to `.project-memory/` — report to your parent instead. The parent owns all memory writes and briefs you with the constraints your task needs.
 
 When this skill activates:
 
@@ -29,8 +26,8 @@ When this skill activates:
 
 5. **Post-first-response drift audit** (standard only):
    - **If MCP `run_audit` is available:** call `run_audit(project_memory_dir, { profile: 'standard', background: true })` at session open. The server returns `{ status: 'running' }` (audit starting/in-progress) or `{ status: 'done' }` (audit already completed moments ago) — in either case emit the instant-ack line and move on; do not start a second audit. Fixes are applied silently in the background via the chained pipeline (`run_audit → apply_audit_fixes → re-run until clean`). **No report block is emitted.**
-   - **If MCP is NOT available:** defer the drift audit to after the LLM answers the user's first message. After the first user-facing response is delivered, run the drift audit (8 categories) via the file-based `audit.md` path and emit the drift report as a follow-up block.
-   - **Exceptions (audit runs synchronously):** (a) explicit invocation via `Skill project-memory audit` or natural-language audit trigger per `DECISION-2026-06-17-audit-implicit-triggers` — uses synchronous `run_audit` (background omitted/false); (b) the first user message is itself an audit-implicit/explicit trigger — run audit synchronously to answer correctly; (c) `minimal` profile — no audit at all, no deferral applies.
+   - **If MCP is NOT available:** defer the drift audit to after the LLM answers the user's first message. After the first user-facing response is delivered, run the drift audit (see standard/audit-fs.md for categories) via the file-based `audit.md` path and emit the drift report as a follow-up block.
+   - **Exceptions (audit runs synchronously):** (a) explicit invocation via `Skill project-memory audit` or natural-language audit trigger (lenient detection: recognize intent in any language, ask clarification when ambiguous) — uses synchronous `run_audit` (background omitted/false); (b) the first user message is itself an audit-implicit/explicit trigger — run audit synchronously to answer correctly; (c) `minimal` profile — no audit at all, no deferral applies.
 
 6. Continue with the session. Do not ask the user for anything beyond the init UX (step 3) at this stage.
 
@@ -44,7 +41,7 @@ When this skill activates:
 
 In `minimal` profile this argument (and natural-language triggers) is a no-op — minimal has no audit. Print a one-line notice and exit.
 
-**Implicit triggers:** Lenient detection of audit / drift-review intent. The user may phrase the request in any language; recognize the intent, not the keywords. When phrasing is genuinely ambiguous (e.g. "let's review what we have" with no project-memory cue), ask a one-line clarification *"Did you mean run the project-memory drift audit?"* before triggering. Governing rule: `DECISION-2026-06-17-audit-implicit-triggers`.
+**Implicit triggers:** Lenient detection of audit / drift-review intent. The user may phrase the request in any language; recognize the intent, not the keywords. When phrasing is genuinely ambiguous (e.g. "let's review what we have" with no project-memory cue), ask a one-line clarification *"Did you mean run the project-memory drift audit?"* before triggering. Governing rule: recognize intent in any language; ask a one-line clarification when genuinely ambiguous.
 
 ## discuss
 
@@ -58,17 +55,13 @@ Discussions are a user-triggered feature — available in all profiles. In `mini
 
 ## change profile
 
-When the user says "switch project-memory to <standard|minimal>" or similar phrasing ("change profile to X", "switch to standard", etc.):
+When the user says "switch project-memory to <standard|minimal>" or similar phrasing:
 
 1. Read current `config.yml` (or detect `MEMORY.md` for minimal).
 2. Append a new entry to `profile_history`: `{profile: <new>, effective_date: today, reason: <user's stated motivation or "user request">}`.
 3. Update top-level `profile` field.
-4. For `standard → minimal`:
-   - **Validation (non-blocking):** Read `summaries/roadmap.md` — if no `### Short-term` or `### Later` sections exist, warn: `"summaries/roadmap.md appears empty — ## Roadmap section in MEMORY.md will be seeded empty."` Read `decisions/index.md` — if no Active section entries exist, warn: `"decisions/index.md has no active entries — ## Decisions section in MEMORY.md will be seeded empty."` Emit warnings as a single batched block. User may Ctrl-C to clean up first, or proceed.
-   - Existing `.project-memory/` stays in place; new behavior follows minimal rules going forward. Roadmap content from `summaries/roadmap.md` is appended to a freshly created `MEMORY.md`.
-5. For `minimal → standard`:
-   - **Validation (non-blocking):** Read `MEMORY.md` — if `## Roadmap` section is missing or empty, warn: `"MEMORY.md → ## Roadmap is empty; summaries/roadmap.md will be seeded empty."` If `## Decisions` section is missing or empty, warn: `"MEMORY.md → ## Decisions is empty; decisions/index.md will be seeded empty."` Emit warnings as a single batched block. User may Ctrl-C to clean up first, or proceed.
-   - Create `.project-memory/` skeleton; migrate `MEMORY.md` sections into seed `roadmap.md` and `decisions/index.md`.
+4. For `standard → minimal`: Validate `summaries/roadmap.md` and `decisions/index.md` for non-empty content; emit warnings as a single batched block if empty. Existing `.project-memory/` stays in place; new behavior follows minimal rules going forward. Roadmap content appended to freshly created `MEMORY.md`.
+5. For `minimal → standard`: Validate `MEMORY.md`'s `## Roadmap` and `## Decisions` for non-empty content; emit warnings as a single batched block if empty. Create `.project-memory/` skeleton; migrate `MEMORY.md` sections into seed `roadmap.md` and `decisions/index.md`.
 6. Inform the user what becomes active / inactive from this point. No existing artifacts are deleted.
 
 ---
@@ -99,22 +92,18 @@ the directives survive context compaction. They are deliberately not restated he
 copy is a drift surface.
 
 For detailed gate procedures → read standard/gates.md.
-For agent thinking protocol and memory loading → read `<profile>/protocol.md`.
-For quick reference cheatsheet → read `<profile>/cheatsheet.md`.
+For agent thinking protocol and memory loading → read `standard/protocol.md`.
+For quick reference cheatsheet → read `standard/cheatsheet.md`.
 
 `<profile>` is `standard`. `minimal` covers all of the above in `minimal/minimal.md`.
 
 ---
 
-# Core Principles
+# Philosophy
 
-Git answers: what changed, where, when, what is the diff.
+Git answers what/where/when/diff. Project Memory answers why/alternatives/constraints/tensions/what-next. Git is the source of truth for code; .project-memory/ is the source of truth for engineering reasoning.
 
-Project Memory answers: why it was changed, what alternatives were considered and rejected, what constraints existed, what tensions are unresolved, what approaches have proven harmful, what should happen next.
-
-Git is the source of truth for code changes. `.project-memory/` (or `MEMORY.md` under minimal) is the source of truth for engineering reasoning.
-
-Records carry author attribution via `created_by` and `contributors` frontmatter fields. Full rules: `conventions/maintainer.md` → Author Attribution. (Note: `contributors` is omitted in `standard`; both `created_by` and `contributors` are omitted in `minimal`.)
+Records carry author attribution via `created_by` (and `contributors` in legacy projects). Full rules: `conventions/maintainer.md` → Author Attribution.
 
 ---
 
@@ -124,19 +113,21 @@ Records carry author attribution via `created_by` and `contributors` frontmatter
 
 ```
 .project-memory/
-├── phases/           # frozen archive (legacy, pre-2026-07) — do not modify; see standard/init.md
-├── decisions/        DECISION-YYYY-MM-DD-slug.md + index.md
-├── discussions/      DISCUSSION-YYYY-MM-DD-slug.md + index.md
-├── issues/           open/ + closed/
-├── instructions/     INSTRUCTION-YYYY-MM-DD-slug.md
-├── notes/            NOTE-YYYY-MM-DD-slug.md
-├── assignments/      ASSIGNMENT-YYYY-MM-DD-slug.md + index.yml
-└── summaries/        2 files: roadmap.md + current-state.md
+├── phases/
+├── decisions/
+├── discussions/
+├── issues/
+├── instructions/
+├── notes/
+├── assignments/
+└── summaries/
 ```
+
+See standard/init.md for the full scaffold.
 
 ## `MEMORY.md` (minimal)
 
-`.project-memory/MEMORY.md` — single file inside the shared `.project-memory/` directory, with four fixed sections (`## Roadmap`, `## Decisions`, `## Notes`, `## Log`). User-triggered features (discussions, instructions, issues, notes) create their own subdirectories inside `.project-memory/` on first use.
+`.project-memory/MEMORY.md` — single file inside the shared `.project-memory/` directory, with four fixed sections (`## Roadmap`, `## Decisions`, `## Notes`, `## Log`). User-triggered features create their own subdirectories inside `.project-memory/` on first use.
 
 ## Skill Files
 
@@ -146,31 +137,30 @@ Records carry author attribution via `created_by` and `contributors` frontmatter
 ├── profiles.md                ← Tier matrix, init UX, migration semantics
 │
 ├── standard/                      ← Files used when profile=standard
-│   ├── protocol.md
 │   ├── audit-fs.md
 │   ├── audit-mcp.md
-│   ├── templates-config.md
-│   ├── init.md
 │   ├── cheatsheet.md
-│   └── gates.md              ← Pre-Implementation Gate + turn-boundary sweep
+│   ├── gates.md              ← Pre-Implementation Gate + turn-boundary sweep
+│   ├── init.md
+│   ├── main-directives.md    ← Canonical per-turn directives (single source)
+│   ├── protocol.md
+│   └── templates-config.md
 │
 ├── minimal/                   ← Files used when profile=minimal
 │   └── minimal.md             ← Single-file spec (covers everything)
 │
 ├── audit.md                   ← Dispatcher (shared) — routes to <profile>/audit-*.md
 ├── conventions/               ← Dispatcher (shared) — routes to conventions/*.md
-│   ├── index.md               ← Dispatcher
 │   ├── decisions.md           ← Shared (lifecycle identical across profiles)
 │   ├── discussions.md         ← Shared
-│   ├── records.md             ← Shared
-│   └── maintainer.md          ← Shared (language policy, author attribution)
+│   ├── maintainer.md          ← Shared (language policy, author attribution)
+│   └── records.md             ← Shared
 ├── templates/                 ← Dispatcher (shared) — routes to templates/*.md
-│   ├── index.md               ← Dispatcher
+│   ├── assignments.md         ← Shared
 │   ├── decisions.md           ← Shared
 │   ├── discussions.md         ← Shared
 │   ├── instructions.md        ← Shared
-│   ├── assignments.md         ← Shared
-│   └── attribution.md         ← Shared (created_by / contributors schema)
+│   └── notes.md               ← Shared (NOTE template)
 ├── mcp-integration.md         ← Shared
 └── README.md                  ← Human-readable overview
 ```
@@ -178,8 +168,6 @@ Records carry author attribution via `created_by` and `contributors` frontmatter
 ---
 
 # Records & Conventions
-
-For naming conventions, file templates, lifecycle rules, and the Decision Resolution Rules → read `conventions/index.md` (dispatcher — routes to shared topic-specific sub-files).
 
 For decision lifecycle, ADR steps, touches guidance → `conventions/decisions.md`.
 For discussion lifecycle, relevancy scoring, expiry → `conventions/discussions.md`.
@@ -190,13 +178,6 @@ For language policy and author attribution → `conventions/maintainer.md`.
 
 # Quick Reference
 
-```
 Turn ending with commits?  → turn-boundary sweep: update current-state.md (once, covering the turn's commits) + roadmap.md on scope-change per standard/gates.md
-About to close discussion?→ Determine outcome, write file, update index (all profiles)
-About to assign work?     → Create ASSIGNMENT-YYYY-MM-DD-slug.md + index entry (all profiles)
-About to implement?       → Pre-Implementation Gate (standard/gates.md)
-About to receive assignment?→ Accept / Reject / Remind at session start
-About to change profile?  → "change profile to X" intent — appends profile_history entry
-```
 
-For the full quick reference → read `<profile>/cheatsheet.md`.
+For the full quick reference, read standard/cheatsheet.md.
