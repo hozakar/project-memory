@@ -129,40 +129,7 @@ User changes profile via natural language ("switch project-memory to minimal"). 
 
 # File layout (skill repo)
 
-```
-.claude/skills/project-memory/
-├── SKILL.md                       ← profile-aware dispatcher (entry point)
-├── profiles.md                    ← this file
-│
-├── standard/                      ← used when profile=standard
-│   ├── protocol.md
-│   ├── gates.md
-│   ├── audit-fs.md
-│   ├── audit-mcp.md
-│   ├── templates-config.md
-│   ├── init.md
-│   └── cheatsheet.md
-│
-├── minimal/                       ← used when profile=minimal
-│   └── minimal.md                 ← single-file spec (~50-80 lines)
-│
-├── audit.md                       ← dispatcher (shared) — routes to <profile>/audit-*
-├── conventions/                   ← dispatcher (shared) — routes to conventions/*.md
-│   ├── index.md                   ← Dispatcher
-│   ├── decisions.md               ← shared
-│   ├── discussions.md             ← shared
-│   ├── records.md                 ← shared
-
-├── templates/                     ← dispatcher (shared) — routes to templates/*.md
-│   ├── index.md                   ← Dispatcher
-│   ├── decisions.md               ← shared
-│   ├── discussions.md             ← shared
-│   ├── instructions.md            ← shared
-│   ├── assignments.md             ← shared
-│   └── attribution.md             ← shared (created_by / contributors schema)
-├── mcp-integration.md             ← shared
-└── README.md
-```
+For the canonical skill file tree, see SKILL.md → Skill Files.
 
 **Why hybrid split (and not pure-split):** truly invariant lifecycles (decision file format, MCP integration, record templates) live in one place — duplicating them in `standard/` and `minimal/` would create maintenance drift without LLM-side benefit. Divergent behavior (gate steps, audit category set, template shape) lives under profile dirs so the LLM reads only what applies; no conditional parsing of unified files.
 

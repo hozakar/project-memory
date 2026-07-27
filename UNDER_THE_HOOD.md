@@ -266,6 +266,8 @@ Skill files are organized into a shared root plus per-profile directories. Profi
 specific behavior lives under `standard/` or `minimal/`; shared lifecycles
 that don't diverge across profiles stay at the root.
 
+> See SKILL.md → Skill Files for the canonical file tree.
+
 **Entry point and profile routing:**
 
 | File | Purpose |

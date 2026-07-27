@@ -146,31 +146,30 @@ Records carry author attribution via `created_by` and `contributors` frontmatter
 ├── profiles.md                ← Tier matrix, init UX, migration semantics
 │
 ├── standard/                      ← Files used when profile=standard
-│   ├── protocol.md
 │   ├── audit-fs.md
 │   ├── audit-mcp.md
-│   ├── templates-config.md
-│   ├── init.md
 │   ├── cheatsheet.md
-│   └── gates.md              ← Pre-Implementation Gate + turn-boundary sweep
+│   ├── gates.md              ← Pre-Implementation Gate + turn-boundary sweep
+│   ├── init.md
+│   ├── main-directives.md    ← Canonical per-turn directives (single source)
+│   ├── protocol.md
+│   └── templates-config.md
 │
 ├── minimal/                   ← Files used when profile=minimal
 │   └── minimal.md             ← Single-file spec (covers everything)
 │
 ├── audit.md                   ← Dispatcher (shared) — routes to <profile>/audit-*.md
 ├── conventions/               ← Dispatcher (shared) — routes to conventions/*.md
-│   ├── index.md               ← Dispatcher
 │   ├── decisions.md           ← Shared (lifecycle identical across profiles)
 │   ├── discussions.md         ← Shared
-│   ├── records.md             ← Shared
-│   └── maintainer.md          ← Shared (language policy, author attribution)
+│   ├── maintainer.md          ← Shared (language policy, author attribution)
+│   └── records.md             ← Shared
 ├── templates/                 ← Dispatcher (shared) — routes to templates/*.md
-│   ├── index.md               ← Dispatcher
+│   ├── assignments.md         ← Shared
 │   ├── decisions.md           ← Shared
 │   ├── discussions.md         ← Shared
 │   ├── instructions.md        ← Shared
-│   ├── assignments.md         ← Shared
-│   └── attribution.md         ← Shared (created_by / contributors schema)
+│   └── notes.md               ← Shared (NOTE template)
 ├── mcp-integration.md         ← Shared
 └── README.md                  ← Human-readable overview
 ```
@@ -178,8 +177,6 @@ Records carry author attribution via `created_by` and `contributors` frontmatter
 ---
 
 # Records & Conventions
-
-For naming conventions, file templates, lifecycle rules, and the Decision Resolution Rules → read `conventions/index.md` (dispatcher — routes to shared topic-specific sub-files).
 
 For decision lifecycle, ADR steps, touches guidance → `conventions/decisions.md`.
 For discussion lifecycle, relevancy scoring, expiry → `conventions/discussions.md`.
