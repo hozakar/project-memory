@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach } from "vitest";
 import * as fs from "fs";
-import { join, sep } from "path";
+import { join } from "path";
 import { createTmpDir, type TmpDir } from "./helpers/tmp-db";
 import { searchMemory } from "../../src/tools/search_memory";
 import {
