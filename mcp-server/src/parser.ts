@@ -1,5 +1,4 @@
 import * as fs from "fs";
-import * as path from "path";
 import { load as yamlParse, FAILSAFE_SCHEMA } from "js-yaml";
 import type {
   DecisionIndexData,
