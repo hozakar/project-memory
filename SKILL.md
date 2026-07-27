@@ -92,8 +92,8 @@ the directives survive context compaction. They are deliberately not restated he
 copy is a drift surface.
 
 For detailed gate procedures → read standard/gates.md.
-For agent thinking protocol and memory loading → read `<profile>/protocol.md`.
-For quick reference cheatsheet → read `<profile>/cheatsheet.md`.
+For agent thinking protocol and memory loading → read `standard/protocol.md`.
+For quick reference cheatsheet → read `standard/cheatsheet.md`.
 
 `<profile>` is `standard`. `minimal` covers all of the above in `minimal/minimal.md`.
 
