@@ -22,7 +22,7 @@ overhead the skill introduces automatically. Choose at first run; switch at any 
 | | `standard` | `minimal` |
 |---|---|---|
 | Pre-Impl Gate | Steps 0–3 (GATE 0 + Steps 1–3) | Step 0 only |
-| Drift audit | 8 categories | none |
+| Drift audit | see standard/audit-fs.md | none |
 | Summaries | `roadmap.md` + `current-state.md` | inline in `MEMORY.md` |
 | Author attribution | `created_by` only | none |
 | Topic-shift detection | off | n/a |
@@ -223,14 +223,7 @@ at all*. The LLM-facing path exists as a fallback, but it is the expensive one.
 
 | Category | Description | Resolution |
 |---|---|---|
-| 5 | Issue files in wrong directory | Auto-fix (file move) |
-| 6 | Decision index drift | Auto-fix (orphan rows) + pending fixes (missing rows, status mismatches) |
-| 8 | ADR sync drift (when ADR enabled) | Pending fixes (missing adr_id, missing ADR files) |
-| 9 | Discussion index drift (low, non-interactive report) | Low/non-interactive report |
-| 11 | Discussion expiry auto-archive | Auto-archive |
-| 13 | MCP consistency (conditional, auto-fix) | Auto-index missing entries |
-| 14 | Assignment orphans / stale pending | Auto-fix |
-| 15 | Decision supersession integrity: dangling pointers + zombie-active + asymmetric + circular + orphan-superseded | Auto-fix (pending fixes) |
+| See standard/audit-fs.md for the full category table. |
 
 ---
 
