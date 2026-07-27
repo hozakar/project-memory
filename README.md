@@ -158,6 +158,24 @@ Just say: *"Let's run an audit."* The skill will walk you through what it found 
 
 No obligation, but nice to have in order to keep everything in check.
 
+## Interactive audit mode
+
+An optional, user-triggered stage of the audit that escalates potential decision conflicts to you for resolution. Unlike the automatic audit categories, this stage is never entered automatically — you must explicitly ask for it.
+
+All four conditions must hold for it to run:
+
+- **User-triggered only** — never entered automatically.
+- **MCP available** — requires the `find_decision_conflicts` tool from the MCP server.
+- **Profile = standard** — only available in the standard profile.
+- **Active decisions** — at least one non-superseded active decision exists.
+
+When triggered, up to **2 findings** are escalated per audit (+1 extra if you ask "what else?"). For each conflicting pair, you have two options:
+
+- **Answer** — explain how to resolve it. The LLM writes a superseding DECISION (provenance: directive) and updates all records.
+- **Ignore** — the pair is added to `audit_ignore` in `.project-memory/config.yml` as `decision-contradiction:<ID1>:<ID2>`. Permanent until you manually remove the entry.
+
+For full technical details, see [audit.md](audit.md) and [DECISION-2026-06-17-semantic-conflict-scan](.project-memory/decisions/DECISION-2026-06-17-semantic-conflict-scan.md).
+
 ---
 
 ## Under the hood
