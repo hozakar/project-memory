@@ -5,10 +5,7 @@ description: Project memory system. Loads at every session start to provide engi
 
 # On Load
 
-**Subagent exemption — check this before step 1.** If you were dispatched as a subagent to
-execute a specific task, do NOT run this on-load flow and do NOT write to `.project-memory/`.
-Proceed with the task as briefed and report results to your parent, which owns all memory
-writes. See `standard/gates.md` → Actor Scope.
+**Subagents are exempt:** if you were dispatched as a subagent for a specific task, skip the session-start load and both gates, and never write to `.project-memory/` — report to your parent instead. The parent owns all memory writes and briefs you with the constraints your task needs.
 
 When this skill activates:
 
@@ -30,7 +27,7 @@ When this skill activates:
 5. **Post-first-response drift audit** (standard only):
    - **If MCP `run_audit` is available:** call `run_audit(project_memory_dir, { profile: 'standard', background: true })` at session open. The server returns `{ status: 'running' }` (audit starting/in-progress) or `{ status: 'done' }` (audit already completed moments ago) — in either case emit the instant-ack line and move on; do not start a second audit. Fixes are applied silently in the background via the chained pipeline (`run_audit → apply_audit_fixes → re-run until clean`). **No report block is emitted.**
    - **If MCP is NOT available:** defer the drift audit to after the LLM answers the user's first message. After the first user-facing response is delivered, run the drift audit (see standard/audit-fs.md for categories) via the file-based `audit.md` path and emit the drift report as a follow-up block.
-   - **Exceptions (audit runs synchronously):** (a) explicit invocation via `Skill project-memory audit` or natural-language audit trigger per `DECISION-2026-06-17-audit-implicit-triggers` — uses synchronous `run_audit` (background omitted/false); (b) the first user message is itself an audit-implicit/explicit trigger — run audit synchronously to answer correctly; (c) `minimal` profile — no audit at all, no deferral applies.
+   - **Exceptions (audit runs synchronously):** (a) explicit invocation via `Skill project-memory audit` or natural-language audit trigger (lenient detection: recognize intent in any language, ask clarification when ambiguous) — uses synchronous `run_audit` (background omitted/false); (b) the first user message is itself an audit-implicit/explicit trigger — run audit synchronously to answer correctly; (c) `minimal` profile — no audit at all, no deferral applies.
 
 6. Continue with the session. Do not ask the user for anything beyond the init UX (step 3) at this stage.
 
@@ -44,7 +41,7 @@ When this skill activates:
 
 In `minimal` profile this argument (and natural-language triggers) is a no-op — minimal has no audit. Print a one-line notice and exit.
 
-**Implicit triggers:** Lenient detection of audit / drift-review intent. The user may phrase the request in any language; recognize the intent, not the keywords. When phrasing is genuinely ambiguous (e.g. "let's review what we have" with no project-memory cue), ask a one-line clarification *"Did you mean run the project-memory drift audit?"* before triggering. Governing rule: `DECISION-2026-06-17-audit-implicit-triggers`.
+**Implicit triggers:** Lenient detection of audit / drift-review intent. The user may phrase the request in any language; recognize the intent, not the keywords. When phrasing is genuinely ambiguous (e.g. "let's review what we have" with no project-memory cue), ask a one-line clarification *"Did you mean run the project-memory drift audit?"* before triggering. Governing rule: recognize intent in any language; ask a one-line clarification when genuinely ambiguous.
 
 ## discuss
 

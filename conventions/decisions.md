@@ -84,7 +84,7 @@ Rejected alternatives are first-class content. Future agents need to know what w
 
 When more than one decision touches the same area, priority is determined in this order:
 
-0. **Global surface.** Active decisions with `applies_globally: true` are surfaced at every Pre-Implementation Gate evaluation regardless of `touches` overlap. They represent cross-cutting policies (language, attribution, gate behavior, security) that bind every implementation. This rule governs **surfacing**, not priority — once surfaced, globals follow rules 1–4 below for precedence against other surfaced rules. See `DECISION-2026-06-17-global-scope-decisions` for the full rationale.
+0. **Global surface.** Active decisions with `applies_globally: true` are surfaced at every Pre-Implementation Gate evaluation regardless of `touches` overlap. They represent cross-cutting policies (language, attribution, gate behavior, security) that bind every implementation. This rule governs **surfacing**, not priority — once surfaced, globals follow rules 1–4 below for precedence against other surfaced rules. Global-scope decisions cross-cut every implementation regardless of touches; surface at every Pre-Implementation Gate.
 
 1. **Explicit supersession.** If decision B has `supersedes: A`, then A is `superseded` and B is the active record. Recency does not enter this case.
 2. **Active conflict.** If two `active` decisions overlap (same `primary_scope` or intersecting `touches`) and their claims contradict, do NOT silently resolve. Surface both to the user and ask which holds, or whether one supersedes the other.

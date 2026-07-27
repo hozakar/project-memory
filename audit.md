@@ -13,7 +13,7 @@ No audit results at this point.
 
 **Context A2 — Post-first-response drift audit:** Deferred to post-first-response. MCP: silent background auto-run (see `standard/audit-mcp.md`). No MCP: deferred file-based audit (see `standard/audit-fs.md`). Exceptions: explicit invocation, first-message audit trigger, minimal.
 
-**Context B — On-demand (standard only):** Run via `Skill project-memory audit` or natural triggers (see `DECISION-2026-06-17-audit-implicit-triggers`). Run detection silently, apply auto-fixes, emit report. Re-run until clean.
+**Context B — On-demand (standard only):** Run via `Skill project-memory audit` or natural triggers (lenient detection: recognize intent in any language, ask clarification when ambiguous). Run detection silently, apply auto-fixes, emit report. Re-run until clean.
 
 **Minimal:** No audit. On-load skips it; `audit` prints a single-line notice and exits.
 
@@ -29,7 +29,7 @@ No audit results at this point.
 
 `<profile>` is standard. See `standard/audit-fs.md` for active categories.
 
-**Semantic Conflict Scan** is an optional final stage of interactive audit, gated by: user-triggered audit + MCP + standard + ≥1 active decision. Uses `find_decision_conflicts`, then LLM evaluates pairs. Up to 2 findings escalated (+1 user-initiated). Resolution: answer → superseding DECISION; dismiss → `audit-ignore` entry. See `DECISION-2026-06-17-semantic-conflict-scan`.
+**Semantic Conflict Scan** is an optional final stage of interactive audit, gated by: user-triggered audit + MCP + standard + ≥1 active decision. Uses `find_decision_conflicts`, then LLM evaluates pairs. Up to 2 findings escalated (+1 user-initiated). Resolution: answer → superseding DECISION; dismiss → `audit-ignore` entry. See Semantic Conflict Scan procedure: user-triggered, 4 gating conditions, 2+1 escalation budget, answer→superseding DECISION or ignore→audit-ignore.
 
 Shared sections below (Permanent Skip, Output Format, Interactive Mode) apply to both paths.
 
@@ -103,7 +103,7 @@ All structural findings are auto-fixed directly (Cat 5, 11, 13, 14a/14c, 15 dang
 
 # Interactive Mode (semantic contradictions)
 
-An optional user-triggered stage that escalates potential decision conflicts to the user. Never entered automatically. See `DECISION-2026-06-17-semantic-conflict-scan` and `standard/audit-mcp.md` → Semantic Conflict Scan for full procedure.
+An optional user-triggered stage that escalates potential decision conflicts to the user. Never entered automatically. See `standard/audit-mcp.md` → Semantic Conflict Scan for full procedure (user-triggered, 4 gating conditions, 2+1 escalation budget, answer→superseding DECISION or ignore→audit-ignore).
 
 **Scope:** Semantic contradictions between active decisions where the LLM cannot deterministically choose. Structural drift handled by Silent Auto-Fix mode.
 

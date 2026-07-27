@@ -15,7 +15,7 @@ description: Standard-profile agent thinking protocol, simplified memory loading
 - If YES: update `summaries/current-state.md` **once** (covering the turn's commits, with all of them in context).
 - If scope changed during this turn, also update `summaries/roadmap.md`.
 - If NO commits this turn: move on — no memory writes.
-- Decision-moment awareness (DECISION-2026-06-25-decision-moment-awareness) handles decisions independently, captured when made, mid-turn — unchanged.
+- Decision-moment awareness handles decisions independently, captured when made, mid-turn — unchanged.
 - This is the turn-boundary sweep — one judgment per turn.
 
 **Before writing any plan:**
@@ -61,7 +61,7 @@ The session-start order. Steps may be no-ops depending on MCP availability and s
    - Emit passive single-line summaries per `conventions/records.md` (Assignment lifecycle — Session-start UX).
    - MCP unavailable fallback: scan `.project-memory/assignments/` ASSIGNMENT-*.md files, filter by frontmatter email fields.
 6. **Header emission** — output `🧠 PROJECT MEMORY LOADED` (memory loaded indicator only).
-7. **Post-First-Response Drift Audit** — deferred to after the LLM's first answer. Run the drift audit (standard category set) via `audit.md` (MCP fast path, else file-based from `standard/audit-fs.md`). Exceptions (synchronous): (a) explicit `Skill project-memory audit` or NL trigger per `DECISION-2026-06-17-audit-implicit-triggers`; (b) first message is itself an audit trigger; (c) `minimal` profile — no audit.
+7. **Post-First-Response Drift Audit** — deferred to after the LLM's first answer. Run the drift audit (standard category set) via `audit.md` (MCP fast path, else file-based from `standard/audit-fs.md`). Exceptions (synchronous): (a) explicit `Skill project-memory audit` or NL trigger (lenient detection: recognize intent in any language, ask clarification when ambiguous); (b) first message is itself an audit trigger; (c) `minimal` profile — no audit.
 
 ---
 

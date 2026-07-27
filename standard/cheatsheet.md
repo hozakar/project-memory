@@ -17,7 +17,7 @@ Did this turn include a commit? (check via git log --since=<turn-start>)
        → THEN move to next turn
 ```
 
-One judgment per turn, not N per commit. Decision-moment awareness (DECISION-2026-06-25) handles decisions independently, captured when made, mid-turn.
+One judgment per turn, not N per commit. Decision-moment awareness handles decisions independently, captured when made, mid-turn.
 
 **About to implement something non-trivial?**
 → GATE 0: load active instructions (EXECUTE search_memory — re-injected at Pre-Impl Gate and Turn-Boundary Sweep).

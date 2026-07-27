@@ -7,7 +7,7 @@ description: Pre-Implementation Gate and turn-boundary sweep for the standard pr
 
 The compressed trigger list lives in `standard/main-directives.md`. This file holds the full procedures those triggers invoke.
 
-> **Turn-boundary-driven writes (T6 contract):** The turn-boundary sweep below is the sole trigger for summary file updates. At turn end, the sweep asks "did this turn include a commit?" — if yes, it updates `current-state.md` (always) and `roadmap.md` (on scope change). One judgment per turn, not N per commit. No per-commit gate fires. Decision-moment awareness (DECISION-2026-06-25-decision-moment-awareness) is independent — decisions are captured when made, mid-turn. T6 (audit re-anchor) may quote this paragraph as the authoritative trigger definition.
+> **Turn-boundary-driven writes (T6 contract):** The turn-boundary sweep below is the sole trigger for summary file updates. At turn end, the sweep asks "did this turn include a commit?" — if yes, it updates `current-state.md` (always) and `roadmap.md` (on scope change). One judgment per turn, not N per commit. No per-commit gate fires. Decision-moment awareness is independent — decisions are captured when made, mid-turn. T6 (audit re-anchor) may quote this paragraph as the authoritative trigger definition.
 
 > **Actor Scope.** Both gates below bind the
 > **primary agent only**. A subagent dispatched to execute a specific task does not run
@@ -20,7 +20,7 @@ The compressed trigger list lives in `standard/main-directives.md`. This file ho
 > The parent is responsible for injecting task-relevant constraints (e.g. an active
 > INSTRUCTION) directly into the subagent's prompt.
 
-> **Instruction re-injection (DECISION-2026-06-14-instruction-gate-injection):** Active instructions are re-injected at the Pre-Implementation Gate GATE 0 checkpoint (before any significant implementation). This ensures instructions survive context compaction and long contexts. See GATE 0 below.
+> **Instruction re-injection (re-injected at Pre-Impl Gate GATE 0 before any implementation):** Active instructions are re-injected at the Pre-Implementation Gate GATE 0 checkpoint (before any significant implementation). This ensures instructions survive context compaction and long contexts. See GATE 0 below.
 
 ---
 
@@ -73,7 +73,7 @@ The `Ambiguous` category collapses into "everything else".
 2. **Find candidate decisions and discussions** — branch on MCP availability:
 
    **If MCP available:**
-   - Decisions: `search_memory(query, touches_filter=entities, scope_filter=[primary_scope], type_filter="decision")`. Superseded decisions are deterministically excluded by `search_memory` at the tool level — they never appear in gate results unless `include_superseded: true` is explicitly passed. The gate path never sets this flag, so superseded records are structurally invisible. See DECISION-2026-06-19-search-memory-superseded-exclusion.
+   - Decisions: `search_memory(query, touches_filter=entities, scope_filter=[primary_scope], type_filter="decision")`. Superseded decisions are deterministically excluded by `search_memory` at the tool level — they never appear in gate results unless `include_superseded: true` is explicitly passed. The gate path never sets this flag, so superseded records are structurally invisible. Search_memory excludes superseded decisions by default; only include_superseded: true includes them.
    - **Globals (FS, always):** also read `decisions/index.md` Active section and surface every row where `Global` is `Yes`. Cross-cutting policies bind every implementation — load them unconditionally. See `conventions/decisions.md` → Rule 0 (Global surface).
    - Discussions: `search_memory(task_description, top_k=8, type_filter="discussion")`.
 
@@ -137,7 +137,7 @@ Update the relevant section (`## Next` / `## Later` / `## Considered but not now
 
 ## Decision capture is NOT part of this sweep
 
-Decision-moment awareness (DECISION-2026-06-25-decision-moment-awareness) is independent of the turn boundary. Decisions are captured **when made** (mid-turn), not batched at the sweep. The sweep carries only the rolling summaries (current-state + roadmap) — not decision capture, and not a separate instruction re-injection gate (handled by the per-turn directive).
+Decision-moment awareness is independent of the turn boundary. Decisions are captured **when made** (mid-turn), not batched at the sweep. The sweep carries only the rolling summaries (current-state + roadmap) — not decision capture, and not a separate instruction re-injection gate (handled by the per-turn directive).
 
 ---
 
