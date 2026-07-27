@@ -174,7 +174,7 @@ When triggered, up to **2 findings** are escalated per audit (+1 extra if you as
 - **Answer** — explain how to resolve it. The LLM writes a superseding DECISION (provenance: directive) and updates all records.
 - **Ignore** — the pair is added to `audit_ignore` in `.project-memory/config.yml` as `decision-contradiction:<ID1>:<ID2>`. Permanent until you manually remove the entry.
 
-For full technical details, see [audit.md](audit.md) and [DECISION-2026-06-17-semantic-conflict-scan](.project-memory/decisions/DECISION-2026-06-17-semantic-conflict-scan.md).
+For full technical details, see [audit.md](audit.md).
 
 ---
 
