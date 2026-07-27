@@ -13,7 +13,7 @@ Issues track bugs and problems that need fixing. Open issues live in `issues/ope
 - Use kebab-case
 - Example: `ISSUE-2026-06-07-nothing-to-commit-detection.md`
 
-**Frontmatter:** See templates for the frontmatter schema. Naming: ISSUE-YYYY-MM-DD-slug.md. On close: update status, add resolved/resolved_in, append git identity to contributors, move file from open/ to closed/. On open: set created_by and seed contributors with the current git identity (see Author Attribution section).
+**Frontmatter:** See templates for the frontmatter schema. Naming: ISSUE-YYYY-MM-DD-slug.md. On close: update status, add resolved/resolved_in, move file from open/ to closed/. On open: set created_by from current git identity (see Author Attribution section). Standard profile does not track `contributors`.
 
 ---
 
@@ -90,7 +90,7 @@ After rejection: assign to another (new ASSIGNMENT), do it yourself (completed b
 
 **Expiry:** No automatic expiry. Cat 14b (stale pending >30d) serves as the backstop for abandoned assignments.
 
-**Author attribution:** On creation: `created_by` set to `assigned_by` identity. On status change: append current git identity to `contributors` (dedup by email). See Author Attribution section above.
+**Author attribution:** On creation: `created_by` set to `assigned_by` identity. Standard profile does not track `contributors`.
 
 **Pre-Implementation Gate integration:** Not scanned.
 

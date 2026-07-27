@@ -38,9 +38,7 @@ spawned_from_discussion: null        # DISCUSSION-YYYY-MM-DD-slug that led to th
 created_by:                          # required — see Author Attribution section below
   name: "Hakan Ozakar"
   email: "hozakar@gmail.com"
-contributors:                        # required — appended on status change
-  - name: "Hakan Ozakar"
-    email: "hozakar@gmail.com"
+# contributors — omitted in standard profile
 ---
 ```
 
@@ -60,7 +58,7 @@ contributors:                        # required — appended on status change
 Rejected alternatives are first-class content. Future agents need to know what was tried and why it didn't fit.
 
 **After writing any DECISION file:**
-0. Set `created_by` and seed `contributors` from current git identity (see Author Attribution section above). On a status change (`active → superseded` / `amended`), append the current identity to `contributors` of BOTH the new decision and the affected superseded decision; dedup by email.
+0. Set `created_by` from current git identity (see Author Attribution section above). Standard profile does not track `contributors`.
 1. Add a row to `decisions/index.md` (see `templates/decisions.md`) — this is the file Claude loads at session start to surface active decisions during the Pre-Implementation Gate.
 2. If `supersedes` is set, update the superseded file: change its `status` to `superseded` and set its `superseded_by` field. Move its row in `decisions/index.md` from the **Active** section to the **Superseded** section and update the Status cell. The index has two sections; only the Active section is scanned during the Pre-Implementation Gate.
 3. **If `adr_enabled: true`** (absent → defaults to `false` for standard profile) in `.project-memory/config.yml`: create the corresponding `adr/` file — count existing `.md` files in `adr_dir` (from config, default `adr/`), assign next integer zero-padded to 4 digits, set `adr_id` in the DECISION frontmatter to that value, write `<adr_dir>/<adr_id>-<slug>.md` using the ADR file template from `templates/decisions.md`. **If `adr_enabled: false`**: skip this step; leave `adr_id: null` in the DECISION frontmatter.
@@ -84,7 +82,7 @@ Rejected alternatives are first-class content. Future agents need to know what w
 
 When more than one decision touches the same area, priority is determined in this order:
 
-0. **Global surface.** Active decisions with `applies_globally: true` are surfaced at every Pre-Implementation Gate evaluation regardless of `touches` overlap. They represent cross-cutting policies (language, attribution, gate behavior, security) that bind every implementation. This rule governs **surfacing**, not priority — once surfaced, globals follow rules 1–4 below for precedence against other surfaced rules. See `DECISION-2026-06-17-global-scope-decisions` for the full rationale.
+0. **Global surface.** Active decisions with `applies_globally: true` are surfaced at every Pre-Implementation Gate evaluation regardless of `touches` overlap. They represent cross-cutting policies (language, attribution, gate behavior, security) that bind every implementation. This rule governs **surfacing**, not priority — once surfaced, globals follow rules 1–4 below for precedence against other surfaced rules. Global-scope decisions cross-cut every implementation regardless of touches; surface at every Pre-Implementation Gate.
 
 1. **Explicit supersession.** If decision B has `supersedes: A`, then A is `superseded` and B is the active record. Recency does not enter this case.
 2. **Active conflict.** If two `active` decisions overlap (same `primary_scope` or intersecting `touches`) and their claims contradict, do NOT silently resolve. Surface both to the user and ask which holds, or whether one supersedes the other.
@@ -115,7 +113,7 @@ Use `applies_globally: true` when the rule binds **every** implementation regard
 
 **Good candidates for `applies_globally: true`:**
 - Language / formatting / encoding policies (e.g. skill files English-only).
-- Attribution requirements (`created_by`, `contributors` on every record).
+- Attribution requirements (`created_by` on every record).
 - Gate-behavior rules (instruction re-injection, contradiction detection protocol).
 - Security / secrets handling rules.
 - Provenance / universal frontmatter field rules.

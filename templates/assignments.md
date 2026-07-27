@@ -49,9 +49,7 @@ last_reminded_at: null
 created_by:
   name: "Hakan Ozakar"
   email: "hozakar@gmail.com"
-contributors:
-  - name: "Hakan Ozakar"
-    email: "hozakar@gmail.com"
+# contributors — omitted in standard profile
 ---
 ```
 
@@ -93,7 +91,7 @@ rejected → remind me later → pending (reminded set to true)
 - MCP: `search_memory` with `assigned_to_email` filter for pending/accepted/ongoing assignments; `assigned_by_email` filter for rejected/completed notifications
 - Fallback: directory scan of `.project-memory/assignments/` filtered by frontmatter `assigned_to.email` / `assigned_by.email`
 
-**Author attribution:** Set `created_by` (assigned_by identity) and seed `contributors` on creation. Append current git identity to `contributors` on status change and on completion (dedup by email). Full rules: `conventions.md` → Author Attribution. Schema: `conventions/maintainer.md` → Author Attribution.
+**Author attribution:** Set `created_by` (assigned_by identity) on creation. Standard profile does not track `contributors`. Full rules: `conventions/maintainer.md` → Author Attribution. Schema: `conventions/maintainer.md` → Author Attribution.
 
 ## assignments/index.yml
 
