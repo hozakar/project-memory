@@ -102,7 +102,7 @@ Assignment records are independent records stored in `.project-memory/assignment
 - Example: `ASSIGNMENT-2026-06-14-mehmet-review-auth-bug.md`
 
 **Frontmatter (required):**
-See `templates/index.md` for the full schema. Key fields:
+See `templates/assignments.md` for the full schema. Key fields:
 - `id`: unique identifier
 - `status`: `pending` | `accepted` | `rejected` | `ongoing` | `completed`
 - `type`: `direct` (linked to existing record) or `freeform` (standalone task)

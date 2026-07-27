@@ -30,7 +30,7 @@ file and cannot absorb anything unintended.
 ---
 id: INSTRUCTION-YYYY-MM-DD-short-slug
 state: active              # active | dropped
-created_by:                # required — see templates/attribution.md
+created_by:                # required — see conventions/maintainer.md → Author Attribution
   name: "Hakan Ozakar"
   email: "hozakar@gmail.com"
 mode: prompt               # always prompt — re-injected at every gate, no per-instruction trigger needed
