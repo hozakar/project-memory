@@ -65,9 +65,10 @@ Copy the skill files into a directory in your project (`.claude/skills/project-m
 
 > The skill creates a `.project-memory/` directory in your project on first use. Do not copy it from another project.
 
-Then tell your agent: *"Run Project Memory Skill first thing every session."*
+**Tier 1 (quick-start):** Tell your agent: *"Run Project Memory Skill first thing every session."*  
+**⚠ Warning:** The Tier-1 approach does not survive context compaction — the bootstrap line is evicted mid-session, and no summary updates occur ([see INSTALLATION.md:165](INSTALLATION.md#L165)).
 
-The skill handles its turn-boundary protocol automatically — it checks for commits after each turn and updates summaries accordingly. No extra configuration needed. Just tell it where the skill lives.
+**Tier 2 (reinforced, recommended):** Place the per-turn directives block in your host instructions file instead ([INSTALLATION.md:132](INSTALLATION.md#L132)). The directives file is re-injected on every turn and survives compaction.
 
 For cross-project setup: → [INSTALLATION.md](INSTALLATION.md)
 
