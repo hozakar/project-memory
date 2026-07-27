@@ -1,43 +1,21 @@
 ---
 name: project-memory-audit
-description: Drift audit dispatcher for project-memory. Routes by active profile and MCP availability. Contains shared sections — severity model, permanent skip, output format, and interactive mode — used by both MCP and FS paths.
+description: Drift audit dispatcher for project-memory. Routes by active profile and MCP availability. Contains shared sections — permanent skip, output format, and interactive mode — used by both MCP and FS paths.
 ---
 
 # When To Run
 
-**Context A1 — On-load header emission (synchronous):**
-Emit `🧠 PROJECT MEMORY LOADED` as a synchronous indicator at session open. This is the memory-loaded header only — no audit results at this point.
+**Context A1 — On-load header emission:**
+```
+🧠 PROJECT MEMORY LOADED
+```
+No audit results at this point.
 
-**Context A2 — Post-first-response drift audit (async):**
-After the LLM answers the user's first message, run the drift audit automatically (standard only — minimal skips audit entirely).
-- **MCP present:** The LLM calls `run_audit(project_memory_dir, { profile: 'standard', background: true })` at session open (SKILL.md On-Load step 5). The server runs the full audit pipeline (`run_audit → apply_audit_fixes → re-run until clean`) silently in the background and returns `{ status: 'running' }` (audit starting/in-progress) or `{ status: 'done' }` (audit already completed moments ago). The LLM emits a single instant-ack line (e.g. `🧠 PROJECT MEMORY AUDIT — running in background`) and moves on. **NO drift report block is emitted**; all fixes apply silently to disk. No retrieval.
-  
-  > **Concurrency guarantees:** Concurrent triggers (server head-start + SKILL.md call) deduplicate via a normalized in-flight guard. Manual `run_audit` / `apply_audit_fixes` calls serialize against the background run via a per-dir async mutex.
-- **No MCP:** Fall back to the deferred file-based audit per On-Load step 5 (requires the LLM to emit the drift report as a follow-up block after the first user response).
+**Context A2 — Post-first-response drift audit:** Deferred to post-first-response. MCP: silent background auto-run (see `standard/audit-mcp.md`). No MCP: deferred file-based audit (see `standard/audit-fs.md`). Exceptions: explicit invocation, first-message audit trigger, minimal.
 
-**Context B — On-demand (standard profile), via `Skill project-memory audit` or natural-language triggers:**
-Run when the skill is invoked with the `audit` argument OR when the user phrases a request that clearly asks for an audit / drift review of project memory (e.g. "let's audit", "review project memory", "run a drift check" — lenient detection in any language, standard only). Run detection silently, apply auto-fixes, emit the consolidated drift report. All active categories auto-fix silently — no interactive triage. Re-run detection after fixes; loop until clean. When the trigger phrase is ambiguous, ask a one-line clarification before entering audit mode. Governing rule: `DECISION-2026-06-17-audit-implicit-triggers`.
+**Context B — On-demand (standard only):** Run via `Skill project-memory audit` or natural triggers (see `DECISION-2026-06-17-audit-implicit-triggers`). Run detection silently, apply auto-fixes, emit report. Re-run until clean.
 
-**Minimal profile:** No audit. On-load skips it; `audit` argument prints a single-line notice and exits.
-
----
-
-# Post-Response Drift Audit
-
-On-load drift audit is deferred to post-first-response.
-
-## MCP present — silent background auto-run
-
-At session open, the LLM calls `run_audit(project_memory_dir, { profile: 'standard', background: true })`. The MCP server starts the chained pipeline (`run_audit → apply_audit_fixes → re-run until clean`) silently in the background and returns `{ status: 'running' }` immediately. The LLM emits a single instant-ack line — e.g. `🧠 PROJECT MEMORY AUDIT — running in background` — and moves on to answer the user. NO drift report block is emitted; all fixes apply silently to disk. No retrieval.
-
-## No MCP — deferred file-based audit
-
-The LLM answers the user's first message first; the drift audit (active categories) runs AFTER the first user-facing response is delivered. The drift report is emitted as a follow-up block with header `[🧠] POST-RESPONSE DRIFT AUDIT — N auto-fixed`.
-
-## Exceptions (audit runs synchronously):
-1. Explicit invocation: `Skill project-memory audit` (or any natural-language audit trigger per `DECISION-2026-06-17-audit-implicit-triggers`). Uses the synchronous `run_audit` form (background omitted/false) — returns the full `{auto_fixed, pending_fixes}` result.
-2. First user message is itself an audit-implicit/explicit trigger — the LLM must run the audit synchronously to answer correctly. Threshold unchanged from current spec; false positives (user accidentally triggers an audit-tarzı message) are tolerable.
-3. `minimal` profile — no audit at all; no deferral applies.
+**Minimal:** No audit. On-load skips it; `audit` prints a single-line notice and exits.
 
 ---
 
@@ -45,48 +23,29 @@ The LLM answers the user's first message first; the drift audit (active categori
 
 **At session start or on `audit` argument:**
 
-1. Read the active `profile` from `.project-memory/config.yml`. If `profile=minimal`, exit (no audit).
-2. Check if `run_audit` is in available MCP tools.
-3. **If yes:** read `<profile>/audit-mcp.md` and follow its MCP Fast Path (the same `run_audit(project_memory_dir, { profile: "standard" })` call shape applies to both on-load and explicit invocation). Skip `<profile>/audit-fs.md`.
-4. **If no:** read `<profile>/audit-fs.md` and follow its file-based Detection Procedure.
+1. Read `profile` from `.project-memory/config.yml`. If `minimal`, exit.
+2. If `run_audit` in available MCP tools: read `<profile>/audit-mcp.md` and follow its MCP Fast Path. Skip `<profile>/audit-fs.md`.
+3. Else: read `<profile>/audit-fs.md` and follow file-based Detection Procedure.
 
-<profile> is standard. See standard/audit-fs.md for the active category set.
+`<profile>` is standard. See `standard/audit-fs.md` for active categories.
 
-**Semantic Conflict Scan (`semantic-conflict-scan`)** is an optional final stage of the interactive (manual) audit, gated by: user-triggered audit + MCP available + profile=standard + at least one non-superseded active decision. It narrows candidate pairs via the `find_decision_conflicts` MCP tool (pairwise embedding similarity → top-K), then the LLM evaluates each pair with an ambiguity-test self-prompt (yes/no only). Up to 2 findings are escalated to the user (plus 1 user-initiated). Resolution: user answers → new superseding DECISION (`provenance: directive`); user dismisses → permanent `audit-ignore` entry (`decision-contradiction:<ID1>:<ID2>`). See `DECISION-2026-06-17-semantic-conflict-scan` for full spec.
+**Semantic Conflict Scan** is an optional final stage of interactive audit, gated by: user-triggered audit + MCP + standard + ≥1 active decision. Uses `find_decision_conflicts`, then LLM evaluates pairs. Up to 2 findings escalated (+1 user-initiated). Resolution: answer → superseding DECISION; dismiss → `audit-ignore` entry. See `DECISION-2026-06-17-semantic-conflict-scan`.
 
-The shared sections below (Severity, Permanent Skip, Output Format, Interactive Mode) apply to both paths and both profiles.
+Shared sections below (Permanent Skip, Output Format, Interactive Mode) apply to both paths.
 
 ---
 
 # Severity
 
-All findings use a single Auto-fix tier — they are either auto-fixed directly or queued as deterministic `pending_fixes` (applied by `apply_audit_fixes`):
-
-| Category | Behavior |
-|----------|----------|
-| 5 (misplaced issues) | Auto-fixed: moved from `open/` to `closed/` |
-| 6 (decision index drift) | Queued as `pending_fixes` (missing rows, status mismatches); orphan rows auto-removed |
-| 8 (ADR sync drift, conditional on `adr_enabled`) | Queued as `pending_fixes` (missing ADR IDs, missing ADR files) |
-| 9 (discussion index drift) | Queued as `pending_fixes` (missing rows, status mismatches); orphan rows auto-removed |
-| 11 (discussion expiry auto-archive) | Auto-fixed: archived to `discussions/archive/` |
-| 13 (MCP consistency, conditional) | Auto-fixed: missing notes re-indexed, orphaned records deleted from DB |
-| 14 (assignment integrity: 14a target orphan, 14b stale pending, 14c completed without evidence) | Auto-fixed: frontmatter annotated with `target_orphaned_at`, `reminded: true`, or `completed_without_evidence_at` |
-| 15 (decision supersession integrity) | Auto-fixed: dangling pointers (supersedes/superseded_by cleared), asymmetric supersession (missing superseded_by link restored), circular supersession (cycle broken), orphan-superseded (status restored to active); pending_fix: zombie-active (status flipped to superseded, index row moved to Superseded table) |
+All findings use a single Auto-fix tier — auto-fixed directly or queued as `pending_fixes`. See `standard/audit-fs.md` for per-category resolution behavior.
 
 ---
 
 # Permanent Skip
 
-Before suppressing any finding (auto-fix or pending fix), check the `audit_ignore` list in `.project-memory/config.yml`. If a finding's fingerprint matches an entry's `key`, suppress it — omit from `auto_fixed`/`pending_fixes`.
+Before suppressing any finding, check `audit_ignore` in `.project-memory/config.yml`. If a finding's fingerprint matches an entry's `key`, suppress it.
 
-**Matching rules:**
-- Exact match: `key` equals the finding fingerprint exactly (backward-compatible).
-- Pattern match: `key` contains `*` as a wildcard. A `*` matches any sequence of characters in that segment. Examples:
-  - `tag-typo:*:skil-md` — matches any phase with tag typo "skil-md"
-  - `phase-completeness:phase-2026*:*.md` — matches missing files across a cohort of phases
-  - `assignment-orphan:ASSIGNMENT-*` — matches all orphan-target assignment findings (Cat 14)
-- Patterns are checked AFTER exact matches. If an exact match exists, pattern matching is skipped for that finding.
-- Pattern matching is glob-style: `*` matches within a single segment (between `:` delimiters). To match across segments, use multiple `*` wildcards.
+**Matching:** Exact match preferred. Pattern match: `*` matches any sequence within a segment (`:` delimiters). Patterns checked after exact matches.
 
 **Fingerprint format per category:**
 
@@ -99,34 +58,16 @@ Before suppressing any finding (auto-fix or pending fix), check the `audit_ignor
 | 14 | `assignment-orphan:<ASSIGNMENT-ID>` / `assignment-stale:<ASSIGNMENT-ID>` / `assignment-no-evidence:<ASSIGNMENT-ID>` |
 | 15 | `decision-supersession:<DECISION-ID>:<dangling|zombie|asymmetric|circular|orphan-superseded>` |
 
-**`config.yml` format:**
+**config.yml format:** ```yaml audit_ignore: ``` Phase-keyed ignore entries for retired categories stay put — only match frozen phase artifacts, harmless historical record.
 
-```yaml
-audit_ignore:
-
-```
-
-**Phase-keyed `audit_ignore` entries:** Existing phase-keyed ignore entries in `.project-memory/config.yml` (e.g. Cat 10 phase-completeness (retired) or Cat 4 phase-gap (retired) entries) stay put — they only ever match frozen phase artifacts, are harmless, and act as a historical record of past audit suppressions. There is no need to remove them.
-
-Manually add the ignored finding's fingerprint to `audit_ignore` in `config.yml` to suppress future occurrences.
 ---
-
-
 
 # Output Format
 
-## Synchronous header (session open)
-
-```
-🧠 PROJECT MEMORY LOADED
-```
-
 ## Deferred post-first-response report
+No intermediate messages. Collect findings and apply fixes in silence. Only output below.
 
-**No intermediate messages.** During detection and auto-fix, output nothing. Do not announce findings as you discover them, do not say "auto-fixing...", do not narrate steps. Collect all findings and apply all fixes in complete silence. The consolidated report below is the only output permitted.
-
-**When findings or auto-fixes exist:**
-
+**When findings exist:**
 ```
 [🧠] POST-RESPONSE DRIFT AUDIT — N auto-fixed
   Auto-fixed:
@@ -137,13 +78,10 @@ Manually add the ignored finding's fingerprint to `audit_ignore` in `config.yml`
   • Auto-archived: DISCUSSION-xxx → discussions/archive/
   • Auto-fixed: moved <filename> to closed/
   • MCP sync: N entries updated
-
 ```
-
-Replace `N` with the count of auto-fixed items. Omit any bullet that has no findings.
+Replace `N` with count. Omit any bullet with no findings.
 
 **When zero findings AND zero auto-fixes:**
-
 ```
 [🧠] POST-RESPONSE DRIFT AUDIT — clean
 ```
@@ -152,40 +90,31 @@ Replace `N` with the count of auto-fixed items. Omit any bullet that has no find
 
 # Explicit (Synchronous) Audit Invocation
 
-When the skill is invoked as `Skill project-memory audit` (standard only), the audit runs synchronously and returns structured results — no interactive triage flow exists:
+When invoked as `Skill project-memory audit` (standard only):
 
-1. Call `run_audit(project_memory_dir, { profile: "standard" })` (background omitted/false). The MCP server scans all 8 active categories and returns `{ auto_fixed, pending_fixes }`.
-2. If `apply_audit_fixes` is available, forward the entire `pending_fixes` array to `apply_audit_fixes(project_memory_dir, pending_fixes)`. The tool returns `{ applied, partial, failed, rerun_audit_recommended }`. If `partial` entries are returned, each carries an `llm_must_do` instruction — action each one by editing the target file per the instruction (e.g. replace `<!-- TODO: claim -->` with a one-sentence claim from the DECISION body).
-3. If `apply_audit_fixes` is NOT available, apply each `pending_fix` manually (edit frontmatter, index rows, etc.).
-4. Re-run the full detection. If new findings appear, repeat from step 1. Loop until clean.
-5. Do NOT re-run the on-load summary loading sequence.
+1. Call `run_audit(project_memory_dir, { profile: "standard" })`. Returns `{ auto_fixed, pending_fixes }`.
+2. Forward `pending_fixes` to `apply_audit_fixes(...)`. Handle `partial` entries' `llm_must_do`. If NOT available, apply each `pending_fix` manually.
+3. Re-run detection. Loop until clean.
+4. Do NOT re-run on-load summary loading sequence.
 
-All structural findings are either auto-fixed directly (Cat 5, 11, 13, 14a/14c, 15 dangling/asymmetric/circular/orphan-superseded) or queued as deterministic `pending_fixes` (Cat 6, 8, 9, 15 zombie-active) — there are no structural findings requiring user triage. User triage applies only in Interactive Mode (see below). Suppressions via `audit_ignore` (see Permanent Skip) are configured manually in `config.yml` outside the audit flow.
+All structural findings are auto-fixed directly (Cat 5, 11, 13, 14a/14c, 15 dangling/asymmetric/circular/orphan-superseded) or queued as `pending_fixes` (Cat 6, 8, 9, 15 zombie-active). User triage only in Interactive Mode. Suppressions via `audit_ignore` configured manually.
 
 ---
 
-# Interactive Mode
+# Interactive Mode (semantic contradictions)
 
-An optional user-triggered stage that escalates potential decision conflicts to the user for resolution. It is never entered automatically — only when the user explicitly invokes `Skill project-memory audit` and accepts the semantic conflict scan prompt.
+An optional user-triggered stage that escalates potential decision conflicts to the user. Never entered automatically. See `DECISION-2026-06-17-semantic-conflict-scan` and `standard/audit-mcp.md` → Semantic Conflict Scan for full procedure.
 
-**Scope:** Interactive Mode addresses semantic contradictions between active decisions — situations where two decisions point in different directions and the LLM cannot deterministically choose one. Structural drift (missing index rows, orphan files, stale statuses) is handled entirely by Silent Auto-Fix mode above and never reaches the user.
+**Scope:** Semantic contradictions between active decisions where the LLM cannot deterministically choose. Structural drift handled by Silent Auto-Fix mode.
 
 **Four gating conditions** (all must hold):
-1. **User-triggered audit only** — never runs in the background auto-run (Context A2).
-2. **MCP available** — requires the `find_decision_conflicts` MCP tool.
-3. **Profile = `standard`** — `minimal` has no audit at all.
-4. **At least one non-superseded active decision** in `decisions/index.md` Active section.
+1. User-triggered audit only.
+2. MCP available (requires `find_decision_conflicts`).
+3. Profile = `standard`.
+4. At least one non-superseded active decision.
 
-**Escalation budget:** up to 2 user-facing questions per audit, with one additional slot if the user explicitly asks ("what else?"). See § Semantic Conflict Scan → Escalation Budget.
+**Escalation budget:** Up to 2 questions per audit (+1 if user asks "what else?").
 
 **User responses:**
-- **Answer** — explains how to resolve the conflict. The LLM writes a superseding DECISION (`provenance: directive`) and updates the affected records.
-- **"Ignore"** — the pair is added to `audit_ignore` in `config.yml` as `decision-contradiction:<ID1>:<ID2>` (permanent until manual removal).
-
-The implementation is the Semantic Conflict Scan stage below, documented in full in `DECISION-2026-06-17-semantic-conflict-scan`.
-
----
-
-# Semantic Conflict Scan
-
-See standard/audit-mcp.md → Semantic Conflict Scan for the full procedure.
+- **Answer** → LLM writes superseding DECISION (`provenance: directive`) and updates records.
+- **"Ignore"** → pair added to `audit_ignore` as `decision-contradiction:<ID1>:<ID2>`. Permanent until manual removal.

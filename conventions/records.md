@@ -13,29 +13,7 @@ Issues track bugs and problems that need fixing. Open issues live in `issues/ope
 - Use kebab-case
 - Example: `ISSUE-2026-06-07-nothing-to-commit-detection.md`
 
-**Frontmatter:**
-```yaml
----
-id: ISSUE-YYYY-MM-DD-short-slug
-title: Human readable title
-severity: critical | high | medium | low
-status: open | closed
-area: pipeline | git | ui | config | ...
-discovered: YYYY-MM-DD
-resolved: YYYY-MM-DD          # set when closing
-resolved_in: <commit-hash>            # set when closing
-created_by:                   # required — see Author Attribution section
-  name: "Hakan Ozakar"
-  email: "hozakar@gmail.com"
-contributors:                 # required — appended on close
-  - name: "Hakan Ozakar"
-    email: "hozakar@gmail.com"
----
-```
-
-**On close:** update `status` to `closed`, add `resolved` and `resolved_in` fields, append current git identity to `contributors` (dedup by email), then move the file from `issues/open/` to `issues/closed/`.
-
-**On open:** set `created_by` and seed `contributors` with the current git identity (see Author Attribution section).
+**Frontmatter:** See templates for the frontmatter schema. Naming: ISSUE-YYYY-MM-DD-slug.md. On close: update status, add resolved/resolved_in, append git identity to contributors, move file from open/ to closed/. On open: set created_by and seed contributors with the current git identity (see Author Attribution section).
 
 ---
 
@@ -63,22 +41,16 @@ origin_updated: false     # true when origin modified since fork
 ---
 ```
 
-**On creation:** set `created_by` from current git identity (see Author Attribution section). No `contributors` field — instructions are single-owner.
+**On creation:** set `created_by` from current git identity. No `contributors` field — single-owner.
 
-**On state change (`active` → `dropped`):** update frontmatter. Instruction is retained but not loaded at session start.
+**On state change (`active` → `dropped`):** update frontmatter. Retained but not loaded.
 
-**Session loading and gate re-injection:**
-- At session start, current user's active instructions are loaded:
-  - MCP available: `search_memory(query="<topic or relevant keywords>", type_filter="instruction")` with `created_by_email` filter.
-  - MCP unavailable: scan `.project-memory/instructions/` for INSTRUCTION-*.md files, filter by `created_by.email`.
-- At every gate checkpoint (Pre-Implementation Gate, turn-boundary sweep, Discussion trigger), active instructions are re-loaded and prepended to gate context. This ensures instructions survive compaction and long contexts. See `standard/gates.md` GATE 0 (Pre-Implementation Gate).
-- ≥5 active instructions triggers a warning
-- Other users' instructions are never loaded without explicit request
+**Session loading:** Instructions are loaded at session start and re-injected at gate checkpoints — see `standard/gates.md` GATE 0 and `standard/protocol.md` Session-start Ordering. Cross-user fork model and scope limits are described below.
 
 **Cross-user sharing (fork model):**
-- User requests "I want to use instruction X" → LLM creates new INSTRUCTION with `created_by` set to current user, `origin: X`
-- If origin instruction is modified → `origin_updated: true` set on fork; user is prompted to review at session start
-- Instructions from other users can be listed via explicit search ("show me X's instructions")
+- User requests "I want to use instruction X" → new INSTRUCTION with `created_by` set to current user, `origin: X`
+- If origin instruction is modified → `origin_updated: true` set on fork; user prompted to review at session start
+- Other users' instructions listed via explicit search ("show me X's instructions")
 
 **What instructions are NOT:**
 - NOT architectural decisions — no ADR counterpart, no Pre-Implementation Gate scanning
@@ -91,9 +63,9 @@ origin_updated: false     # true when origin modified since fork
 
 # Assignments
 
-**Purpose:** ASSIGNMENT is a **continuity and handoff mechanism** — not a task management system. Primary use case: a developer departs or becomes unavailable with unfinished work; their context is transferred to a named teammate so nothing is lost between sessions. Secondary use case: intentional, rare domain handoffs ("this area is yours"). Assignments are created rarely. project-memory is not Jira.
+**Purpose:** ASSIGNMENT is a **continuity and handoff mechanism** — not a task management system. Primary use case: a developer departs or becomes unavailable with unfinished work; context is transferred to a named teammate so nothing is lost between sessions. Secondary use case: intentional, rare domain handoffs. Assignments are created rarely.
 
-Assignment records are independent records stored in `.project-memory/assignments/` with their own `index.yml` summary table.
+Assignment records are stored in `.project-memory/assignments/` with their own `index.yml` summary table.
 
 **Naming:** `ASSIGNMENT-YYYY-MM-DD-<short-slug>.md`
 - Date first — chronological sort order
@@ -101,62 +73,26 @@ Assignment records are independent records stored in `.project-memory/assignment
 - Use kebab-case
 - Example: `ASSIGNMENT-2026-06-14-mehmet-review-auth-bug.md`
 
-**Frontmatter (required):**
-See `templates/assignments.md` for the full schema. Key fields:
-- `id`: unique identifier
-- `status`: `pending` | `accepted` | `rejected` | `ongoing` | `completed`
-- `type`: `direct` (linked to existing record) or `freeform` (standalone task)
-- `assigned_to` / `assigned_by`: `{ name, email }` objects
-- `target_type` / `target_id`: link to existing record — `issue`, `discussion`, `roadmap_item`, or `null` (null for freeform). Legacy `phase` target_type is still parsed but never written.
-- `reminded`: set to true on each `remind me later` action
+**Frontmatter:** See `templates/assignments.md` for the full schema. Key fields: `id`, `status` (pending | accepted | rejected | ongoing | completed), `type` (direct | freeform), `assigned_to` / `assigned_by` ({ name, email }), `target_type` / `target_id` (link to existing record), `reminded` (set to true on remind me later).
 
 **State machine:**
-```
 pending → accepted → ongoing → completed
 pending → rejected → (assigner loop)
 pending → remind me later → pending (reminded: true)
 
-After rejection — assigner options:
-- Assign to Another → creates new ASSIGNMENT (new ID, new assigned_to)
-- Do It Yourself → marks original as completed (by assigner)
-- Remind Me Later → resets to pending (reminded: true)
-```
+After rejection: assign to another (new ASSIGNMENT), do it yourself (completed by assigner), or remind me later (reset to pending, reminded: true).
 
-**Session-start UX (assignee — pending assignments):**
-Every session, pending/ongoing assignments for the current user are loaded via `assigned_to.email` filter. A single passive line is shown — no interaction expected:
-```
-📋 2 pending assignments — "bana atanan görevler" dersen listelerim
-```
-When the user asks to see their assignments, full details are shown and actions (accept / reject / remind me later) become available at that point.
+**Session-start UX:** Pending/ongoing assignments loaded via `assigned_to.email` filter. A single passive line shown at session start — no interaction expected. Rejected assignments for the assigner shown similarly. Completed notifications shown once with View Details / Dismiss options.
 
-**Session-start UX (assigner — rejected assignments):**
-Every session, rejected assignments made by the current user are shown as a passive line:
-```
-📋 1 rejected assignment — "reddettiğim assignment'lar" dersen listelerim
-```
-When the user asks, full details and actions (assign to another / do it yourself / remind me later) are shown.
+**Completion rules:** Only the assignee can mark `completed`. At least one evidence field required: `completion_note`, `completed_decision_id`, or `completed_discussion_id`.
 
-**Session-start UX (assigner — completed notifications):**
-Completed assignments are shown ONCE (not persistent). Options:
-- `[View Details]` — opens completion note and any linked artifacts
-- `[Dismiss]` — clears the notification
+**Permission model:** Open — anyone can assign to anyone. Rejection mechanism is the safety net.
 
-**Completion rules:**
-- Only the assignee can mark `completed` (assigner uses "Do It Yourself" for their side)
-- At least one evidence field required: `completion_note`, `completed_decision_id`, or `completed_discussion_id`
+**Expiry:** No automatic expiry. Cat 14b (stale pending >30d) serves as the backstop for abandoned assignments.
 
-**Permission model:**
-Open — anyone can assign to anyone. Rejection mechanism is the safety net against misuse.
+**Author attribution:** On creation: `created_by` set to `assigned_by` identity. On status change: append current git identity to `contributors` (dedup by email). See Author Attribution section above.
 
-**Expiry:**
-No automatic expiry. Assignments persist until explicitly resolved (completed or rejected + resolved by assigner). Cat 14b (stale pending >30d) serves as the backstop for abandoned assignments.
-
-**Author attribution:**
-On creation: `created_by` is set to `assigned_by` identity (run `git config user.name` + `git config user.email`; missing → `unknown`). `contributors` is seeded with the same identity.
-On status change (accepted, rejected, ongoing, completed): append the current git identity to `contributors` (dedup by email). See Author Attribution section above.
-
-**Pre-Implementation Gate integration:**
-Assignments are NOT scanned during the Pre-Implementation Gate. They are user-scoped workflow artifacts, not architectural constraints.
+**Pre-Implementation Gate integration:** Not scanned.
 
 **Vector DB:** Assignments are indexed via `index_assignment` MCP tool. File system is source of truth; DB is derived read-optimized index.
 
@@ -164,56 +100,7 @@ Assignments are NOT scanned during the Pre-Implementation Gate. They are user-sc
 
 # Notes
 
-Notes capture personal thoughts, drafts, ideas, and reminders. They are the simplest record type — no status workflow, no cross-references, no session-start loading, no audit. Fully private (user-scoped) and deletable by the owner.
-
-**Naming:** `NOTE-YYYY-MM-DD-<short-slug>.md`
-- Date first — chronological sort order
-- Slug describes the topic
-- Use kebab-case
-- Example: `NOTE-2026-06-21-note-taking-design.md`
-
-**Frontmatter (required):**
-```yaml
----
-id: NOTE-YYYY-MM-DD-short-slug
-title: "Human-readable title"
-tags: [optional]
-created_by:
-  name: "Hakan Ozakar"
-  email: "hozakar@gmail.com"
-created_at: YYYY-MM-DD
-updated_at: YYYY-MM-DD
----
-```
-
-**Lifecycle:**
-
-```
-create → (optional update) → (optional delete)
-```
-
-- **Create:** Set `created_by` from current git identity. Set `created_at` and `updated_at`.
-- **Update:** Update `updated_at`. Body or frontmatter fields may change.
-- **Delete:** Owner-triggered only. Remove file. Drop MCP index entry. No archive — permanent deletion.
-
-No state machine. No status field. Notes are either present (file exists) or gone (file deleted).
-
-**Search rules:**
-- Notes are user-scoped (private). Only owner's notes are returned.
-- `search_memory` with `type_filter="note"` automatically applies `created_by_email` filter from git config.
-- No index.yml — filesystem scan or MCP semantic search on demand.
-- Other users' notes are never visible.
-
-**Session loading:**
-- Notes are NOT loaded at session start. Passive, search-only.
-- No gate re-injection. No gate checking.
-
-**Author attribution:**
-- On creation: `created_by` from current git identity. No `contributors` field — notes are single-owner.
-- See Author Attribution section above.
-
-**Audit:**
-- No audit category for notes. They are private ephemera with no project-wide integrity contract.
+See `templates/notes.md` for the note template and naming. Notes are user-scoped, private, search-only (no session loading, no gate re-injection, no audit). Lifecycle: create -> optional update -> optional delete.
 
 **What notes are NOT:**
 - NOT project decisions — no ADR counterpart, no Pre-Implementation Gate scanning
