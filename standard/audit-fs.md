@@ -3,6 +3,25 @@ name: project-memory-audit-fs
 description: File-system drift audit detection procedure for the standard profile. 8 active categories (phase-related categories retired, Cat 7, 12 dropped).
 ---
 
+# Audit Category Set
+
+The project-memory audit system defines 8 active categories:
+
+| # | Name | Description |
+|---|---|---|
+| 5 | Misplaced issue files | Move closed issue files from `issues/open/` to `issues/closed/`. No-op when issues feature unused. |
+| 6 | Decision index drift | Synchronize DECISION files with `decisions/index.md` rows (missing, orphan, status mismatch). |
+| 8 | ADR sync drift (conditional) | Sync ADR records with decision index when `adr_enabled: true` (default: false). |
+| 9 | Discussion index drift | Synchronize DISCUSSION files with `discussions/index.md` rows (missing, orphan, status mismatch). |
+| 11 | Discussion expiry | Archive discussions with `outcome: none` older than 30 days. |
+| 13 | MCP consistency (conditional) | Index on-disk IDs missing from MCP database when MCP `check_consistency` tool is available. |
+| 14 | Assignment integrity | Check orphan targets, stale pending (>30d), and completions without evidence. |
+| 15 | Decision supersession integrity | 5 sub-checks: dangling pointers, zombie-active, asymmetric, circular chains, orphan-superseded. |
+
+**Retired:** Cat 1, 2, 3, 4, 7, 10, 12. Phase-related categories (4, 10) retired when phase concept dropped. Cat 7, 12 dropped.
+
+---
+
 # Detection Procedure (standard)
 
 **Invocation:** at post-first-response hook (default), or on explicit `Skill project-memory audit` (sync), or when first user message is an audit-implicit-trigger (sync).
