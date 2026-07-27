@@ -88,7 +88,7 @@ Traceability rules:
 - `DECISION.spawned_from_discussion` → points back to the discussion that created it; null if decision was opened standalone.
 
 **Resume:**
-User says "continue discussion X" -> load the full DISCUSSION file -> continue conversation -> UPDATE the same file at close. Status remains `open` until conclusively finished. If the outcome changes on resume, update the frontmatter accordingly. On every resume update AND on close, append the current git identity to `contributors` (dedup by email).
+User says "continue discussion X" -> load the full DISCUSSION file -> continue conversation -> UPDATE the same file at close. Status remains `open` until conclusively finished. If the outcome changes on resume, update the frontmatter accordingly. Standard profile does not track `contributors`. Attribution is `created_by` only.
 
 **Expiry:**
 Discussions with `outcome.type: none` AND `date` older than 30 days are expired:

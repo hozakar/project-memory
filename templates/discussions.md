@@ -25,9 +25,7 @@ tags: []
 created_by:                 # required — see conventions/maintainer.md → Author Attribution
   name: "Hakan Ozakar"
   email: "hozakar@gmail.com"
-contributors:               # required — appended on resume / close
-  - name: "Hakan Ozakar"
-    email: "hozakar@gmail.com"
+# contributors — omitted in standard profile
 ---
 ```
 

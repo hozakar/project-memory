@@ -42,7 +42,7 @@ Maintenance rules:
 
 See `conventions/decisions.md` for the required frontmatter schema (`id`, `status`, `provenance`, `primary_scope`, `touches`, `supersedes`, `superseded_by`, `adr_id`) and Decision Resolution Rules.
 
-Author attribution fields (`created_by`, `contributors`) are required. See `conventions/maintainer.md` → Author Attribution for the shared schema.
+Author attribution field (`created_by`) is required. Standard profile does not track `contributors`. See `conventions/maintainer.md` → Author Attribution for the shared schema.
 
 ---
 
