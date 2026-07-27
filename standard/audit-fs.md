@@ -79,3 +79,15 @@ Standard-specific edge case notes per active category:
 - **Cat 13 — MCP consistency on historical records:** Legacy phase records are re-indexed automatically by `rebuild_index` when the historical phases/ directory is walked — there is no public tool to re-index a single phase. The records still have searchable content via plan.md (if present) and the per-commit records.
 - **`adr_enabled` default:** `init.md` does NOT scaffold `adr_enabled: true`. The flag defaults to `false`.
 - **Cat 15 edge cases:** Dangling pointer detection covers both `supersedes` and `superseded_by` directions. Circular chains are detected by following `supersedes` links up to depth 10 before declaring a cycle. Orphan-superseded decisions (status=superseded with no `superseded_by` field and no decision that lists them in its `supersedes`) are restored to active, as they were likely superseded by mistake or left in a broken state during a previous partial fix.
+
+---
+
+## Declined categories
+
+The following audit categories were proposed but declined. Justifications are recorded here to prevent re-litigation.
+
+**Empty-# Prompt detection.** Detects INSTRUCTION files that lack a `# Prompt` section (the parser resolves these to empty string, producing a silent no-op). Declined: Round 1 already fixed the template (`templates/instructions.md`) to require `# Prompt`, and the parser was fixed to resolve `# Prompt -> frontmatter prompt:` with no fallback. New instructions without `# Prompt` are prevented at the template level. The four active instruction files were already rewritten in Round 1, so no existing files need catching.
+
+**Mirror-drift detection (~40 lines TS).** Detects byte-level drift between the three mirror copies of the directives block. Declined: The mirror registry and byte-comparison script were already tried and removed (see CHANGELOG.md). The prerequisite (BEGIN/END markers) is being added in T4 this round, so the category *could* be implemented if drift is observed in practice, but the cost is ~40 lines of TS code and the problem has not been observed. Revisit if drift becomes a real issue.
+
+**Record-ID-in-skill-files regex.** Detects `.project-memory/` record IDs (DECISION-* , DISCUSSION-* , etc.) in tracked skill files. Declined: This round (T6) fixes the 19 known dangling pointers, and the rule "state the rule, drop the ID" is already documented going forward. A regex for `DECISION-YYYY-MM-DD` in `.md` files outside `.project-memory/` and CHANGELOG.md would also flag legitimate references — examples in rules text, IDs used as documentation — producing a high false-positive rate without a way to distinguish "example ID" from "dangling pointer."
