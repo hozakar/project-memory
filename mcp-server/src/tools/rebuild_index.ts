@@ -2,9 +2,9 @@ import * as path from "path";
 import * as fs from "fs";
 import { embedBatch } from "../embedder";
 import { atomicRebuild } from "../db";
-import { buildDecisionText, buildDiscussionText, buildCommitText, buildInstructionText, buildAssignmentText, buildNoteText, deriveOutcomeType } from "../utils";
-import { parseDecisionFile, parseDiscussionFile, parseInstructionFile, parseAssignmentFile, parseNoteFile, ParseError } from "../parser";
-import type { IndexEntry, LanceRecord, CommitDiff, PhaseIndexData, DecisionIndexData, DiscussionIndexData, InstructionIndexData, AssignmentIndexData, NoteIndexData, Identity } from "../types";
+import { buildDecisionText, buildDiscussionText, buildCommitText, buildInstructionText, buildNoteText, deriveOutcomeType } from "../utils";
+import { parseDecisionFile, parseDiscussionFile, parseInstructionFile, parseNoteFile, ParseError } from "../parser";
+import type { IndexEntry, LanceRecord, CommitDiff, PhaseIndexData, DecisionIndexData, DiscussionIndexData, InstructionIndexData, NoteIndexData, Identity } from "../types";
 
 const UNKNOWN_IDENTITY: Identity = { name: "unknown", email: "unknown" };
 
@@ -67,8 +67,8 @@ interface FsTextTuple extends TextTuple {
   tags?: string[];
   decisionStatus?: string;
   outcome?: string;
-  assignedToEmail?: string;
-  assignedByEmail?: string;
+  instructionState?: string;
+  instructionPrompt?: string;
 }
 
 interface CommitTextTuple {
@@ -121,11 +121,6 @@ async function rebuildFromEntries(
         text = buildInstructionText(d);
         createdBy = d.createdBy ?? UNKNOWN_IDENTITY;
         contributors = [];
-      } else if (entry.type === "assignment") {
-        const d = entry.data as AssignmentIndexData;
-        text = buildAssignmentText(d);
-        createdBy = d.createdBy ?? UNKNOWN_IDENTITY;
-        contributors = d.contributors ?? [];
       } else if (entry.type === "note") {
         const d = entry.data as NoteIndexData;
         text = buildNoteText(d);
@@ -163,8 +158,12 @@ async function rebuildFromEntries(
       title,
       text,
       vector,
-      status: "",
+      status: type === "instruction" ? ((data as InstructionIndexData).state ?? "") : "",
     };
+    if (type === "instruction") {
+      // Injected verbatim into sessions — keep it free of the search metadata in `text`.
+      record.body = (data as InstructionIndexData).prompt;
+    }
     if (type === "phase") {
       const pData = data as PhaseIndexData;
       record.tagsJson = JSON.stringify(pData.tags ?? []);
@@ -184,11 +183,6 @@ async function rebuildFromEntries(
       record.createdByName = createdBy.name;
       record.createdByEmail = createdBy.email;
       record.contributorsJson = JSON.stringify(contributors ?? []);
-    }
-    if (type === "assignment") {
-      const aData = data as AssignmentIndexData;
-      record.assignedToEmail = aData.assignedTo.email;
-      record.assignedByEmail = aData.assignedBy.email;
     }
     records.push(record);
   }
@@ -254,13 +248,12 @@ async function rebuildFromFs(
 
   const dirConfig: Array<{
     subdir: string;
-    parse: (filePath: string) => DecisionIndexData | DiscussionIndexData | InstructionIndexData | AssignmentIndexData | NoteIndexData;
-    type: "decision" | "discussion" | "instruction" | "assignment" | "note";
+    parse: (filePath: string) => DecisionIndexData | DiscussionIndexData | InstructionIndexData | NoteIndexData;
+    type: "decision" | "discussion" | "instruction" | "note";
   }> = [
     { subdir: "decisions", parse: parseDecisionFile, type: "decision" },
     { subdir: "discussions", parse: parseDiscussionFile, type: "discussion" },
     { subdir: "instructions", parse: parseInstructionFile, type: "instruction" },
-    { subdir: "assignments", parse: parseAssignmentFile, type: "assignment" },
     { subdir: "notes", parse: parseNoteFile, type: "note" },
   ];
 
@@ -309,15 +302,7 @@ async function rebuildFromFs(
             text = buildInstructionText(d);
             createdBy = d.createdBy ?? UNKNOWN_IDENTITY;
             contributors = [];
-            tuples.push({ text, createdBy, contributors, type, id: d.id, title: d.id });
-            break;
-          }
-          case "assignment": {
-            const d = parsed as AssignmentIndexData;
-            text = buildAssignmentText(d);
-            createdBy = d.createdBy ?? UNKNOWN_IDENTITY;
-            contributors = d.contributors ?? [];
-            tuples.push({ text, createdBy, contributors, type, id: d.id, title: d.id, assignedToEmail: d.assignedTo.email, assignedByEmail: d.assignedBy.email });
+            tuples.push({ text, createdBy, contributors, type, id: d.id, title: d.id, instructionState: d.state, instructionPrompt: d.prompt });
             break;
           }
           case "note": {
@@ -375,9 +360,11 @@ async function rebuildFromFs(
       record.outcomeType = deriveOutcomeType(t.outcome ?? "");
     } else if (t.type === "note") {
       record.tagsJson = JSON.stringify(t.tags ?? []);
-    } else if (t.type === "assignment") {
-      record.assignedToEmail = t.assignedToEmail;
-      record.assignedByEmail = t.assignedByEmail;
+    } else if (t.type === "instruction") {
+      // Without these a full rebuild wipes every instruction's active/dropped state,
+      // which is what the search filter and the binding-prefix gate both key on.
+      record.status = t.instructionState ?? "";
+      record.body = t.instructionPrompt;
     }
 
     if (t.createdBy) {

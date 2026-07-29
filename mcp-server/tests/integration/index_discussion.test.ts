@@ -33,14 +33,7 @@ describe("indexDiscussion + searchMemory roundtrip", () => {
 
     expect(result.success).toBe(true);
 
-    const results = await searchMemory(
-      "LanceDB Qdrant pgvector embedded vector store",
-      5,
-      false,
-      undefined,
-      undefined,
-      "discussion"
-    );
+    const results = await searchMemory({ query: "LanceDB Qdrant pgvector embedded vector store", topK: 5, includeCommits: false, typeFilter: "discussion" });
 
     const match = results.find(
       (r) => r.id === "DISCUSSION-2026-06-23-vector-search-architecture"
@@ -60,20 +53,7 @@ describe("indexDiscussion + searchMemory roundtrip", () => {
       bodyText: "We discussed widget priorities but reached no conclusion.",
     });
 
-    const results = await searchMemory(
-      "widget priority",
-      5,
-      false,
-      undefined,
-      undefined,
-      "discussion",
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      "decision"
-    );
+    const results = await searchMemory({ query: "widget priority", topK: 5, includeCommits: false, typeFilter: "discussion", outcomeTypeFilter: "decision" });
 
     const openMatch = results.find((r) => r.id === "DISCUSSION-2026-06-23-open-loop");
     expect(openMatch).toBeUndefined();

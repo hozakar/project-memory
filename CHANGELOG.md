@@ -6,7 +6,55 @@ All notable changes to the project-memory skill and MCP companion server.
 
 ## Unreleased
 
+### Removed
+
+- **Assignment record type dropped.** Five records had accumulated, four of them
+  completed, in exchange for an index read and two `search_memory` round-trips at every
+  session start plus a maintenance surface spanning the skill files, the MCP tool
+  catalog, an audit category and the shipped documentation. Notes cover the remaining
+  need. Gone: the session-start assignment load, the `index_assignment` tool, the
+  `assigned_to_email` / `assigned_by_email` search filters, audit Category 14
+  (assignment integrity), `templates/assignments.md`, and the assignment lifecycle in
+  `conventions/records.md`. Notes do not reproduce the whole feature — a note is scoped
+  to its creator, so it cannot express "X is assigned to Y"; projects needing
+  cross-person handoff need a mechanism this one no longer provides.
+
+### Changed
+
+- **Session start loads pending state only.** Measured at ~36k tokens before the first
+  user message was answered, of which the memory payload was 121,931 bytes.
+  `decisions/index.md` and `discussions/index.md` are no longer read at session start:
+  the Pre-Implementation Gate already re-reads the decision index from the filesystem on
+  every significant implementation (unconditionally, to surface `Global: Yes` rows, which
+  semantic search cannot be relied on to return) and already issues a discussion search.
+  Loading them eagerly duplicated that work for sessions that implement and wasted it
+  entirely for sessions that don't. Active instructions stay eager — they are binding
+  from the first turn by definition.
+
+- **`check_consistency` no longer scans phases or assignments.** It had been reporting 86
+  missing `phase-*` IDs on every session since the phase concept was dropped, instructing
+  the caller to invoke an `index_phase` tool that does not exist. Legacy `phase-*` rows
+  are skipped on the orphan side too, since they are deliberately retained for historical
+  search; stale `ASSIGNMENT-*` rows are not skipped, so the drift audit purges them once.
+
+- **`search_memory` and the internal `search` take an options object.** Both had grown
+  past a dozen positional parameters, most optional, so call sites were long
+  `undefined, undefined, …` chains. Removing the two assignment parameters silently
+  rebound every later argument — a scope filter arriving as an outcome filter returns
+  wrong results rather than throwing, and four tests were mis-bound this way before the
+  conversion. Named fields make that class of error impossible.
+
 ### Fixes
+
+- **The MCP server was serving a two-day-stale build.** `dist/` is gitignored and
+  untracked, `package.json` points `main` at `dist/index.js`, and nothing rebuilds on
+  install or verifies that the binary matches the source. A dropped instruction was
+  observed being injected with the `THIS IS A NON-NEGOTIABLE BINDING USER INSTRUCTION:`
+  prefix even though `db.ts` already excluded dropped records from search results and
+  already gated that prefix on `status === "active"`; both guards had merged days earlier
+  and never been compiled. Rebuilding restored the intended behavior. The underlying
+  freshness gap — a fix can land, be reviewed and be merged while every consumer keeps
+  running the previous binary — is not yet addressed.
 
 - **Skill files no longer point into `.project-memory/`.** That directory is
   gitignored, so every record ID printed in a shipped skill file was a pointer a

@@ -81,25 +81,7 @@ describe("reindexFile unit tests", () => {
     expect(result).toEqual({ success: true });
   });
 
-  it("returns success for a valid assignment file", async () => {
-    const fp = join(tmpDir, "ASSIGNMENT-test.md");
-    writeFileSync(fp, [
-      "---",
-      "id: ASSIGNMENT-2026-07-26-unit-test",
-      "status: pending",
-      "type: freeform",
-      "assigned_to:",
-      '  name: "Test User"',
-      '  email: "test@example.com"',
-      "assigned_by:",
-      '  name: "Admin"',
-      '  email: "admin@example.com"',
-      "assigned_at: 2026-07-26",
-      "---",
-    ].join("\n"));
-    const result = await reindexFile(tmpDir, "assignment", fp);
-    expect(result).toEqual({ success: true });
-  });
+  // removed: "returns success for a valid assignment file" — assignment feature dropped 2026-07-29
 
   it("returns success for a valid note file", async () => {
     const fp = join(tmpDir, "NOTE-test.md");

@@ -43,8 +43,10 @@ describe("runAudit — Cat 13 orphaned record cleanup (branch-delete scenario)",
   it("cleans ALL orphaned record types from DB", { timeout: 120000 }, async () => {
     // Seed orphaned records for every record type — simulating a feature branch
     // that was indexed, then the branch was deleted.
+    // `phase` is deliberately absent: legacy phase rows are retained in the DB for
+    // historical search, so checkConsistency never reports them as orphaned and Cat 13
+    // never cleans them. See the dropped-concepts cases in check_consistency.test.ts.
     const orphans = [
-      { id: "phase-orphaned-branch-del", type: "phase", title: "Deleted Phase" },
       { id: "DECISION-orphaned-branch-del", type: "decision", title: "Deleted Decision" },
       { id: "DISCUSSION-orphaned-branch-del", type: "discussion", title: "Deleted Discussion" },
       { id: "era-orphaned-branch", type: "era", title: "Deleted Era" },
@@ -59,8 +61,8 @@ describe("runAudit — Cat 13 orphaned record cleanup (branch-delete scenario)",
     }
 
     // Verify all are searchable before audit (notes require type_filter)
-    const beforeAll = await searchMemory("orphaned branch", 20);
-    const beforeNotes = await searchMemory("orphaned branch", 5, undefined, "hozakar@gmail.com", undefined, "note");
+    const beforeAll = await searchMemory({ query: "orphaned branch", topK: 20 });
+    const beforeNotes = await searchMemory({ query: "orphaned branch", topK: 5, createdByEmail: "hozakar@gmail.com", typeFilter: "note" });
     const allBefore = [...beforeAll, ...beforeNotes];
     for (const o of orphans) {
       expect(allBefore.find(r => r.id === o.id), `${o.id} should exist before audit`).toBeDefined();
@@ -77,8 +79,8 @@ describe("runAudit — Cat 13 orphaned record cleanup (branch-delete scenario)",
     }
 
     // Verify NONE are searchable after audit
-    const afterAll = await searchMemory("orphaned branch", 20);
-    const afterNotes = await searchMemory("orphaned branch", 5, undefined, "hozakar@gmail.com", undefined, "note");
+    const afterAll = await searchMemory({ query: "orphaned branch", topK: 20 });
+    const afterNotes = await searchMemory({ query: "orphaned branch", topK: 5, createdByEmail: "hozakar@gmail.com", typeFilter: "note" });
     const allAfter = [...afterAll, ...afterNotes];
     for (const o of orphans) {
       expect(allAfter.find(r => r.id === o.id), `${o.id} should NOT exist after audit`).toBeUndefined();
@@ -86,63 +88,23 @@ describe("runAudit — Cat 13 orphaned record cleanup (branch-delete scenario)",
   });
 
   it("never modifies filesystem for orphaned records", { timeout: 15000 }, async () => {
-    // Seed an orphaned phase record — no FS file exists
-    await seedOrphan("phase-fs-never-touched", "phase", "FS Never Touched");
+    // Seed an orphaned decision record — no FS file exists
+    await seedOrphan("DECISION-fs-never-touched", "decision", "FS Never Touched");
 
     // Verify no file exists
-    const phasePath = join(tmp.pmDir, "phases", "phase-fs-never-touched", "phase.yml");
-    expect(existsSync(phasePath)).toBe(false);
+    const decisionPath = join(tmp.pmDir, "decisions", "DECISION-fs-never-touched.md");
+    expect(existsSync(decisionPath)).toBe(false);
 
     // Run audit
     await runAudit(tmp.pmDir);
 
     // File must STILL not exist — audit never creates files for orphaned records
-    expect(existsSync(phasePath)).toBe(false);
+    expect(existsSync(decisionPath)).toBe(false);
   });
 
-  it("re-indexes records when FS files reappear (branch restore scenario)", { timeout: 120000 }, async () => {
-    // Simulate: branch was deleted (records orphaned), then branch is restored
-    // (FS files reappear via git checkout). Missing → should be re-indexed.
-
-    // 1. Delete from DB first (simulating audit cleaned them)
-    // Then create FS files → they should appear as "missing" and get indexed
-
-    const phaseId = "phase-branch-restored";
-    const phaseDir = join(tmp.pmDir, "phases", phaseId);
-    mkdirSync(phaseDir, { recursive: true });
-    writeFileSync(
-      join(phaseDir, "phase.yml"),
-      [
-        `id: ${phaseId}`,
-        "title: Restored Phase",
-        "status: completed",
-        "branch: null",
-        "started_at: 2026-06-21",
-        "tags: [test, branch-restore]",
-        "created_by:",
-        "  name: Hakan Ozakar",
-        "  email: hozakar@gmail.com",
-      ].join("\n")
-    );
-    writeFileSync(join(phaseDir, "plan.md"), "# Plan\nRestored phase plan.");
-    writeFileSync(join(phaseDir, "implementation.md"), "# Implementation\nRestored.");
-
-    // Update phases/index.yml
-    writeFileSync(
-      join(tmp.pmDir, "phases", "index.yml"),
-      `phases:\n  - id: ${phaseId}\n    title: Restored Phase\n    status: completed\n    tags: [test]\n`
-    );
-
-    // Verify phase is NOT in DB yet
-    const before = await searchMemory("restored phase", 5, undefined, undefined, undefined, "phase");
-    expect(before.find(r => r.id === phaseId)).toBeUndefined();
-
-    // Run audit — should index the missing phase
-    await runAudit(tmp.pmDir);
-
-    // run_audit does not directly index missing phases; that is the responsibility
-    // of the proactive sync that fires at session start. This test asserts only
-    // the orphaned-cleanup invariant (covered above); the "missing → index" path
-    // is exercised in note_audit_consistency.test.ts.
-  });
+  // Removed: "re-indexes records when FS files reappear (branch restore scenario)".
+  // It built a phase directory and index.yml, then asserted nothing after running the
+  // audit — its own closing comment conceded the missing→index path is covered by
+  // note_audit_consistency.test.ts. With phases dropped it exercised a concept that no
+  // longer exists, via a body that carried no coverage.
 });

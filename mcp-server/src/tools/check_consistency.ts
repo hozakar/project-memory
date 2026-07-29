@@ -7,7 +7,17 @@ import type { ConsistencyReport } from "../types";
  * Compares the vector DB index against the filesystem to find inconsistencies.
  *
  * @param {string} projectMemoryDir - Absolute path to the `.project-memory/` directory.
- * Covers phases, decisions, discussions, instructions, assignments, and notes.
+ * Covers decisions, discussions, instructions, and notes.
+ *
+ * Phases and assignments are dropped concepts and are no longer scanned on the
+ * filesystem side: neither has an index tool left to satisfy a `missing` entry, so
+ * reporting them produced findings the caller could never act on.
+ *
+ * The two differ on the orphan side. Legacy `phase-*` rows stay in the DB by design —
+ * they remain searchable for historical lookup — so they are skipped there too.
+ * `ASSIGNMENT-*` rows are not: the feature is being removed, and their files are gone,
+ * so they must surface as orphaned exactly once and let Cat 13 purge them. Skipping
+ * them would strand them in the DB permanently, still answering broad searches.
  * @returns {Promise<ConsistencyReport>} Report with missing and orphaned IDs.
  */
 export async function checkConsistency(
@@ -16,20 +26,6 @@ export async function checkConsistency(
   try {
     // 1. Collect filesystem IDs
     const filesystemIds = new Set<string>();
-
-    // a. Extract phase IDs from phases/index.yml using regex
-    const indexPath = path.join(projectMemoryDir, "phases", "index.yml");
-    if (fs.existsSync(indexPath)) {
-      const ymlText = fs.readFileSync(indexPath, "utf-8");
-      const phaseIdRegex = /^\s+- id:\s+(.+)$/gm;
-      let match: RegExpExecArray | null;
-      while ((match = phaseIdRegex.exec(ymlText)) !== null) {
-        // Trim whitespace and surrounding quotes from the captured ID
-        const rawId = match[1].trim();
-        const cleanId = rawId.replace(/^['"]|['"]$/g, "");
-        filesystemIds.add(cleanId);
-      }
-    }
 
     // b. Extract decision IDs from decisions/DECISION-*.md filenames
     const decisionsDir = path.join(projectMemoryDir, "decisions");
@@ -67,18 +63,6 @@ export async function checkConsistency(
       }
     }
 
-    // f. Extract assignment IDs from assignments/ASSIGNMENT-*.md filenames
-    const assignmentsDir = path.join(projectMemoryDir, "assignments");
-    if (fs.existsSync(assignmentsDir)) {
-      const entries = fs.readdirSync(assignmentsDir);
-      for (const entry of entries) {
-        if (entry.startsWith("ASSIGNMENT-") && entry.endsWith(".md")) {
-          const id = entry.slice(0, -3); // strip .md extension
-          filesystemIds.add(id);
-        }
-      }
-    }
-
     // g. Extract note IDs from notes/NOTE-*.md filenames
     const notesDir = path.join(projectMemoryDir, "notes");
     if (fs.existsSync(notesDir)) {
@@ -107,6 +91,9 @@ export async function checkConsistency(
 
     for (const id of dbIds) {
       if (id.includes("__commit__")) continue; // commit records are not file-backed
+      // Legacy phase rows are retained in the DB for historical search. They have no
+      // filesystem counterpart by design, so they are not orphans.
+      if (id.startsWith("phase-")) continue;
       if (!filesystemIds.has(id)) {
         orphaned.push(id);
       }

@@ -1,6 +1,6 @@
 ---
 name: project-memory-init
-description: First-run initialization instructions for the standard profile. Scaffolds .project-memory/ with 2 summaries (roadmap, current-state), no phases/discussions/assignments/eras dirs (created on first use as needed). Writes profile: standard and profile_history into config.yml.
+description: First-run initialization instructions for the standard profile. Scaffolds .project-memory/ with 2 summaries (roadmap, current-state), no phases/discussions/eras dirs (created on first use as needed). Writes profile: standard and profile_history into config.yml.
 ---
 
 # First-Run Initialization (standard)
@@ -22,7 +22,6 @@ Read only when the user picked `standard` in the SKILL.md init UX. Create this d
 - `issues/open/` + `issues/closed/` — created on first issue.
 - `instructions/` — created on first user instruction.
 - `notes/` — created on first note.
-- `assignments/` — created on first assignment.
 
 This keeps a fresh project visually clean — empty dirs aren't created speculatively.
 

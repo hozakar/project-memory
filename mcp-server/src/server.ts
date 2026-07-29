@@ -7,7 +7,6 @@ import { checkConsistency } from "./tools/check_consistency";
 import { rebuildIndex } from "./tools/rebuild_index";
 import { findSimilarCommit } from "./tools/find_similar_commit";
 import { indexInstruction } from "./tools/index_instruction";
-import { indexAssignment } from "./tools/index_assignment";
 import { indexNote } from "./tools/index_note";
 import { reindexFile } from "./tools/reindex_file";
 import { startBackgroundAudit, runAuditLocked, applyAuditFixesLocked } from "./tools/background_audit";
@@ -28,16 +27,14 @@ const srv = server as any;
 
 srv.tool(
   "search_memory",
-  "Semantic search over indexed project memory (decisions, discussions, instructions, notes, assignments). Returns top-K results sorted by similarity. Use at Pre-Implementation Gate and when user asks about past work.",
+  "Semantic search over indexed project memory (decisions, discussions, instructions, notes). Returns top-K results sorted by similarity. Use at Pre-Implementation Gate and when user asks about past work.",
   {
     query: z.string().describe("Natural language search query"),
     top_k: z.number().int().min(1).max(20).optional().default(8).describe("Number of results"),
     include_commits: z.boolean().optional().default(false).describe("Include per-commit vector records in results (default: false)"),
     created_by_email: z.string().optional().describe("Filter results to a specific creator email. Default: no filter. Use to scope instruction searches to current user."),
     created_by_name: z.string().optional().describe("Filter results to a specific creator name (partial match via LIKE %...%). Default: no filter."),
-    assigned_to_email: z.string().optional(),
-    assigned_by_email: z.string().optional(),
-    type_filter: z.string().optional().describe("Filter results to a specific type (decision, discussion, instruction, note, assignment). Default: no filter. When type is 'note', created_by_email is auto-applied if not provided — users can only search their own notes."),
+    type_filter: z.string().optional().describe("Filter results to a specific type (decision, discussion, instruction, note). Default: no filter. When type is 'note', created_by_email is auto-applied if not provided — users can only search their own notes."),
     touches_filter: z.array(z.string()).optional().describe("Exact AND-filter on decision touches field. E.g. [\"conventions_md\"] returns only decisions that touch conventions_md. Multiple values narrow further (AND semantics). Only effective on type=decision records."),
     tags_filter: z.array(z.string()).optional().describe("Exact AND-filter on phase/discussion tags field. E.g. [\"mcp\", \"schema\"] returns records tagged with both. Only effective on type=phase and type=discussion records."),
     scope_filter: z.array(z.string()).optional().describe("Exact OR-filter on decision primary_scope field. E.g. [\"constraint\"] returns only decisions with primary_scope=constraint. Multiple values broaden (OR semantics). Only effective on type=decision records."),
@@ -47,7 +44,20 @@ srv.tool(
   },
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async (args: any) => {
-    const results = await searchMemory(args.query, args.top_k, args.include_commits, args.created_by_email, args.created_by_name, args.type_filter, args.touches_filter, args.tags_filter, args.assigned_to_email, args.assigned_by_email, args.scope_filter, args.outcome_type_filter, args.diversify, args.include_superseded);
+    const results = await searchMemory({
+      query: args.query,
+      topK: args.top_k,
+      includeCommits: args.include_commits,
+      createdByEmail: args.created_by_email,
+      createdByName: args.created_by_name,
+      typeFilter: args.type_filter,
+      touchesFilter: args.touches_filter,
+      tagsFilter: args.tags_filter,
+      scopeFilter: args.scope_filter,
+      outcomeTypeFilter: args.outcome_type_filter,
+      diversify: args.diversify,
+      includeSuperseded: args.include_superseded,
+    });
     return { content: [{ type: "text" as const, text: JSON.stringify(results) }] };
   }
 );
@@ -119,48 +129,7 @@ srv.tool(
   }
 );
 
-srv.tool(
-  "index_assignment",
-  "Index or update an assignment in the vector DB. Call on ASSIGNMENT file creation and on status change (pending→accepted/rejected, accepted→ongoing, ongoing→completed). Upsert by ID.",
-  {
-    id: z.string().regex(/^[a-zA-Z0-9-]+$/),
-    title: z.string(),
-    status: z.string(),
-    description: z.string().optional(),
-    assignedTo: z.object({ name: z.string(), email: z.string() }).optional(),
-    assignedBy: z.object({ name: z.string(), email: z.string() }).optional(),
-    assignedAt: z.string().optional(),
-    targetType: z.string().nullable().optional(),
-    targetId: z.string().nullable().optional(),
-    rejectReason: z.string().nullable().optional(),
-    completionNote: z.string().nullable().optional(),
-    createdBy: z.object({ name: z.string(), email: z.string() }).optional(),
-    contributors: z.array(z.object({ name: z.string(), email: z.string() })).optional(),
-  },
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  async (args: any) => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const data: any = {
-      id: args.id,
-      title: args.title,
-      status: args.status,
-      description: args.description || null,
-      type: args.targetType && args.targetId ? "direct" : "freeform",
-      assignedTo: args.assignedTo || { name: "unknown", email: "unknown" },
-      assignedBy: args.assignedBy || { name: "unknown", email: "unknown" },
-      assignedAt: args.assignedAt || new Date().toISOString().slice(0, 10),
-      targetType: args.targetType || null,
-      targetId: args.targetId || null,
-      rejectionReason: args.rejectReason || null,
-      completionNote: args.completionNote || null,
-      remindCount: 0,
-      createdBy: args.createdBy,
-      contributors: args.contributors,
-    };
-    await indexAssignment(data);
-    return { content: [{ type: "text", text: `Indexed assignment: ${args.id}` }] };
-  },
-);
+// removed: index_assignment tool — assignment feature dropped 2026-07-29
 
 srv.tool(
   "index_note",
@@ -202,7 +171,7 @@ srv.tool(
   "Re-index a single .project-memory/ file by reading it from disk. Reads the file, parses frontmatter and sections, embeds, and upserts into the vector DB. Returns { success: true } on success, or { success: false, error, details } on failure (file not found, parse error, unsupported type). Use for single-file recovery without full rebuild.",
   {
     project_memory_dir: z.string().describe("Absolute path to the .project-memory/ directory"),
-    type: z.enum(["decision", "discussion", "instruction", "assignment", "note"]).describe("Record type"),
+    type: z.enum(["decision", "discussion", "instruction", "note"]).describe("Record type"),
     file_path: z.string().describe("Absolute or relative (to project_memory_dir) path to the markdown file"),
   },
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -318,7 +287,7 @@ srv.tool(
 
 srv.tool(
   "list_contributors",
-  "List all contributors across project-memory records. Walks phase, decision, discussion, issue, and assignment files, extracts created_by and contributors from frontmatter, deduplicates by email, and returns sorted by name. Useful for understanding who has touched the project memory.",
+  "List all contributors across project-memory records. Walks decision, discussion, and issue files, extracts created_by and contributors from frontmatter, deduplicates by email, and returns sorted by name. Useful for understanding who has touched the project memory.",
   {},
   async () => {
     const result = await listContributors();

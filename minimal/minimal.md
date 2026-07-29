@@ -15,7 +15,7 @@ Use this profile when project longevity, revisit frequency, and reasoning densit
 └── MEMORY.md        ← four sections: ## Roadmap, ## Decisions, ## Notes, ## Log
 ```
 
-Detection: `.project-memory/config.yml` exists → installed; absent → first-run (see below). User-triggered features (discussions, issues, instructions, assignments, notes) create their own subdirectories inside `.project-memory/` on first use, exactly as in other profiles.
+Detection: `.project-memory/config.yml` exists → installed; absent → first-run (see below). User-triggered features (discussions, issues, instructions, notes) create their own subdirectories inside `.project-memory/` on first use, exactly as in other profiles.
 
 ## First-run initialization (minimal)
 
@@ -105,7 +105,7 @@ Profile metadata (`profile`, `profile_history`) lives in `config.yml` — same a
 
 - **Log append:** when significant work happens, append a single row to `## Log`: `- YYYY-MM-DD: topic-name — what happened (1 line)`. "Significant" is a judgment call — no classification ceremony. A reasonable rule of thumb: if you'd want a future session to know it happened, log it.
 
-## Discussions / issues / instructions / assignments / notes (orthogonal)
+## Discussions / issues / instructions / notes (orthogonal)
 
 These features are user-triggered. When used in a minimal-profile project, the corresponding `.project-memory/<feature>/` directory is created on first use. Their lifecycles follow the shared `conventions/discussions.md`, `conventions/records.md` etc. — minimal does not change their behavior.
 

@@ -1,14 +1,13 @@
 # project-memory MCP Server
 
-Optional MCP companion server for the [project-memory](../) skill. Provides semantic search over decisions, discussions, instructions, assignments, notes, and legacy phase rows using LanceDB + all-MiniLM-L6-v2 (local embedding, no API key needed).
+Optional MCP companion server for the [project-memory](../) skill. Provides semantic search over decisions, discussions, instructions, notes, and legacy phase rows using LanceDB + all-MiniLM-L6-v2 (local embedding, no API key needed).
 
 ## Tools
 
-- `search_memory(query, top_k?, include_commits?, include_superseded?, created_by_email?, created_by_name?, assigned_to_email?, assigned_by_email?, type_filter?, touches_filter?, tags_filter?, scope_filter?, outcome_type_filter?, diversify?)` — hybrid semantic + structural search over decisions, discussions, instructions, assignments, notes, and legacy phase rows. Supports `created_by_email` and `created_by_name` user-scope filters, `type_filter` to restrict record type, `touches_filter` (decision entities, AND), `tags_filter` (phase/discussion tags, AND), `scope_filter` (decision primary_scope, OR), `outcome_type_filter` (discussion outcome category: none/phase/decision/roadmap), `assigned_to_email`/`assigned_by_email` (assignment filters), `include_commits` opt-in for per-commit records, and `diversify` (opt-in MMR reranking: over-fetches 5x and reranks with lambda=0.7 for result diversity; set true for survey/exploration queries with top_k >= 5; P@1 preserved). When `type_filter="note"`, `created_by_email` is auto-applied — notes are private. Legacy phase rows remain searchable.
+- `search_memory(query, top_k?, include_commits?, include_superseded?, created_by_email?, created_by_name?, type_filter?, touches_filter?, tags_filter?, scope_filter?, outcome_type_filter?, diversify?)` — hybrid semantic + structural search over decisions, discussions, instructions, notes, and legacy phase rows. Supports `created_by_email` and `created_by_name` user-scope filters, `type_filter` to restrict record type, `touches_filter` (decision entities, AND), `tags_filter` (phase/discussion tags, AND), `scope_filter` (decision primary_scope, OR), `outcome_type_filter` (discussion outcome category: none/phase/decision/roadmap), `include_commits` opt-in for per-commit records, and `diversify` (opt-in MMR reranking: over-fetches 5x and reranks with lambda=0.7 for result diversity; set true for survey/exploration queries with top_k >= 5; P@1 preserved). When `type_filter="note"`, `created_by_email` is auto-applied — notes are private. Legacy phase rows remain searchable.
 - `index_decision(data)` — upsert a decision (called on creation and status change)
 - `index_discussion(data)` — upsert a discussion (called on conclusion)
 - `index_instruction(data)` — upsert a user instruction (active or dropped)
-- `index_assignment(data)` — upsert an assignment record; supports `assigned_to_email` and `assigned_by_email` search filters
 - `index_note(data)` — upsert a personal note (user-scoped, private, deletable)
 - `delete_note(id)` — delete a note from LanceDB and filesystem; returns per-store deletion details
 - `reindex_file(project_memory_dir, type, file_path)` — re-index a single .project-memory/ file by reading it from disk; parses frontmatter and sections, embeds, and upserts into the vector DB; returns `{ success: true }` on success, or `{ success: false, error, details }` on failure (file not found, parse error, unsupported type)
@@ -22,7 +21,7 @@ Optional MCP companion server for the [project-memory](../) skill. Provides sema
 
 **Version:** 0.1.3
 
-**Record types indexed:** decisions, discussions, instructions, assignments, notes, and legacy phase rows. Notes are user-scoped and private — broad searches exclude them; `search_memory` auto-applies `created_by_email` when `type_filter="note"`.
+**Record types indexed:** decisions, discussions, instructions, notes, and legacy phase rows. Notes are user-scoped and private — broad searches exclude them; `search_memory` auto-applies `created_by_email` when `type_filter="note"`.
 
 **Write direction:** files → DB only. MCP may write `.project-memory/` files for file-move auto-fixes (Cat 5/11) and `apply_audit_fixes` structural fixes. YAML prose mutations remain LLM-only. Zero data loss on MCP absence.
 

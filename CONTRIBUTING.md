@@ -100,7 +100,7 @@ do) must account for both profiles:
   update the tier matrix in `profiles.md`.
 - If the new behavior applies to both, verify that neither profile's loading
   path or feature set is broken by the change.
-- Features the user triggers explicitly (discussions, issues, assignments,
+- Features the user triggers explicitly (discussions, issues,
   instructions, ADR) are available in all profiles regardless — a change to any
   of these must work in both profiles.
 

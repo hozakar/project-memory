@@ -8,7 +8,7 @@ export async function findSimilarCommit(
 ): Promise<CommitSearchResult[]> {
   try {
     const vector = await embed(diffSnippet);
-    const results = await search(vector, topK, "commit");
+    const results = await search({ vector, topK, typeFilter: "commit" });
     return results.map((r) => {
       const parts = r.id.split("__commit__");
       const hash = parts[1] ?? "";

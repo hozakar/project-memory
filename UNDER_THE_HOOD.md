@@ -27,7 +27,7 @@ overhead the skill introduces automatically. Choose at first run; switch at any 
 | Author attribution | `created_by` only | none |
 | Topic-shift detection | off | n/a |
 
-Features you trigger explicitly — discussions, issues, assignments, instructions,
+Features you trigger explicitly — discussions, issues, instructions,
 ADR, MCP — are available in all profiles regardless of which you choose.
 
 ---
@@ -39,7 +39,7 @@ ADR, MCP — are available in all profiles regardless of which you choose.
 > there. If something looks wrong, just say so; it can be fixed.
 
 **Standard profile** uses a `.project-memory/` directory (scaffolds a
-leaner tree at init — no `discussions/`, `issues/`, `assignments/`, or
+leaner tree at init — no `discussions/`, `issues/`, or
 `instructions/` until you use those features for the first time):
 
 ```
@@ -52,9 +52,6 @@ leaner tree at init — no `discussions/`, `issues/`, `assignments/`, or
 │   └── DISCUSSION-YYYY-MM-DD-slug.md
 ├── instructions/
 │   └── INSTRUCTION-YYYY-MM-DD-slug.md
-├── assignments/
-│   ├── index.yml
-│   └── ASSIGNMENT-YYYY-MM-DD-slug.md
 ├── issues/
 │   ├── open/
 │   └── closed/
@@ -71,7 +68,7 @@ leaner tree at init — no `discussions/`, `issues/`, `assignments/`, or
 └── MEMORY.md      ← three sections: ## Roadmap, ## Decisions, ## Log
 ```
 
-User-triggered features (discussions, issues, assignments, instructions) create their
+User-triggered features (discussions, issues, instructions) create their
 own subdirectories inside `.project-memory/` on first use, same as other profiles.
 
 ---
@@ -80,9 +77,10 @@ own subdirectories inside `.project-memory/` on first use, same as other profile
 
 The skill acts at three kinds of moments, not at phase boundaries:
 
-- **Session start** — load context (summaries, decisions, discussions, instructions,
-  assignments), cross-reference active decisions against the working tree, log the
-  session. No phase ceremony — just memory loading and conflict detection.
+- **Session start** — load pending state only: the current section of the summaries
+  plus active instructions. Decisions and discussions are not pre-loaded; the
+  Pre-Implementation Gate fetches them when work actually touches them. No phase
+  ceremony — just memory loading and conflict detection.
 
 - **Turn boundary** — at the end of each turn, a sweep asks "did this turn include
   a commit?". If no → move on (no memory writes). If yes → update
@@ -144,12 +142,6 @@ Workflow preferences and agent behavior rules live in
 instructions constrain the agent's behavior for a specific user. Each instruction
 is scoped to the user who created it by email — other team members' instructions
 are never loaded into your session.
-
----
-
-## Assignments
-
-A lightweight safety net: hand off open decisions or discussions so nothing gets orphaned. Two variants — direct (linked to a record) and freeform (standalone). State machine: `pending → accepted → ongoing → completed / rejected`. Session-start notifications are passive (one line per direction). A rare feature; use your existing tool for daily task management.
 
 ---
 
@@ -256,10 +248,9 @@ that don't diverge across profiles stay at the root.
 | `audit.md` | Dispatcher — routes to `<profile>/audit-mcp.md` or `<profile>/audit-fs.md` |
 | `conventions/decisions.md` | Decision lifecycle, ADR steps, touches guidance |
 | `conventions/discussions.md` | Discussion lifecycle, relevancy scoring, expiry |
-| `conventions/records.md` | Issue, instruction, assignment lifecycles |
+| `conventions/records.md` | Issue, instruction, note lifecycles |
 | `conventions/maintainer.md` | Language policy, author attribution rules |
 | `templates/decisions.md` | DECISION + ADR + decisions/index.md templates |
 | `templates/discussions.md` | DISCUSSION + discussions/index.md templates |
 | `templates/instructions.md` | INSTRUCTION template |
-| `templates/assignments.md` | ASSIGNMENT + assignments/index.yml templates |
 | `mcp-integration.md` | MCP tool catalog, proactive sync, degradation rules |

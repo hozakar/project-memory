@@ -67,31 +67,13 @@ export interface NoteIndexData {
   updatedAt: string;       // YYYY-MM-DD
 }
 
-export interface AssignmentIndexData {
-  id: string;
-  status: string;              // pending | accepted | rejected | ongoing | completed
-  type: string;                // direct | freeform
-  assignedTo: Identity;
-  assignedBy: Identity;
-  assignedAt: string;          // YYYY-MM-DD
-  targetType: string | null;   // issue | phase | discussion | roadmap_item
-  targetId: string | null;
-  description: string | null;
-  rejectedAt: string | null;
-  rejectionReason: string | null;
-  completedAt: string | null;
-  completionNote: string | null;
-  completedDecisionId: string | null;
-  completedDiscussionId: string | null;
-  remindCount: number;
-  lastRemindedAt: string | null;
-  createdBy?: Identity;
-  contributors?: Identity[];
-}
+// removed: 'AssignmentIndexData' — assignment feature dropped 2026-07-29
 
 export interface SearchResult {
+  // 'phase' and 'era' are legacy read-only: no tool can index them, but rows written
+  // before those concepts were dropped stay searchable for historical lookup.
   id: string;
-  type: "phase" | "decision" | "discussion" | "commit" | "era" | "instruction" | "assignment" | "note";
+  type: "phase" | "decision" | "discussion" | "commit" | "era" | "instruction" | "note";
   similarity: number;      // 0 to 1, higher = more similar
   title: string;
   createdBy?: Identity;
@@ -119,8 +101,8 @@ export interface ConsistencyReport {
 }
 
 export interface IndexEntry {
-  type: "phase" | "decision" | "discussion" | "era" | "instruction" | "assignment" | "note";
-  data: PhaseIndexData | DecisionIndexData | DiscussionIndexData | InstructionIndexData | AssignmentIndexData | NoteIndexData;
+  type: "phase" | "decision" | "discussion" | "era" | "instruction" | "note";
+  data: PhaseIndexData | DecisionIndexData | DiscussionIndexData | InstructionIndexData | NoteIndexData;
 }
 
 // removed: 'create_phase_stub' from PendingFix.type in 2026-07-06 phase-removal
@@ -186,8 +168,6 @@ export interface LanceRecord {
   contributorsJson?: string; // JSON.stringify(Identity[])
   touchesJson?: string;      // JSON.stringify(string[]) — decision touches; supports exact WHERE filter
   tagsJson?: string;         // JSON.stringify(string[]) — phase/discussion tags; supports exact WHERE filter
-  assignedToEmail?: string;
-  assignedByEmail?: string;
   primaryScope?: string;     // decision primary_scope — supports exact WHERE filter via scope_filter
   outcomeType?: string;      // derived discussion outcome category (none, phase, decision, roadmap) — supports exact WHERE filter via outcomeTypeFilter
   status?: string;            // record status (e.g. decision: active | superseded | amended)
