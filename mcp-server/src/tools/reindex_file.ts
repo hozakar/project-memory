@@ -6,7 +6,6 @@ import {
   buildDecisionText,
   buildDiscussionText,
   buildInstructionText,
-  buildAssignmentText,
   buildNoteText,
   deriveOutcomeType,
 } from "../utils";
@@ -15,12 +14,11 @@ import {
   parseDecisionFile,
   parseDiscussionFile,
   parseInstructionFile,
-  parseAssignmentFile,
   parseNoteFile,
 } from "../parser";
 import type { LanceRecord, Identity } from "../types";
 
-export type SupportedType = "decision" | "discussion" | "instruction" | "assignment" | "note";
+export type SupportedType = "decision" | "discussion" | "instruction" | "note";
 
 export interface ReindexResult {
   success: boolean;
@@ -114,32 +112,13 @@ export async function reindexFile(
           createdByName: createdBy.name,
           createdByEmail: createdBy.email,
           contributorsJson: JSON.stringify([]),
+          status: d.state,   // without this a reindexed instruction loses active/dropped
+          body: d.prompt,
         };
         await upsert(record);
         break;
       }
-      case "assignment": {
-        const d = parseAssignmentFile(absolutePath);
-        const text = buildAssignmentText(d);
-        const createdBy = d.createdBy ?? UNKNOWN_IDENTITY;
-        const contributors = d.contributors ?? [];
-
-        const vector = await embed(text);
-        const record: LanceRecord = {
-          id: d.id,
-          type: "assignment",
-          title: d.id,
-          text,
-          vector,
-          createdByName: createdBy.name,
-          createdByEmail: createdBy.email,
-          contributorsJson: JSON.stringify(contributors),
-          assignedToEmail: d.assignedTo.email,
-          assignedByEmail: d.assignedBy.email,
-        };
-        await upsert(record);
-        break;
-      }
+      // removed: case "assignment" — assignment feature dropped 2026-07-29
       case "note": {
         const d = parseNoteFile(absolutePath);
         const text = buildNoteText(d);

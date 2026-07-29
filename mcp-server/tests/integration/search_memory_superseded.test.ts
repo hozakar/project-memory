@@ -67,20 +67,14 @@ describe("searchMemory superseded exclusion", () => {
     // All 3 IDs should exist in the DB
 
     // Default search — should return active + amended, NOT superseded
-    const defaultResults = await searchMemory(
-      "auth token decision", 10, false, undefined, undefined, "decision",
-      undefined, undefined, undefined, undefined, undefined, undefined, false, false
-    );
+    const defaultResults = await searchMemory({ query: "auth token decision", topK: 10, includeCommits: false, typeFilter: "decision", diversify: false, includeSuperseded: false });
     const defaultIds = defaultResults.map(r => r.id);
     expect(defaultIds).toContain("DECISION-test-active");
     expect(defaultIds).toContain("DECISION-test-amended");
     expect(defaultIds).not.toContain("DECISION-test-superseded");
 
     // Opt-in search — should return all 3 including superseded
-    const optInResults = await searchMemory(
-      "auth token decision", 10, false, undefined, undefined, "decision",
-      undefined, undefined, undefined, undefined, undefined, undefined, false, true
-    );
+    const optInResults = await searchMemory({ query: "auth token decision", topK: 10, includeCommits: false, typeFilter: "decision", diversify: false, includeSuperseded: true });
     const optInIds = optInResults.map(r => r.id);
     expect(optInIds).toContain("DECISION-test-active");
     expect(optInIds).toContain("DECISION-test-amended");

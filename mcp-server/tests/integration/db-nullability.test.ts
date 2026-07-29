@@ -83,8 +83,6 @@ describe("getTable() schema nullability", () => {
       stringField("contributorsJson", true),
       stringField("tagsJson", true),
       stringField("touchesJson", true),
-      stringField("assignedToEmail", true),
-      stringField("assignedByEmail", true),
       stringField("primaryScope", false), // THE BUG
       stringField("outcomeType", true),
       stringField("status", true),

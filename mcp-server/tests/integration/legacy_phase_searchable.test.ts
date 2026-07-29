@@ -39,7 +39,7 @@ describe("searchMemory still returns legacy phase rows after phase removal", () 
     expect(result.failed).toBe(0);
 
     // Search with a query that should match the seeded phase
-    const queryResults = await searchMemory("LanceDB vector store migration", 5);
+    const queryResults = await searchMemory({ query: "LanceDB vector store migration", topK: 5 });
 
     const match = queryResults.find((r) => r.id === "phase-20260614-legacy-search-test");
     expect(match).toBeDefined();

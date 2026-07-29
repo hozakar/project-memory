@@ -1,5 +1,5 @@
 // removed: buildPhaseText in 2026-07-06 phase-removal
-import type { DecisionIndexData, DiscussionIndexData, CommitDiff, InstructionIndexData, AssignmentIndexData, NoteIndexData } from "./types";
+import type { DecisionIndexData, DiscussionIndexData, CommitDiff, InstructionIndexData, NoteIndexData } from "./types";
 
 export function buildDecisionText(data: DecisionIndexData): string {
   return [
@@ -60,36 +60,7 @@ export function buildNoteText(data: NoteIndexData): string {
     .slice(0, 3000);
 }
 
-export function buildAssignmentText(data: AssignmentIndexData): string {
-  const parts: string[] = [];
-  parts.push(`Assignment: ${data.id}`);
-  parts.push(`Status: ${data.status}`);
-  parts.push(`Type: ${data.type}`);
-  parts.push(`Assigned To: ${data.assignedTo.name} <${data.assignedTo.email}>`);
-  parts.push(`Assigned By: ${data.assignedBy.name} <${data.assignedBy.email}>`);
-  parts.push(`Assigned At: ${data.assignedAt}`);
-  if (data.type === "direct" && data.targetType && data.targetId) {
-    parts.push(`Target: ${data.targetType} ${data.targetId}`);
-  }
-  if (data.description) {
-    parts.push(`Description: ${data.description}`);
-  }
-  if (data.status === "rejected" && data.rejectedAt) {
-    parts.push(`Rejected: ${data.rejectedAt}`);
-    if (data.rejectionReason) {
-      parts.push(`Rejection Reason: ${data.rejectionReason}`);
-    }
-  }
-  if (data.status === "completed" && data.completedAt) {
-    parts.push(`Completed: ${data.completedAt}`);
-    if (data.completionNote) {
-      parts.push(`Completion Note: ${data.completionNote}`);
-    }
-  }
-  parts.push(`Reminders: ${data.remindCount}`);
-  return parts.join("\n").slice(0, 2000);
-}
-
+// removed: 'buildAssignmentText' — assignment feature dropped 2026-07-29
 export function deriveOutcomeType(outcome: string): string {
   if (!outcome || outcome === "none") return "none";
   if (outcome.startsWith("phase-")) return "phase";

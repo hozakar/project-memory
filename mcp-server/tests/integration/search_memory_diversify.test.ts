@@ -91,10 +91,7 @@ describe("searchMemory diversify flag", () => {
     expect(rebuildResult.failed).toBe(0);
 
     // Without diversify — top-3 should cluster on connection-pooling decisions
-    const noDiversifyResults = await searchMemory(
-      "connection pooling", 5, false, undefined, undefined, "decision",
-      undefined, undefined, undefined, undefined, undefined, undefined, false
-    );
+    const noDiversifyResults = await searchMemory({ query: "connection pooling", topK: 5, includeCommits: false, typeFilter: "decision", diversify: false });
     expect(noDiversifyResults.length).toBeGreaterThanOrEqual(3);
     // At least 2 of the top 3 should be connection-pooling decisions
     const poolIdsWithout = noDiversifyResults.slice(0, 3).filter(r =>
@@ -106,10 +103,7 @@ describe("searchMemory diversify flag", () => {
   it("with diversify=true, top-1 preserved but top-5 includes diverse decisions", async () => {
     // With diversify — top-1 should still be a connection-pooling decision (P@1 preserved),
     // but the top-5 should include the diverse decisions (not all 3 near-duplicates in top-3).
-    const diversifyResults = await searchMemory(
-      "connection pooling", 5, false, undefined, undefined, "decision",
-      undefined, undefined, undefined, undefined, undefined, undefined, true
-    );
+    const diversifyResults = await searchMemory({ query: "connection pooling", topK: 5, includeCommits: false, typeFilter: "decision", diversify: true });
     expect(diversifyResults.length).toBe(5);
 
     // Top-1 should be a connection-pooling decision (P@1 preserved)
@@ -122,10 +116,7 @@ describe("searchMemory diversify flag", () => {
   });
 
   it("P@1 preserved: top-1 with diversify matches highest-similarity pooling decision", async () => {
-    const results = await searchMemory(
-      "connection pooling", 5, false, undefined, undefined, "decision",
-      undefined, undefined, undefined, undefined, undefined, undefined, true
-    );
+    const results = await searchMemory({ query: "connection pooling", topK: 5, includeCommits: false, typeFilter: "decision", diversify: true });
     expect(results[0].id).toMatch(/^DECISION-pooling-/);
     // The highest-similarity result should be one of the pooling decisions
     // (P@1 = first pick = max similarity to query)

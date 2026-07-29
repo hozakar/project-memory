@@ -64,7 +64,7 @@ describe("runAudit — Cat 13 note consistency", () => {
     );
 
     // Verify note is NOT searchable before audit
-    const before = await searchMemory("audit missing test", 5, undefined, "hozakar@gmail.com", undefined, "note");
+    const before = await searchMemory({ query: "audit missing test", topK: 5, createdByEmail: "hozakar@gmail.com", typeFilter: "note" });
     expect(before.find((r) => r.id === "NOTE-2026-06-21-audit-missing")).toBeUndefined();
 
     // Run audit — should auto-index the missing note
@@ -76,7 +76,7 @@ describe("runAudit — Cat 13 note consistency", () => {
     expect(noteFix!).toContain("indexed missing note");
 
     // Verify note is NOW searchable after audit
-    const after = await searchMemory("audit missing test", 5, undefined, "hozakar@gmail.com", undefined, "note");
+    const after = await searchMemory({ query: "audit missing test", topK: 5, createdByEmail: "hozakar@gmail.com", typeFilter: "note" });
     const match = after.find((r) => r.id === "NOTE-2026-06-21-audit-missing");
     expect(match).toBeDefined();
   });
@@ -91,7 +91,7 @@ describe("runAudit — Cat 13 note consistency", () => {
     );
 
     // Verify note IS searchable before audit (DB has it, even with zero vector)
-    const before = await searchMemory("orphan test", 5, undefined, "hozakar@gmail.com", undefined, "note");
+    const before = await searchMemory({ query: "orphan test", topK: 5, createdByEmail: "hozakar@gmail.com", typeFilter: "note" });
     expect(before.find((r) => r.id === "NOTE-2026-06-21-audit-orphan")).toBeDefined();
 
     // Run audit — should auto-delete the orphaned DB record
@@ -103,7 +103,7 @@ describe("runAudit — Cat 13 note consistency", () => {
     expect(noteFix!).toContain("deleted orphaned");
 
     // Verify note is NO LONGER searchable after audit
-    const after = await searchMemory("orphan test", 5, undefined, "hozakar@gmail.com", undefined, "note");
+    const after = await searchMemory({ query: "orphan test", topK: 5, createdByEmail: "hozakar@gmail.com", typeFilter: "note" });
     expect(after.find((r) => r.id === "NOTE-2026-06-21-audit-orphan")).toBeUndefined();
   });
 

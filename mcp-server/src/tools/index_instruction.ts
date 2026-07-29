@@ -28,6 +28,10 @@ export async function indexInstruction(
       createdByEmail: createdBy.email,
       contributorsJson: JSON.stringify([]),
       status: data.state,  // "active" | "dropped" — enables WHERE filtering
+      // `text` is the embedding blob (id + state + prompt + origin + author); `body` is
+      // what gets injected verbatim into a session. Keeping them apart means injection
+      // carries the instruction itself, not the metadata assembled for search.
+      body: data.prompt,
     };
 
     await upsert(record);

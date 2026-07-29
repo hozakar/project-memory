@@ -60,8 +60,6 @@ export async function getTable(): Promise<any> {
       contributorsJson: "",
       tagsJson: "",
       touchesJson: "",
-      assignedToEmail: "",
-      assignedByEmail: "",
       primaryScope: "",
       outcomeType: "",
       status: "",
@@ -94,7 +92,7 @@ export async function getTable(): Promise<any> {
 // WARNING: This upsert is non-atomic (delete then add). If the process crashes
 // between these two operations, the record is permanently removed from the
 // vector index. Recovery path: Cat 13 / proactive sync (check_consistency +
-// index_phase/index_decision) on the next session. LanceDB does not support
+// index_decision) on the next session. LanceDB does not support
 // multi-statement transactions.
 export async function upsert(record: LanceRecord): Promise<void> {
   const table = await getTable();
@@ -125,22 +123,36 @@ export function escapeLike(value: string): string {
     .replace(/'/g, "''");
 }
 
-export async function search(
-  vector: number[],
-  topK: number,
-  typeFilter?: string,
-  excludeCommits: boolean = true,
-  createdByEmail?: string,
-  createdByName?: string,
-  touchesFilter?: string[],
-  tagsFilter?: string[],
-  assignedToEmail?: string,
-  assignedByEmail?: string,
-  scopeFilter?: string[],
-  outcomeTypeFilter?: string,
-  diversify?: boolean,
-  includeSuperseded: boolean = false
-): Promise<SearchResult[]> {
+export interface SearchOptions {
+  vector: number[];
+  topK: number;
+  typeFilter?: string;
+  excludeCommits?: boolean;
+  createdByEmail?: string;
+  createdByName?: string;
+  touchesFilter?: string[];
+  tagsFilter?: string[];
+  scopeFilter?: string[];
+  outcomeTypeFilter?: string;
+  diversify?: boolean;
+  includeSuperseded?: boolean;
+}
+
+export async function search(opts: SearchOptions): Promise<SearchResult[]> {
+  const {
+    vector,
+    topK,
+    typeFilter,
+    excludeCommits = true,
+    createdByEmail,
+    createdByName,
+    touchesFilter,
+    tagsFilter,
+    scopeFilter,
+    outcomeTypeFilter,
+    diversify,
+    includeSuperseded = false,
+  } = opts;
   try {
     const table = await getTable();
     const fetchLimit = diversify ? Math.max(topK, topK * 5) : topK;
@@ -156,12 +168,6 @@ export async function search(
     }
     if (createdByName) {
       whereClauses.push(`createdByName LIKE '%${escapeLike(createdByName)}%' ESCAPE '\\'`);
-    }
-    if (assignedToEmail) {
-      whereClauses.push(`assignedToEmail = '${escapeLike(assignedToEmail)}'`);
-    }
-    if (assignedByEmail) {
-      whereClauses.push(`assignedByEmail = '${escapeLike(assignedByEmail)}'`);
     }
     if (touchesFilter && touchesFilter.length > 0) {
       for (const touch of touchesFilter) {
@@ -228,8 +234,14 @@ export async function search(
         if (createdByName && createdByEmail) {
           result.createdBy = { name: createdByName, email: createdByEmail };
         }
-        if (row.type === "instruction" && row.text && row.status === "active") {
-          result.body = `THIS IS A NON-NEGOTIABLE BINDING USER INSTRUCTION:\n${row.text as string}`;
+        if (row.type === "instruction" && row.status === "active") {
+          // Prefer the stored prompt. Rows written before the prompt was persisted
+          // separately fall back to the embedding blob, which also carries the id,
+          // state and author lines — correct but noisier. A reindex clears that.
+          const injected = (row.body as string) || (row.text as string);
+          if (injected) {
+            result.body = `THIS IS A NON-NEGOTIABLE BINDING USER INSTRUCTION:\n${injected}`;
+          }
         }
         return result;
       })

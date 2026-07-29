@@ -34,7 +34,7 @@ describe("indexDecision + searchMemory roundtrip", () => {
 
     expect(result.success).toBe(true);
 
-    const results = await searchMemory("ONNX MiniLM local embedding runtime", 5);
+    const results = await searchMemory({ query: "ONNX MiniLM local embedding runtime", topK: 5 });
 
     const match = results.find(
       (r) => r.id === "DECISION-2026-06-23-onnx-runtime-choice"
@@ -54,19 +54,7 @@ describe("indexDecision + searchMemory roundtrip", () => {
       touches: ["package_json", "husky"],
     });
 
-    const results = await searchMemory(
-      "decision",
-      10,
-      false,
-      undefined,
-      undefined,
-      "decision",
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      ["constraint"]
-    );
+    const results = await searchMemory({ query: "decision", topK: 10, includeCommits: false, typeFilter: "decision", scopeFilter: ["constraint"] });
 
     expect(results.find((r) => r.id === "DECISION-2026-06-23-workflow-pick")).toBeUndefined();
     expect(
@@ -85,14 +73,7 @@ describe("indexDecision + searchMemory roundtrip", () => {
       touches: ["something_old"],
     });
 
-    const results = await searchMemory(
-      "old approach",
-      5,
-      false,
-      undefined,
-      undefined,
-      "decision"
-    );
+    const results = await searchMemory({ query: "old approach", topK: 5, includeCommits: false, typeFilter: "decision" });
 
     expect(
       results.find((r) => r.id === "DECISION-2026-06-23-superseded-example")

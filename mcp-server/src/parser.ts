@@ -4,7 +4,6 @@ import type {
   DecisionIndexData,
   DiscussionIndexData,
   InstructionIndexData,
-  AssignmentIndexData,
   NoteIndexData,
   Identity,
 } from "./types";
@@ -529,96 +528,7 @@ export function parseInstructionFile(
   };
 }
 
-/**
- * Parse an ASSIGNMENT file from disk.
- */
-export function parseAssignmentFile(
-  fileOrContent: string,
-): AssignmentIndexData {
-  let content: string;
-  if (
-    fileOrContent.includes("\\") ||
-    fileOrContent.includes("/") ||
-    fileOrContent.endsWith(".md")
-  ) {
-    if (fs.existsSync(fileOrContent)) {
-      content = readFileContent(fileOrContent);
-    } else {
-      content = normalizeContent(fileOrContent);
-    }
-  } else {
-    content = normalizeContent(fileOrContent);
-  }
-
-  if (
-    !content.includes("---\n") &&
-    !content.includes("---\r\n") &&
-    fileOrContent.includes(".") &&
-    !fileOrContent.includes("\n")
-  ) {
-    content = readFileContent(fileOrContent);
-  }
-
-  const fm = parseFrontmatter(content);
-
-  const id = getString(fm, "id") || "";
-  const status = getString(fm, "status") || "";
-  const type = getString(fm, "type") || "direct";
-
-  // Required: assigned_to, assigned_by, assigned_at
-  const assignedTo = getRequiredIdentity(fm, "assigned_to", "assigned_to");
-  const assignedBy = getRequiredIdentity(fm, "assigned_by", "assigned_by");
-  const assignedAt = getString(fm, "assigned_at") || "";
-
-  // remindCount: if reminded is true, count=1; else 0
-  const reminded = fm["reminded"];
-  const remindCount =
-    reminded === true || reminded === "true" ? 1 : 0;
-
-  return {
-    id,
-    status,
-    type,
-    assignedTo,
-    assignedBy,
-    assignedAt,
-    targetType: getString(fm, "target_type") ?? getString(fm, "targetType") ?? null,
-    targetId: getString(fm, "target_id") ?? getString(fm, "targetId") ?? null,
-    description:
-      getString(fm, "description") ?? null,
-    rejectedAt:
-      getString(fm, "rejected_at") ?? getString(fm, "rejectedAt") ?? null,
-    rejectionReason:
-      getString(fm, "rejection_reason") ??
-      getString(fm, "rejectionReason") ??
-      null,
-    completedAt:
-      getString(fm, "completed_at") ?? getString(fm, "completedAt") ?? null,
-    completionNote:
-      getString(fm, "completion_note") ??
-      getString(fm, "completionNote") ??
-      null,
-    completedDecisionId:
-      getString(fm, "completed_decision_id") ??
-      getString(fm, "completedDecisionId") ??
-      null,
-    completedDiscussionId:
-      getString(fm, "completed_discussion_id") ??
-      getString(fm, "completedDiscussionId") ??
-      null,
-    lastRemindedAt:
-      getString(fm, "last_reminded_at") ??
-      getString(fm, "lastRemindedAt") ??
-      null,
-    remindCount,
-    createdBy: getIdentity(fm, "created_by") || getIdentity(fm, "createdBy"),
-    contributors: getIdentityArray(fm, "contributors"),
-  };
-}
-
-/**
- * Parse a NOTE file from disk.
- */
+// removed: 'parseAssignmentFile' — assignment feature dropped 2026-07-29
 export function parseNoteFile(fileOrContent: string): NoteIndexData {
   let content: string;
   if (

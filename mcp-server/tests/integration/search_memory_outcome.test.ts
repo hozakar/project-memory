@@ -66,33 +66,22 @@ describe("searchMemory outcomeTypeFilter", () => {
     expect(rebuildResult.failed).toBe(0);
 
     // Filter by outcomeType=none — should return only the "none" discussion
-    const noneResults = await searchMemory(
-      "test", 10, false, undefined, undefined, "discussion",
-      undefined, undefined, undefined, undefined, undefined, "none"
-    );
+    const noneResults = await searchMemory({ query: "test", topK: 10, includeCommits: false, typeFilter: "discussion", outcomeTypeFilter: "none" });
     expect(noneResults.length).toBeGreaterThanOrEqual(1);
     expect(noneResults.every(r => r.id.startsWith("DISCUSSION-2026-06-18-none"))).toBe(true);
 
     // Filter by outcomeType=phase — should return only the phase discussion
-    const phaseResults = await searchMemory(
-      "test", 10, false, undefined, undefined, "discussion",
-      undefined, undefined, undefined, undefined, undefined, "phase"
-    );
+    const phaseResults = await searchMemory({ query: "test", topK: 10, includeCommits: false, typeFilter: "discussion", outcomeTypeFilter: "phase" });
     expect(phaseResults.length).toBeGreaterThanOrEqual(1);
     expect(phaseResults.every(r => r.id.startsWith("DISCUSSION-2026-06-18-phase"))).toBe(true);
 
     // Filter by outcomeType=decision — should return only the decision discussion
-    const decisionResults = await searchMemory(
-      "test", 10, false, undefined, undefined, "discussion",
-      undefined, undefined, undefined, undefined, undefined, "decision"
-    );
+    const decisionResults = await searchMemory({ query: "test", topK: 10, includeCommits: false, typeFilter: "discussion", outcomeTypeFilter: "decision" });
     expect(decisionResults.length).toBeGreaterThanOrEqual(1);
     expect(decisionResults.every(r => r.id.startsWith("DISCUSSION-2026-06-18-decision"))).toBe(true);
 
     // No outcomeTypeFilter — should return all 3 discussions
-    const allResults = await searchMemory(
-      "test", 10, false, undefined, undefined, "discussion"
-    );
+    const allResults = await searchMemory({ query: "test", topK: 10, includeCommits: false, typeFilter: "discussion" });
     expect(allResults.length).toBe(3);
   });
 });

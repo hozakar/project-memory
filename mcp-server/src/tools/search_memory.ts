@@ -2,29 +2,52 @@ import { embed } from "../embedder";
 import { search } from "../db";
 import type { SearchResult } from "../types";
 
-export async function searchMemory(
-  query: string,
-  topK: number = 8,
-  include_commits: boolean = false,
-  createdByEmail?: string,
-  createdByName?: string,
-  typeFilter?: string,
-  touchesFilter?: string[],
-  tagsFilter?: string[],
-  assignedToEmail?: string,
-  assignedByEmail?: string,
-  scopeFilter?: string[],
-  outcomeTypeFilter?: string,
-  diversify?: boolean,
-  include_superseded: boolean = false,
-  /**
-   * NOTE: Phase rows are legacy read-only. No new phases can be indexed via this
-   * surface. Historical type:phase entries in the vector DB continue to be
-   * returned for backward-compatible search results.
-   */
+/**
+ * Options for {@link searchMemory}.
+ *
+ * This is an options object rather than a positional list on purpose. The previous
+ * positional signature carried thirteen parameters, most of them optional, so call
+ * sites degenerated into long `undefined, undefined, …` chains. Removing a parameter
+ * then silently rebound every later argument — a scope filter arriving as an outcome
+ * filter returns wrong results instead of throwing. Named fields make that impossible.
+ *
+ * NOTE: `phase` and `era` rows are legacy read-only. No tool can index them any more,
+ * but historical entries stay searchable via `typeFilter`.
+ */
+export interface SearchMemoryOptions {
+  query: string;
+  topK?: number;
+  includeCommits?: boolean;
+  createdByEmail?: string;
+  createdByName?: string;
+  typeFilter?: string;
+  touchesFilter?: string[];
+  tagsFilter?: string[];
+  scopeFilter?: string[];
+  outcomeTypeFilter?: string;
+  diversify?: boolean;
+  includeSuperseded?: boolean;
   /** Caller identity email — required for note privacy enforcement. Only used when typeFilter === "note". */
-  callerEmail?: string
-): Promise<SearchResult[]> {
+  callerEmail?: string;
+}
+
+export async function searchMemory(opts: SearchMemoryOptions): Promise<SearchResult[]> {
+  const {
+    query,
+    topK = 8,
+    includeCommits = false,
+    createdByEmail,
+    createdByName,
+    typeFilter,
+    touchesFilter,
+    tagsFilter,
+    scopeFilter,
+    outcomeTypeFilter,
+    diversify,
+    includeSuperseded = false,
+    callerEmail,
+  } = opts;
+
   try {
     // Notes are user-scoped (private). They are excluded from all broad searches
     // at the database level (db.ts). Only returned when type_filter is explicitly "note".
@@ -36,8 +59,20 @@ export async function searchMemory(
     }
 
     const vector = await embed(query);
-    const results = await search(vector, topK, typeFilter, !include_commits, effectiveCreatedByEmail, createdByName, touchesFilter, tagsFilter, assignedToEmail, assignedByEmail, scopeFilter, outcomeTypeFilter, diversify, include_superseded);
-    return results;
+    return await search({
+      vector,
+      topK,
+      typeFilter,
+      excludeCommits: !includeCommits,
+      createdByEmail: effectiveCreatedByEmail,
+      createdByName,
+      touchesFilter,
+      tagsFilter,
+      scopeFilter,
+      outcomeTypeFilter,
+      diversify,
+      includeSuperseded,
+    });
   } catch (err) {
     console.error("search_memory failed:", err);
     return [];

@@ -5,7 +5,6 @@ import {
   buildCommitText,
   buildInstructionText,
   buildNoteText,
-  buildAssignmentText,
   deriveOutcomeType,
   cosine,
   mmrRerank,
@@ -157,79 +156,7 @@ describe("deriveOutcomeType", () => {
   });
 });
 
-describe("buildAssignmentText", () => {
-  it("includes assignee, assigner, and description for freeform", () => {
-    const result = buildAssignmentText({
-      id: "ASSIGNMENT-2026-06-14-test",
-      status: "pending",
-      type: "freeform",
-      assignedTo: { name: "Mehmet", email: "mehmet@example.com" },
-      assignedBy: { name: "Hakan", email: "hakan@example.com" },
-      assignedAt: "2026-06-14",
-      targetType: null,
-      targetId: null,
-      description: "Review the auth module",
-      rejectedAt: null,
-      rejectionReason: null,
-      completedAt: null,
-      completionNote: null,
-      completedDecisionId: null,
-      completedDiscussionId: null,
-      remindCount: 0,
-      lastRemindedAt: null,
-    });
-    expect(result).toContain("Mehmet");
-    expect(result).toContain("Review the auth module");
-    expect(result).toContain("pending");
-  });
-
-  it("includes target info for direct type", () => {
-    const result = buildAssignmentText({
-      id: "ASSIGNMENT-2026-06-14-direct",
-      status: "accepted",
-      type: "direct",
-      assignedTo: { name: "Ahmet", email: "ahmet@example.com" },
-      assignedBy: { name: "Hakan", email: "hakan@example.com" },
-      assignedAt: "2026-06-14",
-      targetType: "issue",
-      targetId: "ISSUE-2026-06-14-foo",
-      description: null,
-      rejectedAt: null,
-      rejectionReason: null,
-      completedAt: null,
-      completionNote: null,
-      completedDecisionId: null,
-      completedDiscussionId: null,
-      remindCount: 0,
-      lastRemindedAt: null,
-    });
-    expect(result).toContain("issue ISSUE-2026-06-14-foo");
-  });
-
-  it("includes rejection reason when status is rejected", () => {
-    const result = buildAssignmentText({
-      id: "ASSIGNMENT-2026-06-14-rejected",
-      status: "rejected",
-      type: "freeform",
-      assignedTo: { name: "Ahmet", email: "ahmet@example.com" },
-      assignedBy: { name: "Hakan", email: "hakan@example.com" },
-      assignedAt: "2026-06-14",
-      targetType: null,
-      targetId: null,
-      description: "some task",
-      rejectedAt: "2026-06-15",
-      rejectionReason: "not my area",
-      completedAt: null,
-      completionNote: null,
-      completedDecisionId: null,
-      completedDiscussionId: null,
-      remindCount: 1,
-      lastRemindedAt: "2026-06-14",
-    });
-    expect(result).toContain("not my area");
-    expect(result).toContain("2026-06-15");
-  });
-});
+// removed: buildAssignmentText tests — assignment feature dropped 2026-07-29
 
 describe("cosine", () => {
   it("returns 1 for identical vectors", () => {

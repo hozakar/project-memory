@@ -33,7 +33,6 @@ One judgment per turn, not N per commit. Decision-moment awareness handles decis
 → Capture in a DECISION record with the cancellation rationale.
 
 **About to route work to a teammate?**
-→ `assignments/` directory is created on first use. Use ASSIGNMENT template.
 
 **About to close a discussion?**
 → Discussions are orthogonal to profile. `discussions/` directory is created on first close.
@@ -63,9 +62,7 @@ One judgment per turn, not N per commit. Decision-moment awareness handles decis
 | Drift audit (post-first-response) — `run_audit` NOT available | Default: deferred. Run file-based detection (8 active categories). |
 | User mentions lost commits after squash/rebase | `find_similar_commit` per `mcp-integration.md`. |
 | User triggers manual audit (`Skill project-memory audit`) + MCP available | After structural categories clean: offer semantic conflict scan via `find_decision_conflicts` per `audit.md` → Semantic Conflict Scan. |
-| Assignment created / status changed | Update `assignments/index.yml`, re-call `index_assignment` if MCP. |
-| Session start | Load `summaries/current-state.md`, `summaries/roadmap.md`, `decisions/index.md`, `discussions/index.md`, instructions, and assignments. |
-| Session start — pending/rejected/completed assignment notifications | Same as legacy. |
+| Session start | Load the `## Current` section of `summaries/current-state.md`, pending items from `summaries/roadmap.md`, and active instructions. Decisions and discussions are fetched by the Pre-Implementation Gate, not here. |
 | User says "switch project-memory to &lt;profile&gt;" | SKILL.md → change-profile flow: append `profile_history` entry, switch active `profile`, handle minimal ↔ structured shape transitions per `profiles.md` → Migration mechanism. |
 
 **Clear on sight:** any `*(none)*` in a section that now has content (replace the `*(none)*` with the real content).

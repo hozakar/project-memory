@@ -30,14 +30,7 @@ describe("indexInstruction + searchMemory roundtrip", () => {
 
     expect(result.success).toBe(true);
 
-    const results = await searchMemory(
-      "trailing whitespace pre-commit policy",
-      5,
-      false,
-      "hozakar@gmail.com",
-      undefined,
-      "instruction"
-    );
+    const results = await searchMemory({ query: "trailing whitespace pre-commit policy", topK: 5, includeCommits: false, createdByEmail: "hozakar@gmail.com", typeFilter: "instruction" });
 
     const match = results.find(
       (r) => r.id === "INSTRUCTION-2026-06-23-no-trailing-whitespace"
@@ -56,14 +49,7 @@ describe("indexInstruction + searchMemory roundtrip", () => {
       createdBy: { name: "Other Dev", email: "other@example.com" },
     });
 
-    const results = await searchMemory(
-      "emoji PR titles",
-      5,
-      false,
-      "hozakar@gmail.com",
-      undefined,
-      "instruction"
-    );
+    const results = await searchMemory({ query: "emoji PR titles", topK: 5, includeCommits: false, createdByEmail: "hozakar@gmail.com", typeFilter: "instruction" });
 
     expect(
       results.find((r) => r.id === "INSTRUCTION-2026-06-23-other-user")

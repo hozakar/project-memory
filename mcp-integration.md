@@ -19,7 +19,6 @@ At session start, check if `search_memory`, `index_decision`, and `index_instruc
 | `index_decision(data)` | Upsert a decision; called on creation and status change. |
 | `index_discussion(data)` | Upsert a discussion; called on conclusion and status change. |
 | `index_instruction(data)` | Upsert an instruction; called on creation and state change (active ↔ dropped). |
-| `index_assignment(data)` | Upsert an assignment; called on creation and status change. |
 | `index_note(data)` | Upsert a note; called on creation and update. |
 | `delete_note(id)` | Delete a note from vector DB and filesystem; called on user-initiated note deletion. |
 | `reindex_file(project_memory_dir, type, file_path)` | Re-index a single .project-memory/ file by reading it from disk. Reads the file, parses frontmatter and sections, embeds, and upserts into the vector DB. Returns `{ success: true }` on success, or `{ success: false, error, details }` on failure. |
@@ -27,13 +26,15 @@ At session start, check if `search_memory`, `index_decision`, and `index_instruc
 | `rebuild_index(entries[])` | Full atomic rebuild of the index; called when DB is empty or on user request. |
 | `run_audit(project_memory_dir)` | Executes all 8 audit categories (including Cat 15 decision supersession integrity) in a single MCP call. Returns `{auto_fixed, pending_fixes}` (no escalations — all findings auto-fix directly or as deterministic pending_fixes). See `standard/audit-mcp.md`. |
 | `apply_audit_fixes(project_memory_dir, pending_fixes)` | Deterministically applies the `pending_fixes` payload from `run_audit`. Supports 7 fix types: `add_decision_index_row`, `fix_decision_index_status`, `assign_adr_id`, `create_adr_file`, `add_discussion_index_row`, `fix_discussion_index_status`, `fix_decision_supersession_status`. Returns `{applied, partial, failed, rerun_audit_recommended}`. Source-of-truth safe (never reads vector index, never synthesizes prose). Idempotent. See `standard/audit-mcp.md` step 2. |
-| `list_contributors()` | Walk all project-memory records (phase, decision, discussion, issue, assignment files), extract `created_by` and `contributors` from frontmatter, deduplicate by email, return sorted by name. Useful for understanding who has touched the project. |
+| `list_contributors()` | Walk all project-memory records (decision, discussion, issue files), extract `created_by` and `contributors` from frontmatter, deduplicate by email, return sorted by name. Useful for understanding who has touched the project. |
 | `find_similar_commit(diff_snippet, top_k?)` | Search for past commits with similar code changes; used for squash/rebase recovery. |
 | `find_decision_conflicts(project_memory_dir, threshold?, top_k?)` | Find candidate pairs of active decisions that may semantically conflict via pairwise embedding similarity. Used by the semantic-conflict-scan audit stage (manual audit only). |
 
 ## Proactive DB Sync
 
-At session start, if MCP is active: call `check_consistency(project_memory_dir)`. For each ID in `missing`: call the appropriate index tool (`index_decision`, `index_discussion`, `index_instruction`, `index_assignment`, `index_note`). Best-effort — if any call fails, continue.
+At session start, if MCP is active: call `check_consistency(project_memory_dir)`. For each ID in `missing`: call the appropriate index tool (`index_decision`, `index_discussion`, `index_instruction`, `index_note`). Best-effort — if any call fails, continue.
+
+`check_consistency` scans decisions, discussions, instructions and notes only. Phases and assignments are dropped concepts with no index tool left, so they are never reported as missing; legacy `phase-*` rows are also skipped on the orphan side because they are retained for historical search. Stale `ASSIGNMENT-*` rows do surface as orphaned so the drift audit can purge them.
 
 ## Graceful Degradation
 

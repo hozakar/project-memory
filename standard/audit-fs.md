@@ -15,7 +15,6 @@ The project-memory audit system defines 8 active categories:
 | 9 | Discussion index drift | Synchronize DISCUSSION files with `discussions/index.md` rows (missing, orphan, status mismatch). |
 | 11 | Discussion expiry | Archive discussions with `outcome: none` older than 30 days. |
 | 13 | MCP consistency (conditional) | Index on-disk IDs missing from MCP database when MCP `check_consistency` tool is available. |
-| 14 | Assignment integrity | Check orphan targets, stale pending (>30d), and completions without evidence. |
 | 15 | Decision supersession integrity | 5 sub-checks: dangling pointers, zombie-active, asymmetric, circular chains, orphan-superseded. |
 
 **Retired:** Cat 1, 2, 3, 4, 7, 10, 12. Phase-related categories (4, 10) retired when phase concept dropped. Cat 7, 12 dropped.
@@ -44,7 +43,6 @@ Run all 8 active categories on every audit pass. Collect findings before acting.
 | 9 | **Discussion index drift** | DISCUSSION files vs discussions/index.md rows; missing row / status mismatch / orphan row. Missing rows and status mismatches become pending fixes; orphan rows auto-removed from index. | Glob: discussions/DISCUSSION-*.md; Read: discussions/index.md | **Auto-fix** | — |
 | 11 | **Discussion expiry** | DISCUSSION with outcome: none and age > 30 days → archive. | Glob: discussions/DISCUSSION-*.md; Read frontmatter | **Auto-fix** | — |
 | 13 | **MCP consistency (conditional)** | Runs only if MCP `check_consistency` tool is available. Indexes any IDs found on disk but not in DB. | MCP: `check_consistency`; `Read` files for missing IDs; MCP: `index_*` tools | **Auto-fix** | — |
-| 14 | **Assignment integrity** | 14a (target_id orphan: auto-fix writes `target_orphaned_at` to frontmatter, any age), 14b (stale pending >30d: one-shot `reminded: true` flag), 14c (completed without evidence: auto-fix writes `completed_without_evidence_at` to frontmatter). **No-op when assignments feature unused.** | `Glob: assignments/*.md`; `Read` frontmatter | **Auto-fix** | — |
 | 15 | **Decision supersession integrity** | 5 sub-checks: (a) dangling — supersedes/superseded_by points to missing file; (b) zombie-active — superseded_by set & target exists but status not superseded; (c) asymmetric — only one side of a supersedes pair set; (d) circular — A supersedes B supersedes C supersedes A; (e) orphan-superseded — status=superseded but no superseded_by & no target claims it | `Glob: decisions/DECISION-*.md`; `Read: decisions/index.md` | **Auto-fix** (dangling: direct clear; zombie: pending_fix flips status + moves index row; asymmetric: restore missing link; circular: break cycle; orphan-superseded: restore status to active) | — |
 
 ---
@@ -59,14 +57,13 @@ Each active category's auto-fix behavior is specified inline in the table above.
 - **Cat 9 (discussion index drift):** Missing rows queued; orphan rows auto-removed; status mismatches resolved.
 - **Cat 11 (discussion expiry):** Auto-archived to `discussions/archive/`; index row removed.
 - **Cat 13 (MCP consistency, conditional):** Missing notes re-indexed; orphaned records deleted from DB.
-- **Cat 14 (assignment integrity):** 14a — `target_orphaned_at` written to frontmatter; 14b — `reminded: true` flag set (one-shot); 14c — `completed_without_evidence_at` written to frontmatter.
 - **Cat 15 (decision supersession integrity):** Dangling — clear pointer; zombie-active — pending_fix flips status + moves index row; asymmetric — restore missing link; circular — break cycle; orphan-superseded — restore status to active.
 
 Phase-related categories (open-phase gaps, phase file completeness) are retired — no auto-fix rules apply.
 
 ---
 
-Phase-related open-phase gap auto-assignment heuristic is retired — no longer applies.
+Phase-related open-phase gap heuristic is retired — no longer applies. Cat 14 (assignment integrity) is retired with the assignment feature.
 
 ---
 

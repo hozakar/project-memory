@@ -55,7 +55,6 @@ Before suppressing any finding, check `audit_ignore` in `.project-memory/config.
 | 6 | `decision-drift:<DECISION-ID>:<missing-row|orphan-row|status-mismatch>` |
 | 8 | `adr-drift:<DECISION-ID>:<missing-adr_id|missing-file|status-mismatch>` |
 | 9 | `discussion-drift:<DISCUSSION-ID>:<missing-row|orphan-row|status-mismatch>` |
-| 14 | `assignment-orphan:<ASSIGNMENT-ID>` / `assignment-stale:<ASSIGNMENT-ID>` / `assignment-no-evidence:<ASSIGNMENT-ID>` |
 | 15 | `decision-supersession:<DECISION-ID>:<dangling|zombie|asymmetric|circular|orphan-superseded>` |
 
 **config.yml format:** ```yaml audit_ignore: ``` Phase-keyed ignore entries for retired categories stay put — only match frozen phase artifacts, harmless historical record.

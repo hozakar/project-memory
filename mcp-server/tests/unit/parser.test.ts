@@ -5,7 +5,6 @@ import {
   parseDecisionFile,
   parseDiscussionFile,
   parseInstructionFile,
-  parseAssignmentFile,
   parseNoteFile,
 } from "../../src/parser";
 
@@ -110,11 +109,11 @@ describe("parseFrontmatter", () => {
     expect(result.touches).toEqual(["conventions_md", "decisions"]);
   });
 
-  it("parses assigned_to and assigned_by as nested objects", () => {
-    const content = "---\nassigned_to:\n  name: John\n  email: john@test.com\nassigned_by:\n  name: Admin\n  email: admin@test.com\n---\n";
+  it("parses nested identity objects", () => {
+    const content = "---\ncreated_by:\n  name: John\n  email: john@test.com\nreviewed_by:\n  name: Admin\n  email: admin@test.com\n---\n";
     const result = parseFrontmatter(content);
-    expect(result.assigned_to).toEqual({ name: "John", email: "john@test.com" });
-    expect(result.assigned_by).toEqual({ name: "Admin", email: "admin@test.com" });
+    expect(result.created_by).toEqual({ name: "John", email: "john@test.com" });
+    expect(result.reviewed_by).toEqual({ name: "Admin", email: "admin@test.com" });
   });
 
   it("throws ParseError on malformed YAML", () => {
@@ -521,139 +520,7 @@ describe("parseInstructionFile", () => {
 // parseAssignmentFile
 // ---------------------------------------------------------------------------
 
-describe("parseAssignmentFile", () => {
-  const baseAssignment = [
-    "---",
-    "id: ASSIGNMENT-2026-06-14-test",
-    "status: pending",
-    "type: direct",
-    "assigned_to:",
-    "  name: John",
-    "  email: john@example.com",
-    "assigned_by:",
-    "  name: Admin",
-    "  email: admin@example.com",
-    "assigned_at: 2026-06-14",
-    "---",
-    "",
-    "# Assignment",
-    "Description of the task.",
-  ].join("\n");
-
-  it("parses a valid ASSIGNMENT file with all fields", () => {
-    const content = [
-      "---",
-      "id: ASSIGNMENT-2026-06-14-test",
-      "status: pending",
-      "type: direct",
-      "assigned_to:",
-      "  name: John",
-      "  email: john@example.com",
-      "assigned_by:",
-      "  name: Admin",
-      "  email: admin@example.com",
-      "assigned_at: 2026-06-14",
-      "target_type: issue",
-      "target_id: ISSUE-2026-06-14-foo",
-      "description: Fix the bug",
-      "created_by:",
-      "  name: Admin",
-      "  email: admin@example.com",
-      "contributors:",
-      "  - name: Alice",
-      "    email: alice@example.com",
-      "---",
-      "",
-      "# Assignment",
-      "Fix the critical bug in the parser.",
-    ].join("\n");
-
-    const result = parseAssignmentFile(content);
-    expect(result.id).toBe("ASSIGNMENT-2026-06-14-test");
-    expect(result.status).toBe("pending");
-    expect(result.type).toBe("direct");
-    expect(result.assignedTo).toEqual({ name: "John", email: "john@example.com" });
-    expect(result.assignedBy).toEqual({ name: "Admin", email: "admin@example.com" });
-    expect(result.assignedAt).toBe("2026-06-14");
-    expect(result.targetType).toBe("issue");
-    expect(result.targetId).toBe("ISSUE-2026-06-14-foo");
-    expect(result.description).toBe("Fix the bug");
-    expect(result.createdBy).toEqual({ name: "Admin", email: "admin@example.com" });
-    expect(result.contributors).toEqual([{ name: "Alice", email: "alice@example.com" }]);
-  });
-
-  it("handles optional fields (rejected, completed)", () => {
-    const content = [
-      "---",
-      "id: ASSIGNMENT-2026-06-14-test",
-      "status: completed",
-      "type: direct",
-      "assigned_to:",
-      "  name: John",
-      "  email: john@example.com",
-      "assigned_by:",
-      "  name: Admin",
-      "  email: admin@example.com",
-      "assigned_at: 2026-06-14",
-      "rejected_at: null",
-      "rejection_reason: null",
-      "completed_at: 2026-06-15",
-      "completion_note: Done",
-      "completed_decision_id: null",
-      "completed_discussion_id: null",
-      "last_reminded_at: null",
-      "reminded: true",
-      "---",
-      "",
-      "# Assignment",
-      "Description.",
-    ].join("\n");
-
-    const result = parseAssignmentFile(content);
-    expect(result.status).toBe("completed");
-    expect(result.rejectedAt).toBeNull();
-    expect(result.rejectedAt).toBeNull();
-    expect(result.completedAt).toBe("2026-06-15");
-    expect(result.completionNote).toBe("Done");
-    expect(result.completedDecisionId).toBeNull();
-    expect(result.completedDiscussionId).toBeNull();
-    expect(result.lastRemindedAt).toBeNull();
-    expect(result.remindCount).toBe(1);
-  });
-
-  it("remindCount is 0 when reminded is false or absent", () => {
-    const result = parseAssignmentFile(baseAssignment);
-    expect(result.remindCount).toBe(0);
-  });
-
-  it("handles null target_type and target_id", () => {
-    const content = [
-      "---",
-      "id: ASSIGNMENT-2026-06-14-test",
-      "status: pending",
-      "type: freeform",
-      "assigned_to:",
-      "  name: John",
-      "  email: john@example.com",
-      "assigned_by:",
-      "  name: Admin",
-      "  email: admin@example.com",
-      "assigned_at: 2026-06-14",
-      "target_type: null",
-      "target_id: null",
-      "description: null",
-      "---",
-      "",
-      "# Assignment",
-      "Description.",
-    ].join("\n");
-
-    const result = parseAssignmentFile(content);
-    expect(result.targetType).toBeNull();
-    expect(result.targetId).toBeNull();
-    expect(result.description).toBeNull();
-  });
-});
+// removed: parseAssignmentFile tests — assignment feature dropped 2026-07-29
 
 // ---------------------------------------------------------------------------
 // parseNoteFile

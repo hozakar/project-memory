@@ -759,85 +759,7 @@ function cat15DecisionSupersession(
   return { autoFixed, pendingFixes };
 }
 
-function cat14AssignmentIntegrity(
-  projectMemoryDir: string,
-  ignored: AuditIgnoreSet,
-): string[] {
-  const autoFixed: string[] = [];
-
-  const assignmentsDir = path.join(projectMemoryDir, "assignments");
-  if (!fs.existsSync(assignmentsDir)) {
-    return autoFixed;
-  }
-
-  const now = new Date();
-
-  for (const f of fs.readdirSync(assignmentsDir)) {
-    const m = f.match(/^(ASSIGNMENT-.+)\.md$/);
-    if (!m) continue;
-
-    const assignmentId = m[1];
-    const filePath = path.join(assignmentsDir, f);
-    let content = readFile(filePath);
-    const parsed = parseFrontmatter(content);
-    if (!parsed || Object.keys(parsed).length === 0) continue;
-
-    const status = parsed["status"] || "";
-    const type = parsed["type"] || "";
-    const targetId = parsed["target_id"] || "";
-    const assignedAt = parsed["assigned_at"] || "";
-    const reminded = parsed["reminded"] || "";
-    const completedNote = parsed["completion_note"] || "";
-    const completedDecisionId = parsed["completed_decision_id"] || "";
-    const completedDiscussionId = parsed["completed_discussion_id"] || "";
-
-    // 14a: Direct assignment target orphan — auto-fix for ALL ages
-    if (type === "direct" && targetId && status !== "completed") {
-      if (!ignored.has(`assignment-orphan:${assignmentId}`)) {
-        let targetExists = false;
-        const targetPaths = [
-          path.join(projectMemoryDir, "issues", "open", `${targetId}.md`),
-          path.join(projectMemoryDir, "issues", "closed", `${targetId}.md`),
-          path.join(projectMemoryDir, "phases", String(targetId).replace(/^phase-/, ""), "phase.yml"),
-          path.join(projectMemoryDir, "decisions", `${targetId}.md`),
-          path.join(projectMemoryDir, "discussions", `${targetId}.md`),
-        ];
-        for (const tp of targetPaths) {
-          if (fs.existsSync(tp)) { targetExists = true; break; }
-        }
-        if (!targetExists && !parsed["target_orphaned_at"]) {
-          content = setFrontmatterField(content, "target_orphaned_at", today());
-          fs.writeFileSync(filePath, content, "utf-8");
-          autoFixed.push(`Assignment ${assignmentId}: target ${targetId} orphaned, annotated`);
-        }
-      }
-    }
-
-    // 14b: Stale pending assignment (>30 days) — one-shot reminded flag
-    // Uses updated `content` (14a may have written to the same file above)
-    if (status === "pending" && assignedAt) {
-      const ageDays = (now.getTime() - new Date(String(assignedAt)).getTime()) / 86400000;
-      if (ageDays > 30) {
-        if (!ignored.has(`assignment-stale:${assignmentId}`) && reminded !== "true") {
-          content = setFrontmatterField(content, "reminded", "true");
-          fs.writeFileSync(filePath, content, "utf-8");
-          autoFixed.push(`Assignment ${assignmentId}: stale pending (${Math.round(ageDays)}d), marked reminded`);
-        }
-      }
-    }
-
-    // 14c: Completed without evidence — auto-annotate
-    if (status === "completed" && !completedNote && !completedDecisionId && !completedDiscussionId) {
-      if (!ignored.has(`assignment-no-evidence:${assignmentId}`) && !parsed["completed_without_evidence_at"]) {
-        content = setFrontmatterField(content, "completed_without_evidence_at", today());
-        fs.writeFileSync(filePath, content, "utf-8");
-        autoFixed.push(`Assignment ${assignmentId}: completed without evidence, annotated`);
-      }
-    }
-  }
-
-  return autoFixed;
-}
+// removed: 'cat14AssignmentIntegrity' — assignment feature dropped 2026-07-29
 
 // ---------------------------------------------------------------------------
 // Main entry point
@@ -909,8 +831,9 @@ export async function runAudit(
         autoFixed.push(`Cat 13: indexed missing note ${id}`);
       }
     }
-    // Other missing types (phase, decision, discussion, era, instruction, assignment)
-    // are handled by proactive sync at session start.
+    // Other missing types (decision, discussion, instruction) are handled by
+    // proactive sync at session start. Phases, eras and assignments are dropped
+    // concepts and are no longer reported as missing by check_consistency.
   }
   for (const id of consistency.orphaned) {
     // FS is source of truth — if file is gone, DB record must go.
@@ -923,9 +846,6 @@ export async function runAudit(
     }
     autoFixed.push(`Cat 13: deleted orphaned ${id} from DB`);
   }
-
-  // Cat 14: Assignment integrity — auto-fix only (no escalations)
-  autoFixed.push(...cat14AssignmentIntegrity(projectMemoryDir, ignored));
 
   // Cat 15: Decision supersession integrity — dangling pointers (auto-fix) + zombie-active (pending fix)
   const cat15Result = cat15DecisionSupersession(projectMemoryDir, ignored);

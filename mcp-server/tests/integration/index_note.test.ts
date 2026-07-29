@@ -32,14 +32,7 @@ describe("indexNote + searchMemory roundtrip", () => {
 
     expect(result.success).toBe(true);
 
-    const results = await searchMemory(
-      "groceries and MCP server",
-      5,
-      undefined,
-      "hozakar@gmail.com",
-      undefined,
-      "note",
-    );
+    const results = await searchMemory({ query: "groceries and MCP server", topK: 5, createdByEmail: "hozakar@gmail.com", typeFilter: "note" });
 
     const match = results.find((r) => r.id === "NOTE-2026-06-21-test");
     expect(match).toBeDefined();
@@ -57,14 +50,7 @@ describe("indexNote + searchMemory roundtrip", () => {
       updatedAt: "2026-06-21",
     });
 
-    const results = await searchMemory(
-      "world domination",
-      5,
-      undefined,
-      "other@example.com",
-      undefined,
-      "note",
-    );
+    const results = await searchMemory({ query: "world domination", topK: 5, createdByEmail: "other@example.com", typeFilter: "note" });
 
     expect(results).toHaveLength(0);
   });
@@ -82,7 +68,7 @@ describe("indexNote + searchMemory roundtrip", () => {
 
     // Without type_filter, notes are excluded at the database level.
     // They are user-scoped private records — only returned via type_filter="note".
-    const results = await searchMemory("private note unfiltered", 5);
+    const results = await searchMemory({ query: "private note unfiltered", topK: 5 });
 
     const match = results.find((r) => r.id === "NOTE-2026-06-21-private-note");
     expect(match).toBeUndefined();

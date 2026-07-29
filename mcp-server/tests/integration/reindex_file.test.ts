@@ -40,7 +40,7 @@ describe("reindexFile integration", () => {
     const result = await reindexFile(tmp.dir, "decision", fp);
     expect(result).toEqual({ success: true });
 
-    const results = await searchMemory("reindex integration test decision", 5);
+    const results = await searchMemory({ query: "reindex integration test decision", topK: 5 });
     expect(results.find((r) => r.id === "DECISION-2026-07-26-reindex-int")).toBeDefined();
   });
 
@@ -62,7 +62,7 @@ describe("reindexFile integration", () => {
     const result = await reindexFile(tmp.dir, "discussion", fp);
     expect(result).toEqual({ success: true });
 
-    const results = await searchMemory("reindex integration test discussion", 5);
+    const results = await searchMemory({ query: "reindex integration test discussion", topK: 5 });
     expect(results.find((r) => r.id === "DISCUSSION-2026-07-26-reindex-int")).toBeDefined();
   });
 
@@ -96,7 +96,7 @@ describe("reindexFile integration", () => {
     const r2 = await reindexFile(tmp.dir, "decision", fp);
     expect(r2).toEqual({ success: true });
 
-    const results = await searchMemory("duplicate reindex test", 5);
+    const results = await searchMemory({ query: "duplicate reindex test", topK: 5 });
     expect(results.find((r) => r.id === "DECISION-2026-07-26-duplicate")).toBeDefined();
   });
 
@@ -119,10 +119,7 @@ describe("reindexFile integration", () => {
     const result = await reindexFile(tmp.dir, "note", fp);
     expect(result).toEqual({ success: true });
 
-    const results = await searchMemory(
-      "reindex integration test note", 5, false,
-      "test@example.com", undefined, "note",
-    );
+    const results = await searchMemory({ query: "reindex integration test note", topK: 5, includeCommits: false, createdByEmail: "test@example.com", typeFilter: "note" });
     expect(results.find((r) => r.id === "NOTE-2026-07-26-reindex-int")).toBeDefined();
   });
 });

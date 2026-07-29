@@ -1,6 +1,6 @@
 ---
 name: project-memory-conventions-records
-description: Issue, instruction, and assignment record lifecycles — creation, state machines, session-start UX, completion rules.
+description: Issue, instruction, and note record lifecycles — creation, state machines, session-start UX, completion rules.
 ---
 
 # Issues
@@ -61,51 +61,19 @@ origin_updated: false     # true when origin modified since fork
 
 ---
 
-# Assignments
-
-**Purpose:** ASSIGNMENT is a **continuity and handoff mechanism** — not a task management system. Primary use case: a developer departs or becomes unavailable with unfinished work; context is transferred to a named teammate so nothing is lost between sessions. Secondary use case: intentional, rare domain handoffs. Assignments are created rarely.
-
-Assignment records are stored in `.project-memory/assignments/` with their own `index.yml` summary table.
-
-**Naming:** `ASSIGNMENT-YYYY-MM-DD-<short-slug>.md`
-- Date first — chronological sort order
-- Slug describes the task topic (e.g. `mehmet-review-auth`, `ahmet-payment-research`)
-- Use kebab-case
-- Example: `ASSIGNMENT-2026-06-14-mehmet-review-auth-bug.md`
-
-**Frontmatter:** See `templates/assignments.md` for the full schema. Key fields: `id`, `status` (pending | accepted | rejected | ongoing | completed), `type` (direct | freeform), `assigned_to` / `assigned_by` ({ name, email }), `target_type` / `target_id` (link to existing record), `reminded` (set to true on remind me later).
-
-**State machine:**
-pending → accepted → ongoing → completed
-pending → rejected → (assigner loop)
-pending → remind me later → pending (reminded: true)
-
-After rejection: assign to another (new ASSIGNMENT), do it yourself (completed by assigner), or remind me later (reset to pending, reminded: true).
-
-**Session-start UX:** Pending/ongoing assignments loaded via `assigned_to.email` filter. A single passive line shown at session start — no interaction expected. Rejected assignments for the assigner shown similarly. Completed notifications shown once with View Details / Dismiss options.
-
-**Completion rules:** Only the assignee can mark `completed`. At least one evidence field required: `completion_note`, `completed_decision_id`, or `completed_discussion_id`.
-
-**Permission model:** Open — anyone can assign to anyone. Rejection mechanism is the safety net.
-
-**Expiry:** No automatic expiry. Cat 14b (stale pending >30d) serves as the backstop for abandoned assignments.
-
-**Author attribution:** On creation: `created_by` set to `assigned_by` identity. Standard profile does not track `contributors`.
-
-**Pre-Implementation Gate integration:** Not scanned.
-
-**Vector DB:** Assignments are indexed via `index_assignment` MCP tool. File system is source of truth; DB is derived read-optimized index.
-
----
-
 # Notes
 
 See `templates/notes.md` for the note template and naming. Notes are user-scoped, private, search-only (no session loading, no gate re-injection, no audit). Lifecycle: create -> optional update -> optional delete.
 
 **What notes are NOT:**
 - NOT project decisions — no ADR counterpart, no Pre-Implementation Gate scanning
-- NOT collaborative — no sharing, no fork model, no assignment
+- NOT collaborative — no sharing, no fork model, no delegation to another person
 - NOT in discussions/index.md or decisions/index.md
 - NOT session-persistent — passive, search-only
+
+> **Note on handoff.** Notes replaced the assignment record type, but they do not
+> reproduce all of it: a note is scoped to its creator (note searches auto-apply the
+> caller's email), so it cannot express "X is assigned to Y". A project that needs
+> cross-person handoff needs a mechanism this one does not provide.
 
 **Vector DB:** Notes are indexed via `index_note` MCP tool. File system is source of truth; DB is derived read-optimized index.

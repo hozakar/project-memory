@@ -7,7 +7,7 @@ description: Tier matrix, init UX, migration semantics, and orthogonal-feature l
 
 Project-memory supports two profiles. They differ only in ceremony-bearing features — audit categories, summaries, gate procedure depth.
 
-**User-triggered features are NOT tier-bound.** Discussions, issues, assignments, instruction *creation*, notes, the ADR mirror, and the MCP companion remain opt-in regardless of profile.
+**User-triggered features are NOT tier-bound.** Discussions, issues, instruction *creation*, notes, the ADR mirror, and the MCP companion remain opt-in regardless of profile.
 
 The right axis for choosing a profile is **longevity × revisit frequency × reasoning density** — will future-me (or someone else) need to ask "why?" in a way that git + code don't already answer?
 
@@ -43,7 +43,6 @@ These remain user-triggered or config-flagged regardless of profile:
 - **ADR mirror** — `adr_enabled` flag in `config.yml`
 - **Discussions** — implicit/explicit trigger
 - **Issues** — user creates; `issues/` dir on first use
-- **Assignments** — user delegates; `assignments/` dir on first use
 - **Notes** — user takes note; `notes/` dir on first use
 - **Instructions creation** — user gives instruction; file created on demand
 
